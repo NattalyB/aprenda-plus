@@ -29,7 +29,7 @@ public class Funcionario {
     private LocalDate dataNascimento;
 
     @Column(name = "data_admissao", nullable = false)
-    private LocalDate dataAdmissao;
+    private LocalDate dataAdmissao = LocalDate.now();
 
     @Column(name = "senha_hash", nullable = false)
     private String senhaHash;
