@@ -10,6 +10,10 @@ import AdminLayout from './components/admin/AdminLayout';
 import AdminCursos from './pages/admin/AdminCursos';
 import AdminCursoForm from './pages/admin/AdminCursoForm';
 import RotaProtegidaAdmin from './components/admin/RotaProtegidaAdmin';
+import AdminAlunos from './pages/admin/AdminAlunos';
+import AdminAlunoForm from './pages/admin/AdminAlunoForm';
+import AdminProfessores from './pages/admin/AdminProfessores';
+import AdminProfessorForm from './pages/admin/AdminProfessorForm';
 
 function App() {
   return (
@@ -36,6 +40,12 @@ function App() {
           <Route path="cursos" element={<AdminCursos />} />
           <Route path="cursos/novo" element={<AdminCursoForm />} />
           <Route path="cursos/:id/editar" element={<AdminCursoForm />} />
+          <Route path="alunos" element={<AdminAlunos />} />
+          <Route path="professores" element={<AdminProfessores />} />
+          <Route path="professores/novo" element={<AdminProfessorForm />} />
+          <Route path="professores/:id/editar" element={<AdminProfessorForm />} />
+          <Route path="alunos/novo" element={<AdminAlunoForm />} />
+          <Route path="alunos/:id/editar" element={<AdminAlunoForm />} />
         </Route>
       </Routes>
     </BrowserRouter>
