@@ -13,7 +13,7 @@ function Footer() {
         </div>
       </div>
       <div className="footer-bottom">
-        <p>Desenvolvido por: <strong>Natty</strong> &amp; equipe</p>
+        <p>Desenvolvido por: <strong>Alunos +Pra TI</strong></p>
       </div>
     </footer>
   );
