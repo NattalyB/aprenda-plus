@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { listarCursos } from '../services/cursoService';
+import { useSearch } from '../context/SearchContext';
+import CursoModal from '../components/CursoModal';
 
 function Home() {
   const [cursos, setCursos] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState(null);
+  const [cursoSelecionado, setCursoSelecionado] = useState(null);
+  const { termoBusca } = useSearch();
 
   useEffect(() => {
     listarCursos()
@@ -19,26 +22,49 @@ function Home() {
       });
   }, []);
 
-  if (carregando) return <p>Carregando cursos...</p>;
-  if (erro) return <p style={{ color: 'red' }}>{erro}</p>;
+  if (carregando) return <p style={{ textAlign: 'center', padding: '2rem' }}>Carregando cursos...</p>;
+  if (erro) return <p style={{ color: 'red', textAlign: 'center', padding: '2rem' }}>{erro}</p>;
+
+  const cursosFiltrados = cursos.filter((curso) =>
+    curso.nome.toLowerCase().includes(termoBusca.toLowerCase())
+  );
 
   return (
-    <div style={{ padding: '1rem' }}>
-      <h1>Cursos mais vendidos</h1>
-      {cursos.length === 0 ? (
-        <p>Nenhum curso cadastrado ainda.</p>
-      ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '1rem' }}>
-          {cursos.map((curso) => (
-            <div key={curso.idCurso} style={{ border: '1px solid #444', borderRadius: '8px', padding: '1rem' }}>
-              <h3>{curso.nome}</h3>
-              <p>R$ {curso.valor}</p>
-              <Link to={`/curso/${curso.idCurso}`}>Mais detalhes</Link>
-            </div>
-          ))}
+    <>
+      <section className="hero-banner">
+        <div className="hero-text">
+          <h2>APRENDA NOVAS HABILIDADES.<br />INVISTA NO SEU FUTURO.</h2>
         </div>
-      )}
-    </div>
+      </section>
+
+      <main className="main-content">
+        <h3 className="section-title">CURSOS MAIS VENDIDOS</h3>
+
+        {cursosFiltrados.length === 0 ? (
+          <p style={{ textAlign: 'center' }}>Nenhum curso encontrado.</p>
+        ) : (
+          <div className="courses-grid">
+            {cursosFiltrados.map((curso) => (
+              <div className="course-card" key={curso.idCurso}>
+                <div className="course-img-placeholder">Aprenda+</div>
+                <h4>{curso.nome}</h4>
+                <div className="course-price">R$ {curso.valor}</div>
+                <div className="course-buttons">
+                  <button className="btn-details" onClick={() => setCursoSelecionado(curso)}>
+                    MAIS DETALHES
+                  </button>
+                  <button className="btn-buy" onClick={() => setCursoSelecionado(curso)}>
+                    ADICIONAR AO CARRINHO
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </main>
+
+      <CursoModal curso={cursoSelecionado} onClose={() => setCursoSelecionado(null)} />
+    </>
   );
 }
 

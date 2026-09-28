@@ -1,10 +1,23 @@
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import logo from '../assets/aprenda-plus-logos/logo-aprenda-plus-branco.png';
+import logo from '../assets/logo-aprenda-plus.png';
 import { estaLogado, getNomeAluno, logout } from '../services/authService';
+import { listarItensDoCarrinho } from '../services/carrinhoService';
+import { useSearch } from '../context/SearchContext';
 
 function Header() {
   const navigate = useNavigate();
   const logado = estaLogado();
+  const { termoBusca, setTermoBusca } = useSearch();
+  const [qtdCarrinho, setQtdCarrinho] = useState(0);
+
+  useEffect(() => {
+    if (logado) {
+      listarItensDoCarrinho()
+        .then((itens) => setQtdCarrinho(itens.length))
+        .catch(() => setQtdCarrinho(0));
+    }
+  }, [logado]);
 
   const handleLogout = () => {
     logout();
@@ -12,27 +25,40 @@ function Header() {
   };
 
   return (
-    <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem' }}>
-      <Link to="/">
-        <img src={logo} alt="AprendaPlus" style={{ height: '50px' }} />
-      </Link>
+    <header className="header">
+      <div className="logo-container">
+        <Link to="/">
+          <img src={logo} alt="Aprenda Plus" className="logo-img" />
+        </Link>
+      </div>
 
-      <input type="text" placeholder="Pesquisar cursos..." />
+      <div className="search-container">
+        <input
+          type="text"
+          placeholder="Pesquisar cursos..."
+          value={termoBusca}
+          onChange={(e) => setTermoBusca(e.target.value)}
+        />
+        <button className="search-btn">🔍</button>
+      </div>
 
-      <nav style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-        <Link to="/carrinho">Carrinho</Link>
+      <div className="header-actions">
+        <Link to="/carrinho">
+          <button className="btn-cart">🛒 Carrinho ({qtdCarrinho})</button>
+        </Link>
+
         {logado ? (
           <>
             <span>Olá, {getNomeAluno()}</span>
-            <button onClick={handleLogout}>Sair</button>
+            <button className="btn-login" onClick={handleLogout}>Sair</button>
           </>
         ) : (
           <>
-            <Link to="/login">Login</Link>
-            <Link to="/cadastro">Cadastro</Link>
+            <Link to="/login"><button className="btn-login">Login</button></Link>
+            <Link to="/cadastro"><button className="btn-signup">Cadastro</button></Link>
           </>
         )}
-      </nav>
+      </div>
     </header>
   );
 }
