@@ -1,0 +1,14 @@
+# Backend (Java/Maven)
+aprenda-plus-backend/target/
+aprenda-plus-backend/bin/
+aprenda-plus-backend/.mvn/wrapper/maven-wrapper.jar
+
+# Frontend (Node/Vite)
+aprenda-plus-frontend/node_modules/
+aprenda-plus-frontend/dist/
+
+# Editor
+.vscode/
+
+# Configs sensíveis
+aprenda-plus-backend/src/main/resources/application-local.properties
