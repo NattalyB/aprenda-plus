@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { HashRouter, Routes, Route } from 'react-router-dom';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import Home from './pages/Home';
@@ -37,7 +37,7 @@ function SitePage({ children }) {
 
 function App() {
   return (
-    <BrowserRouter>
+    <HashRouter>
       <Routes>
         <Route path="/" element={<SitePage><Home /></SitePage>} />
         <Route path="/login" element={<SitePage><Login /></SitePage>} />
@@ -85,7 +85,7 @@ function App() {
 
         </Route>
       </Routes>
-    </BrowserRouter>
+    </HashRouter>
   );
 }
 
