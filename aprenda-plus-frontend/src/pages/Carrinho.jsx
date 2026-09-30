@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { listarItensDoCarrinho, removerItemDoCarrinho } from '../services/carrinhoService';
 import { buscarTurmasPorCurso } from '../services/cursoService';
 import { criarInscricao } from '../services/inscricaoService';
 import { estaLogado } from '../services/authService';
 
 function Carrinho() {
-  const navigate = useNavigate();
   const [itens, setItens] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState(null);
@@ -59,6 +58,11 @@ function Carrinho() {
 
     Promise.all(promessas)
       .then(() => {
+        // Inscrições criadas: esvazia o carrinho
+        return Promise.all(itens.map((item) => removerItemDoCarrinho(item.idItem)));
+      })
+      .then(() => {
+        setItens([]);
         setSucesso(true);
         setFinalizando(false);
       })

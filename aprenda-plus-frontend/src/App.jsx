@@ -24,6 +24,7 @@ import AdminTurmaForm from './pages/admin/AdminTurmaForm';
 import AdminInscricoes from './pages/admin/AdminInscricoes';
 import AdminMatriculas from './pages/admin/AdminMatriculas';
 import AdminMatriculaForm from './pages/admin/AdminMatriculaForm';
+import Aviso from './components/Aviso';
 
 function SitePage({ children }) {
   return (
@@ -31,6 +32,7 @@ function SitePage({ children }) {
       <Header />
       {children}
       <Footer />
+      <Aviso />
     </SearchProvider>
   );
 }

@@ -1,20 +1,35 @@
 import { useState } from 'react';
 import { estaLogado } from '../services/authService';
 import { adicionarAoCarrinho } from '../services/carrinhoService';
+import { mostrarAviso } from '../services/avisoService';
 
 function CursoModal({ curso, onClose }) {
-  const [mensagem, setMensagem] = useState(null);
+  const [adicionando, setAdicionando] = useState(false);
 
   if (!curso) return null;
 
+  // Separa o conteúdo em tópicos (cada linha ou cada ";" vira um item)
+  const topicos = (curso.conteudo || '')
+    .split(/\r?\n|;/)
+    .map((t) => t.trim())
+    .filter((t) => t.length > 0);
+
   const handleAdicionar = () => {
     if (!estaLogado()) {
-      setMensagem('Você precisa fazer login para adicionar cursos ao carrinho.');
+      mostrarAviso('Você precisa fazer login para adicionar cursos ao carrinho.', 'aviso');
       return;
     }
+
+    setAdicionando(true);
     adicionarAoCarrinho(curso.idCurso)
-      .then(() => setMensagem('Curso adicionado ao carrinho!'))
-      .catch(() => setMensagem('Não foi possível adicionar ao carrinho.'));
+      .then(() => {
+        mostrarAviso(`"${curso.nome}" foi adicionado ao carrinho!`, 'sucesso');
+        onClose();
+      })
+      .catch(() => {
+        mostrarAviso('Não foi possível adicionar ao carrinho. Tente novamente.', 'erro');
+      })
+      .finally(() => setAdicionando(false));
   };
 
   return (
@@ -48,13 +63,26 @@ function CursoModal({ curso, onClose }) {
 
         <div className="modal-body">
           <h3>Conteúdo programático</h3>
-          <p>{curso.conteudo}</p>
-          {mensagem && <p style={{ marginTop: '1rem' }}>{mensagem}</p>}
+          {topicos.length > 1 ? (
+            <ul className="modal-topicos">
+              {topicos.map((topico, index) => (
+                <li key={index}>{topico}</li>
+              ))}
+            </ul>
+          ) : (
+            <p>{curso.conteudo}</p>
+          )}
         </div>
 
         <div className="modal-footer">
           <span className="modal-price">R$ {curso.valor}</span>
-          <button className="btn-buy modal-buy-btn" onClick={handleAdicionar}>ADICIONAR AO CARRINHO</button>
+          <button
+            className="btn-buy modal-buy-btn"
+            onClick={handleAdicionar}
+            disabled={adicionando}
+          >
+            {adicionando ? 'ADICIONANDO...' : 'ADICIONAR AO CARRINHO'}
+          </button>
         </div>
       </div>
     </div>

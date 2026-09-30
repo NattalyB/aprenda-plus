@@ -2,6 +2,11 @@ import api from './api';
 
 const getAlunoId = () => localStorage.getItem('idAluno');
 
+// Avisa os componentes (ex: Header) que o carrinho mudou
+const avisarCarrinhoAtualizado = () => {
+  window.dispatchEvent(new Event('carrinho-atualizado'));
+};
+
 // Busca o carrinho existente do aluno, ou cria um novo se não existir
 const getOuCriarCarrinho = () => {
   const alunoId = getAlunoId();
@@ -15,12 +20,17 @@ const getOuCriarCarrinho = () => {
 };
 
 export const adicionarAoCarrinho = (idCurso) => {
-  return getOuCriarCarrinho().then((carrinho) => {
-    return api.post('/itens-carrinho', {
-      carrinho: { idCarrinho: carrinho.idCarrinho },
-      curso: { idCurso: idCurso },
+  return getOuCriarCarrinho()
+    .then((carrinho) => {
+      return api.post('/itens-carrinho', {
+        carrinho: { idCarrinho: carrinho.idCarrinho },
+        curso: { idCurso: idCurso },
+      });
+    })
+    .then((response) => {
+      avisarCarrinhoAtualizado();
+      return response;
     });
-  });
 };
 
 export const listarItensDoCarrinho = () => {
@@ -32,5 +42,8 @@ export const listarItensDoCarrinho = () => {
 };
 
 export const removerItemDoCarrinho = (idItem) => {
-  return api.delete(`/itens-carrinho/${idItem}`);
+  return api.delete(`/itens-carrinho/${idItem}`).then((response) => {
+    avisarCarrinhoAtualizado();
+    return response;
+  });
 };

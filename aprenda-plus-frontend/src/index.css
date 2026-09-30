@@ -395,3 +395,101 @@ body {
     font-size: 13px;
     border-radius: 6px;
 }
+
+/* ===== Avisos (toast) ===== */
+.aviso {
+  position: fixed;
+  top: 90px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 300px;
+  max-width: 420px;
+  padding: 16px 18px;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  animation: aviso-entrar 0.3s ease-out;
+}
+
+.aviso-sucesso { background: #16a34a; }
+.aviso-erro    { background: #dc2626; }
+.aviso-aviso   { background: #f59e0b; color: #1f2937; }
+
+.aviso-icone { font-size: 22px; }
+.aviso-texto { flex: 1; line-height: 1.4; }
+
+.aviso-fechar {
+  background: transparent;
+  border: none;
+  color: inherit;
+  font-size: 22px;
+  cursor: pointer;
+  line-height: 1;
+  opacity: 0.8;
+}
+.aviso-fechar:hover { opacity: 1; }
+
+@keyframes aviso-entrar {
+  from { opacity: 0; transform: translateX(40px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@media (max-width: 600px) {
+  .aviso {
+    left: 16px;
+    right: 16px;
+    min-width: auto;
+  }
+}
+
+/* ===== Tópicos do conteúdo programático ===== */
+.modal-topicos {
+  list-style: none;
+  padding: 0;
+  margin: 0.75rem 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.modal-topicos li {
+  position: relative;
+  padding-left: 26px;
+  line-height: 1.5;
+}
+
+.modal-topicos li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: #0f8f6a;
+  font-weight: 700;
+}
+
+/* ===== Imagens dos cards de curso ===== */
+.course-img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 2.27 / 1;
+  object-fit: cover;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.course-img:hover {
+  transform: scale(1.02);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+/* Bloco reserva (cursos sem imagem) com o mesmo tamanho das imagens */
+.course-img-placeholder {
+  height: auto;
+  aspect-ratio: 2.27 / 1;
+}

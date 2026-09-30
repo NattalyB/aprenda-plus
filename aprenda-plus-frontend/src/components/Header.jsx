@@ -12,11 +12,23 @@ function Header() {
   const [qtdCarrinho, setQtdCarrinho] = useState(0);
 
   useEffect(() => {
-    if (logado) {
+    const atualizarQtdCarrinho = () => {
+      if (!estaLogado()) {
+        setQtdCarrinho(0);
+        return;
+      }
       listarItensDoCarrinho()
         .then((itens) => setQtdCarrinho(itens.length))
         .catch(() => setQtdCarrinho(0));
-    }
+    };
+
+    // Busca a quantidade ao carregar e sempre que o carrinho mudar
+    atualizarQtdCarrinho();
+    window.addEventListener('carrinho-atualizado', atualizarQtdCarrinho);
+
+    return () => {
+      window.removeEventListener('carrinho-atualizado', atualizarQtdCarrinho);
+    };
   }, [logado]);
 
   const handleLogout = () => {

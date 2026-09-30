@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { listarCursos } from '../services/cursoService';
 import { useSearch } from '../context/SearchContext';
 import CursoModal from '../components/CursoModal';
+import { getImagemCurso } from '../utils/imagensCursos';
 
 function Home() {
   const [cursos, setCursos] = useState([]);
@@ -44,21 +45,35 @@ function Home() {
           <p style={{ textAlign: 'center' }}>Nenhum curso encontrado.</p>
         ) : (
           <div className="courses-grid">
-            {cursosFiltrados.map((curso) => (
-              <div className="course-card" key={curso.idCurso}>
-                <div className="course-img-placeholder">Aprenda+</div>
-                <h4>{curso.nome}</h4>
-                <div className="course-price">R$ {curso.valor}</div>
-                <div className="course-buttons">
-                  <button className="btn-details" onClick={() => setCursoSelecionado(curso)}>
-                    MAIS DETALHES
-                  </button>
-                  <button className="btn-buy" onClick={() => setCursoSelecionado(curso)}>
-                    ADICIONAR AO CARRINHO
-                  </button>
+            {cursosFiltrados.map((curso) => {
+              const imagem = getImagemCurso(curso.nome);
+
+              return (
+                <div className="course-card" key={curso.idCurso}>
+                  {imagem ? (
+                    <img
+                      src={imagem}
+                      alt={`Banner do curso ${curso.nome}`}
+                      className="course-img"
+                      loading="lazy"
+                      onClick={() => setCursoSelecionado(curso)}
+                    />
+                  ) : (
+                    <div className="course-img-placeholder">Aprenda+</div>
+                  )}
+                  <h4>{curso.nome}</h4>
+                  <div className="course-price">R$ {curso.valor}</div>
+                  <div className="course-buttons">
+                    <button className="btn-details" onClick={() => setCursoSelecionado(curso)}>
+                      MAIS DETALHES
+                    </button>
+                    <button className="btn-buy" onClick={() => setCursoSelecionado(curso)}>
+                      ADICIONAR AO CARRINHO
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </main>

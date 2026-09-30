@@ -64,7 +64,19 @@ function AdminCursoForm() {
         </select>
 
         <textarea name="descricao" placeholder="Descrição" value={form.descricao} onChange={handleChange} rows={3} />
-        <textarea name="conteudo" placeholder="Conteúdo programático" value={form.conteudo} onChange={handleChange} rows={3} />
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+          <textarea
+            name="conteudo"
+            placeholder={'Conteúdo programático. Exemplo:\nAlgoritmos e Estruturas de Dados\nBanco de Dados\nDesenvolvimento Web'}
+            value={form.conteudo}
+            onChange={handleChange}
+            rows={6}
+          />
+          <small style={{ color: '#666' }}>
+            💡 Digite um tópico por linha (aperte Enter entre eles). Cada linha vira um item da lista no site.
+          </small>
+        </div>
 
         <input name="cargaHoraria" type="number" placeholder="Carga horária (h)" value={form.cargaHoraria} onChange={handleChange} required />
         <input name="modalidade" placeholder="Modalidade (EAD, presencial, híbrido)" value={form.modalidade} onChange={handleChange} required />
