@@ -2,6 +2,7 @@ package com.aprendaplus.controller;
 
 import com.aprendaplus.entity.Professor;
 import com.aprendaplus.service.ProfessorService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -26,12 +27,12 @@ public class ProfessorController {
     }
 
     @PostMapping
-    public ResponseEntity<Professor> criar(@RequestBody Professor professor) {
+    public ResponseEntity<Professor> criar(@Valid @RequestBody Professor professor) {
         return ResponseEntity.ok(professorService.salvar(professor));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Professor> atualizar(@PathVariable Integer id, @RequestBody Professor professor) {
+    public ResponseEntity<Professor> atualizar(@PathVariable Integer id, @Valid @RequestBody Professor professor) {
         professor.setIdProfessor(id);
         return ResponseEntity.ok(professorService.salvar(professor));
     }
