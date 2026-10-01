@@ -4,6 +4,11 @@ import { listarItensDoCarrinho, removerItemDoCarrinho } from '../services/carrin
 import { buscarTurmasPorCurso } from '../services/cursoService';
 import { criarInscricao } from '../services/inscricaoService';
 import { estaLogado } from '../services/authService';
+import { mostrarAviso } from '../services/avisoService';
+import { getImagemCurso } from '../utils/imagensCursos';
+
+const formatarValor = (valor) =>
+  Number(valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 function Carrinho() {
   const [itens, setItens] = useState([]);
@@ -11,10 +16,11 @@ function Carrinho() {
   const [erro, setErro] = useState(null);
   const [finalizando, setFinalizando] = useState(false);
   const [sucesso, setSucesso] = useState(false);
+  const [removendoId, setRemovendoId] = useState(null);
+  const logado = estaLogado();
 
   const carregarCarrinho = () => {
     if (!estaLogado()) {
-      setErro('Você precisa fazer login para ver o carrinho.');
       setCarregando(false);
       return;
     }
@@ -34,10 +40,17 @@ function Carrinho() {
     carregarCarrinho();
   }, []);
 
-  const handleRemover = (idItem) => {
-    removerItemDoCarrinho(idItem).then(() => {
-      carregarCarrinho();
-    });
+  const handleRemover = (item) => {
+    setRemovendoId(item.idItem);
+    removerItemDoCarrinho(item.idItem)
+      .then(() => {
+        mostrarAviso(`"${item.curso.nome}" foi removido do carrinho.`, 'sucesso');
+        carregarCarrinho();
+      })
+      .catch(() => {
+        mostrarAviso('Não foi possível remover o curso. Tente novamente.', 'erro');
+      })
+      .finally(() => setRemovendoId(null));
   };
 
   const handleConcluirInscricao = () => {
@@ -72,51 +85,157 @@ function Carrinho() {
       });
   };
 
-  if (carregando) return <p>Carregando carrinho...</p>;
-
-  if (sucesso) {
+  // ===== Carregando =====
+  if (carregando) {
     return (
-      <div style={{ maxWidth: '700px', margin: '2rem auto', padding: '1rem' }}>
-        <h1>Inscrição concluída!</h1>
-        <p>Sua inscrição foi registrada com status "pendente de pagamento".</p>
-        <Link to="/">← Voltar para a Home</Link>
+      <div className="carrinho-page">
+        <p className="carrinho-carregando">Carregando carrinho...</p>
       </div>
     );
   }
 
-  if (erro && itens.length === 0) return <p style={{ color: 'red' }}>{erro}</p>;
+  // ===== Sem login =====
+  if (!logado) {
+    return (
+      <div className="carrinho-page">
+        <div className="carrinho-estado">
+          <span className="carrinho-estado-icone">🔒</span>
+          <h2>Faça login para ver seu carrinho</h2>
+          <p>Entre na sua conta para adicionar cursos e concluir sua inscrição.</p>
+          <div className="carrinho-estado-botoes">
+            <Link to="/login" className="admin-btn admin-btn-primary">Entrar</Link>
+            <Link to="/cadastro" className="admin-btn admin-btn-secundario">Criar conta</Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
+  // ===== Inscrição concluída =====
+  if (sucesso) {
+    return (
+      <div className="carrinho-page">
+        <div className="carrinho-estado">
+          <span className="carrinho-estado-icone">🎉</span>
+          <h2>Inscrição concluída!</h2>
+          <p>
+            Sua inscrição foi registrada com status <strong>pendente de pagamento</strong>.
+            Em breve você receberá as próximas instruções.
+          </p>
+          <div className="carrinho-estado-botoes">
+            <Link to="/" className="admin-btn admin-btn-primary">Continuar navegando</Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ===== Carrinho vazio =====
+  if (itens.length === 0) {
+    return (
+      <div className="carrinho-page">
+        {erro && <div className="form-erro">{erro}</div>}
+        <div className="carrinho-estado">
+          <span className="carrinho-estado-icone">🛒</span>
+          <h2>Seu carrinho está vazio</h2>
+          <p>Explore nossos cursos e encontre o próximo passo da sua carreira.</p>
+          <div className="carrinho-estado-botoes">
+            <Link to="/" className="admin-btn admin-btn-primary">Ver cursos</Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ===== Carrinho com itens =====
   const valorTotal = itens.reduce((soma, item) => soma + Number(item.curso.valor), 0);
 
   return (
-    <div style={{ maxWidth: '700px', margin: '2rem auto', padding: '1rem' }}>
-      <h1>Carrinho</h1>
-
-      {erro && <p style={{ color: 'red' }}>{erro}</p>}
-
-      {itens.length === 0 ? (
-        <p>Carrinho vazio</p>
-      ) : (
-        <>
-          {itens.map((item) => (
-            <div key={item.idItem} style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #444', padding: '0.5rem 0' }}>
-              <span>{item.curso.nome}</span>
-              <span>R$ {item.curso.valor}</span>
-              <button onClick={() => handleRemover(item.idItem)}>Remover</button>
-            </div>
-          ))}
-
-          <p style={{ marginTop: '1rem' }}><strong>Total: R$ {valorTotal.toFixed(2)}</strong></p>
-
-          <button onClick={handleConcluirInscricao} disabled={itens.length === 0 || finalizando}>
-            {finalizando ? 'Processando...' : 'Concluir a inscrição'}
-          </button>
-        </>
-      )}
-
-      <p style={{ marginTop: '2rem' }}>
-        <Link to="/">← Continuar navegando</Link>
+    <div className="carrinho-page">
+      <h1 className="carrinho-titulo">Meu carrinho</h1>
+      <p className="carrinho-subtitulo">
+        {itens.length} {itens.length === 1 ? 'curso selecionado' : 'cursos selecionados'}
       </p>
+
+      {erro && <div className="form-erro">{erro}</div>}
+
+      <div className="carrinho-layout">
+        {/* ===== Lista de itens ===== */}
+        <div className="carrinho-itens">
+          {itens.map((item) => {
+            const imagem = getImagemCurso(item.curso.nome);
+
+            return (
+              <div className="carrinho-item" key={item.idItem}>
+                <div className="carrinho-item-img">
+                  {imagem ? (
+                    <img src={imagem} alt={`Banner do curso ${item.curso.nome}`} />
+                  ) : (
+                    <div className="carrinho-item-placeholder">Aprenda+</div>
+                  )}
+                </div>
+
+                <div className="carrinho-item-info">
+                  <h3>{item.curso.nome}</h3>
+                  <div className="carrinho-item-tags">
+                    {item.curso.categoria && (
+                      <span className={`categoria-badge categoria-${item.curso.categoria}`}>
+                        {item.curso.categoria}
+                      </span>
+                    )}
+                    {item.curso.modalidade && (
+                      <span className="carrinho-item-modalidade">📚 {item.curso.modalidade}</span>
+                    )}
+                    {item.curso.cargaHoraria && (
+                      <span className="carrinho-item-modalidade">⏱️ {item.curso.cargaHoraria}h</span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="carrinho-item-lado">
+                  <span className="carrinho-item-preco">{formatarValor(item.curso.valor)}</span>
+                  <button
+                    className="carrinho-item-remover"
+                    onClick={() => handleRemover(item)}
+                    disabled={removendoId === item.idItem || finalizando}
+                  >
+                    {removendoId === item.idItem ? 'Removendo...' : 'Remover'}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+
+          <Link to="/" className="carrinho-continuar">← Continuar navegando</Link>
+        </div>
+
+        {/* ===== Resumo ===== */}
+        <aside className="carrinho-resumo">
+          <h2>Resumo do pedido</h2>
+
+          <div className="carrinho-resumo-linha">
+            <span>Subtotal ({itens.length} {itens.length === 1 ? 'curso' : 'cursos'})</span>
+            <span>{formatarValor(valorTotal)}</span>
+          </div>
+
+          <div className="carrinho-resumo-total">
+            <span>Total</span>
+            <span>{formatarValor(valorTotal)}</span>
+          </div>
+
+          <button
+            className="carrinho-btn-concluir"
+            onClick={handleConcluirInscricao}
+            disabled={finalizando}
+          >
+            {finalizando ? 'PROCESSANDO...' : 'CONCLUIR INSCRIÇÃO'}
+          </button>
+
+          <p className="carrinho-resumo-nota">
+            🔒 Sua inscrição fica com status "pendente de pagamento" até a confirmação.
+          </p>
+        </aside>
+      </div>
     </div>
   );
 }

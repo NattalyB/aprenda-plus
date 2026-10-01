@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { buscarCursoPorId, criarCurso, atualizarCurso } from '../../services/cursoService';
 
+const formatarValor = (valor) =>
+  Number(valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
 function AdminCursoForm() {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -16,6 +19,7 @@ function AdminCursoForm() {
     modalidade: '',
     preRequisitos: '',
     valor: '',
+    numeroParcelas: '',
     formasPagamento: '',
   });
   const [erro, setErro] = useState(null);
@@ -38,7 +42,13 @@ function AdminCursoForm() {
     setErro(null);
     setEnviando(true);
 
-    const acao = modoEdicao ? atualizarCurso(id, form) : criarCurso(form);
+    // Campo de parcelas vazio vai como null (curso sem parcelamento definido)
+    const dadosParaEnviar = {
+      ...form,
+      numeroParcelas: form.numeroParcelas ? Number(form.numeroParcelas) : null,
+    };
+
+    const acao = modoEdicao ? atualizarCurso(id, dadosParaEnviar) : criarCurso(dadosParaEnviar);
 
     acao
       .then(() => {
@@ -54,6 +64,10 @@ function AdminCursoForm() {
         setEnviando(false);
       });
   };
+
+  // Prévia da mensalidade
+  const parcelas = Number(form.numeroParcelas);
+  const mensalidade = form.valor && parcelas > 0 ? Number(form.valor) / parcelas : null;
 
   return (
     <div>
@@ -122,14 +136,32 @@ function AdminCursoForm() {
           <div className="form-grid">
             <div className="form-row">
               <div className="form-field">
+                <label htmlFor="valor">Valor total (R$)</label>
+                <input id="valor" name="valor" type="number" step="0.01" min="0" placeholder="Ex: 7999.99" value={form.valor || ''} onChange={handleChange} required />
+              </div>
+              <div className="form-field">
                 <label htmlFor="cargaHoraria">Carga horária (horas)</label>
                 <input id="cargaHoraria" name="cargaHoraria" type="number" placeholder="Ex: 3000" value={form.cargaHoraria || ''} onChange={handleChange} required />
               </div>
+            </div>
+
+            <div className="form-row">
               <div className="form-field">
-                <label htmlFor="valor">Valor (R$)</label>
-                <input id="valor" name="valor" type="number" step="0.01" placeholder="Ex: 7999.99" value={form.valor || ''} onChange={handleChange} required />
+                <label htmlFor="numeroParcelas">Número de parcelas (mensalidades)</label>
+                <input id="numeroParcelas" name="numeroParcelas" type="number" min="1" max="120" placeholder="Ex: 24" value={form.numeroParcelas || ''} onChange={handleChange} />
+              </div>
+              <div className="form-field">
+                <label>Mensalidade calculada</label>
+                <div className={mensalidade ? 'form-preview' : 'form-preview form-preview-vazio'}>
+                  {mensalidade
+                    ? `${parcelas}x de ${formatarValor(mensalidade)}`
+                    : 'Preencha o valor e as parcelas'}
+                </div>
               </div>
             </div>
+            <span className="form-dica">
+              💡 No site, a mensalidade aparece em destaque e o valor total fica logo abaixo, menor. Sem parcelas, o site mostra só o valor total.
+            </span>
 
             <div className="form-field">
               <label htmlFor="preRequisitos">Pré-requisitos</label>
@@ -138,7 +170,7 @@ function AdminCursoForm() {
 
             <div className="form-field">
               <label htmlFor="formasPagamento">Formas de pagamento</label>
-              <input id="formasPagamento" name="formasPagamento" placeholder="Ex: Pix, boleto, cartão em até 12x" value={form.formasPagamento || ''} onChange={handleChange} />
+              <input id="formasPagamento" name="formasPagamento" placeholder="Ex: Pix, boleto, cartão" value={form.formasPagamento || ''} onChange={handleChange} />
             </div>
           </div>
 

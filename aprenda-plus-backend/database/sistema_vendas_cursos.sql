@@ -104,6 +104,7 @@ CREATE TABLE curso (
     modalidade        VARCHAR(30) NOT NULL,
     pre_requisitos    TEXT,
     valor             NUMERIC(10,2) NOT NULL,
+    numero_parcelas   INTEGER,
     formas_pagamento  VARCHAR(150),
     criado_em         TIMESTAMP NOT NULL DEFAULT NOW(),
     atualizado_em     TIMESTAMP NOT NULL DEFAULT NOW(),

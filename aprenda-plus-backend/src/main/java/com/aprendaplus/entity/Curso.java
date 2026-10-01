@@ -1,6 +1,8 @@
 package com.aprendaplus.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -36,6 +38,13 @@ public class Curso {
 
     @Column(name = "valor", nullable = false, precision = 10, scale = 2)
     private BigDecimal valor;
+
+    // Em quantas parcelas mensais o curso é pago (opcional).
+    // O front calcula a mensalidade: valor / numeroParcelas
+    @Min(value = 1, message = "O número de parcelas deve ser no mínimo 1.")
+    @Max(value = 120, message = "O número de parcelas deve ser no máximo 120.")
+    @Column(name = "numero_parcelas")
+    private Integer numeroParcelas;
 
     @Column(name = "formas_pagamento", length = 150)
     private String formasPagamento;
@@ -74,6 +83,9 @@ public class Curso {
 
     public BigDecimal getValor() { return valor; }
     public void setValor(BigDecimal valor) { this.valor = valor; }
+
+    public Integer getNumeroParcelas() { return numeroParcelas; }
+    public void setNumeroParcelas(Integer numeroParcelas) { this.numeroParcelas = numeroParcelas; }
 
     public String getFormasPagamento() { return formasPagamento; }
     public void setFormasPagamento(String formasPagamento) { this.formasPagamento = formasPagamento; }

@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.aprendaplus.entity.Curso;
 import com.aprendaplus.service.CursoService;
 
+import jakarta.validation.Valid;
+
 @RestController
 @RequestMapping("/cursos")
 public class CursoController {
@@ -34,12 +36,12 @@ public class CursoController {
     }
 
     @PostMapping
-    public ResponseEntity<Curso> criar(@RequestBody Curso curso) {
+    public ResponseEntity<Curso> criar(@Valid @RequestBody Curso curso) {
         return ResponseEntity.ok(cursoService.salvar(curso));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Curso> atualizar(@PathVariable Integer id, @RequestBody Curso curso) {
+    public ResponseEntity<Curso> atualizar(@PathVariable Integer id, @Valid @RequestBody Curso curso) {
         curso.setIdCurso(id);
         return ResponseEntity.ok(cursoService.salvar(curso));
     }
