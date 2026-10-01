@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { criarAluno } from '../services/alunoService';
 
 function Cadastro() {
@@ -49,31 +49,104 @@ function Cadastro() {
   };
 
   return (
-    <div style={{ maxWidth: '500px', margin: '2rem auto' }}>
-      <h1>Cadastro</h1>
-      {erro && <p style={{ color: 'red' }}>{erro}</p>}
+    <div className="form-page">
+      <div className="form-card">
+        <h1 className="form-title">Cadastro</h1>
+        <p className="form-subtitle">Crie sua conta e comece a aprender hoje mesmo.</p>
 
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-        <input name="nomeCompleto" placeholder="Nome completo" value={form.nomeCompleto} onChange={handleChange} required />
-        <input name="telefone" placeholder="Telefone" value={form.telefone} onChange={handleChange} required />
-        <input name="email" type="email" placeholder="E-mail" value={form.email} onChange={handleChange} required />
-        <input name="dataNascimento" type="date" value={form.dataNascimento} onChange={handleChange} required />
-        <input name="cpf" placeholder="CPF (apenas números)" value={form.cpf} onChange={handleChange} maxLength={11} required />
+        {erro && <div className="form-erro">{erro}</div>}
 
-        <input name="rua" placeholder="Rua/Av" value={form.rua} onChange={handleChange} />
-        <input name="numero" placeholder="Número" value={form.numero} onChange={handleChange} />
-        <input name="complemento" placeholder="Complemento" value={form.complemento} onChange={handleChange} />
-        <input name="cep" placeholder="CEP" value={form.cep} onChange={handleChange} />
-        <input name="bairro" placeholder="Bairro" value={form.bairro} onChange={handleChange} />
-        <input name="cidade" placeholder="Cidade" value={form.cidade} onChange={handleChange} />
-        <input name="estado" placeholder="UF" value={form.estado} onChange={handleChange} maxLength={2} />
+        <form onSubmit={handleSubmit}>
+          {/* ===== Dados pessoais ===== */}
+          <h2 className="form-section-title">Dados pessoais</h2>
+          <div className="form-grid">
+            <div className="form-field">
+              <label htmlFor="nomeCompleto">Nome completo</label>
+              <input id="nomeCompleto" name="nomeCompleto" placeholder="Ex: Maria da Silva" value={form.nomeCompleto} onChange={handleChange} required />
+            </div>
 
-        <input name="senhaHash" type="password" placeholder="Senha" value={form.senhaHash} onChange={handleChange} required />
+            <div className="form-field">
+              <label htmlFor="email">E-mail</label>
+              <input id="email" name="email" type="email" placeholder="seuemail@exemplo.com" value={form.email} onChange={handleChange} required />
+            </div>
 
-        <button type="submit" disabled={enviando}>
-          {enviando ? 'Salvando...' : 'Salvar'}
-        </button>
-      </form>
+            <div className="form-row">
+              <div className="form-field">
+                <label htmlFor="telefone">Telefone</label>
+                <input id="telefone" name="telefone" placeholder="(51) 99999-9999" value={form.telefone} onChange={handleChange} required />
+              </div>
+              <div className="form-field">
+                <label htmlFor="dataNascimento">Data de nascimento</label>
+                <input id="dataNascimento" name="dataNascimento" type="date" value={form.dataNascimento} onChange={handleChange} required />
+              </div>
+            </div>
+
+            <div className="form-field">
+              <label htmlFor="cpf">CPF</label>
+              <input id="cpf" name="cpf" placeholder="Apenas números" value={form.cpf} onChange={handleChange} maxLength={11} required />
+            </div>
+          </div>
+
+          {/* ===== Endereço ===== */}
+          <h2 className="form-section-title">Endereço</h2>
+          <div className="form-grid">
+            <div className="form-field">
+              <label htmlFor="rua">Rua/Av</label>
+              <input id="rua" name="rua" placeholder="Ex: Av. Brasil" value={form.rua} onChange={handleChange} required />
+            </div>
+
+            <div className="form-row">
+              <div className="form-field">
+                <label htmlFor="numero">Número</label>
+                <input id="numero" name="numero" placeholder="Ex: 123" value={form.numero} onChange={handleChange} required />
+              </div>
+              <div className="form-field">
+                <label htmlFor="complemento">Complemento (opcional)</label>
+                <input id="complemento" name="complemento" placeholder="Apto, bloco..." value={form.complemento} onChange={handleChange} />
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-field">
+                <label htmlFor="cep">CEP</label>
+                <input id="cep" name="cep" placeholder="00000-000" value={form.cep} onChange={handleChange} required />
+              </div>
+              <div className="form-field">
+                <label htmlFor="bairro">Bairro</label>
+                <input id="bairro" name="bairro" placeholder="Ex: Centro" value={form.bairro} onChange={handleChange} required />
+              </div>
+            </div>
+
+            <div className="form-row form-row-uf">
+              <div className="form-field">
+                <label htmlFor="cidade">Cidade</label>
+                <input id="cidade" name="cidade" placeholder="Ex: Canoas" value={form.cidade} onChange={handleChange} required />
+              </div>
+              <div className="form-field">
+                <label htmlFor="estado">UF</label>
+                <input id="estado" name="estado" placeholder="RS" value={form.estado} onChange={handleChange} maxLength={2} required />
+              </div>
+            </div>
+          </div>
+
+          {/* ===== Acesso ===== */}
+          <h2 className="form-section-title">Acesso</h2>
+          <div className="form-grid">
+            <div className="form-field">
+              <label htmlFor="senhaHash">Senha</label>
+              <input id="senhaHash" name="senhaHash" type="password" placeholder="Crie uma senha" value={form.senhaHash} onChange={handleChange} required />
+            </div>
+          </div>
+
+          <button type="submit" className="form-btn" disabled={enviando}>
+            {enviando ? 'SALVANDO...' : 'CRIAR CONTA'}
+          </button>
+        </form>
+
+        <p className="form-rodape">
+          Já tem conta? <Link to="/login">Entrar</Link>
+        </p>
+      </div>
     </div>
   );
 }

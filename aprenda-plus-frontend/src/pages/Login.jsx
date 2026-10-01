@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { login, salvarSessao } from '../services/authService';
 
 function Login() {
@@ -33,17 +33,35 @@ function Login() {
   };
 
   return (
-    <div style={{ maxWidth: '400px', margin: '2rem auto' }}>
-      <h1>Login</h1>
-      {erro && <p style={{ color: 'red' }}>{erro}</p>}
+    <div className="form-page">
+      <div className="form-card form-card-sm">
+        <h1 className="form-title">Login</h1>
+        <p className="form-subtitle">Que bom te ver de novo! Entre na sua conta.</p>
 
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-        <input name="email" type="email" placeholder="E-mail" value={form.email} onChange={handleChange} required />
-        <input name="senha" type="password" placeholder="Senha" value={form.senha} onChange={handleChange} required />
-        <button type="submit" disabled={enviando}>
-          {enviando ? 'Entrando...' : 'Confirmar'}
-        </button>
-      </form>
+        {erro && <div className="form-erro">{erro}</div>}
+
+        <form onSubmit={handleSubmit}>
+          <div className="form-grid">
+            <div className="form-field">
+              <label htmlFor="email">E-mail</label>
+              <input id="email" name="email" type="email" placeholder="seuemail@exemplo.com" value={form.email} onChange={handleChange} required />
+            </div>
+
+            <div className="form-field">
+              <label htmlFor="senha">Senha</label>
+              <input id="senha" name="senha" type="password" placeholder="Digite sua senha" value={form.senha} onChange={handleChange} required />
+            </div>
+          </div>
+
+          <button type="submit" className="form-btn" disabled={enviando}>
+            {enviando ? 'ENTRANDO...' : 'ENTRAR'}
+          </button>
+        </form>
+
+        <p className="form-rodape">
+          Ainda não tem conta? <Link to="/cadastro">Cadastre-se</Link>
+        </p>
+      </div>
     </div>
   );
 }

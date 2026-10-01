@@ -1,4 +1,5 @@
-import { Link, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import logo from '../../assets/logo-aprenda-plus-branco.png';
 import { getNomeFuncionario, logoutAdmin } from '../../services/authAdminService';
 
 const menuItems = [
@@ -21,20 +22,32 @@ function AdminLayout() {
   };
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
-      <aside style={{ width: '240px', borderRight: '1px solid #444', padding: '1rem' }}>
-        <h3>AprendaPlus Admin</h3>
-        <p>Olá, {getNomeFuncionario()}</p>
-        <button onClick={handleLogout} style={{ marginBottom: '1rem' }}>Sair</button>
+    <div className="admin-layout">
+      <aside className="admin-sidebar">
+        <div className="admin-sidebar-logo">
+          <img src={logo} alt="Aprenda Plus" />
+          <span className="admin-badge">PAINEL ADMIN</span>
+        </div>
 
-        <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        <nav className="admin-nav">
           {menuItems.map((item) => (
-            <Link key={item.path} to={item.path}>{item.label}</Link>
+            <NavLink
+              key={item.path}
+              to={item.path}
+              className={({ isActive }) => (isActive ? 'admin-nav-link ativo' : 'admin-nav-link')}
+            >
+              {item.label}
+            </NavLink>
           ))}
         </nav>
+
+        <div className="admin-sidebar-footer">
+          <span className="admin-usuario">Olá, {getNomeFuncionario()}</span>
+          <button className="admin-btn-sair" onClick={handleLogout}>Sair</button>
+        </div>
       </aside>
 
-      <main style={{ flex: 1, padding: '1.5rem' }}>
+      <main className="admin-main">
         <Outlet />
       </main>
     </div>
