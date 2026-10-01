@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { estaLogado } from '../services/authService';
 import { adicionarAoCarrinho } from '../services/carrinhoService';
 import { mostrarAviso } from '../services/avisoService';
+import PrecoCurso from './PrecoCurso';
 
 function CursoModal({ curso, onClose }) {
   const [adicionando, setAdicionando] = useState(false);
@@ -75,7 +76,7 @@ function CursoModal({ curso, onClose }) {
         </div>
 
         <div className="modal-footer">
-          <span className="modal-price">R$ {curso.valor}</span>
+          <PrecoCurso curso={curso} variante="modal" />
           <button
             className="btn-buy modal-buy-btn"
             onClick={handleAdicionar}

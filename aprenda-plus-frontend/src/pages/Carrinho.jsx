@@ -6,9 +6,8 @@ import { criarInscricao } from '../services/inscricaoService';
 import { estaLogado } from '../services/authService';
 import { mostrarAviso } from '../services/avisoService';
 import { getImagemCurso } from '../utils/imagensCursos';
-
-const formatarValor = (valor) =>
-  Number(valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+import { formatarValor, calcularMensalidade } from '../utils/precoCurso';
+import PrecoCurso from '../components/PrecoCurso';
 
 function Carrinho() {
   const [itens, setItens] = useState([]);
@@ -149,6 +148,8 @@ function Carrinho() {
 
   // ===== Carrinho com itens =====
   const valorTotal = itens.reduce((soma, item) => soma + Number(item.curso.valor), 0);
+  const todosParcelados = itens.every((item) => calcularMensalidade(item.curso));
+  const totalMensal = itens.reduce((soma, item) => soma + (calcularMensalidade(item.curso) || 0), 0);
 
   return (
     <div className="carrinho-page">
@@ -193,7 +194,7 @@ function Carrinho() {
                 </div>
 
                 <div className="carrinho-item-lado">
-                  <span className="carrinho-item-preco">{formatarValor(item.curso.valor)}</span>
+                  <PrecoCurso curso={item.curso} variante="carrinho" />
                   <button
                     className="carrinho-item-remover"
                     onClick={() => handleRemover(item)}
@@ -218,8 +219,17 @@ function Carrinho() {
             <span>{formatarValor(valorTotal)}</span>
           </div>
 
+          {todosParcelados && (
+            <div className="carrinho-resumo-mensal">
+              <span>Por mês</span>
+              <span className="carrinho-resumo-mensal-valor">
+                {formatarValor(totalMensal)}<small>/mês</small>
+              </span>
+            </div>
+          )}
+
           <div className="carrinho-resumo-total">
-            <span>Total</span>
+            <span>Valor total</span>
             <span>{formatarValor(valorTotal)}</span>
           </div>
 
@@ -230,6 +240,12 @@ function Carrinho() {
           >
             {finalizando ? 'PROCESSANDO...' : 'CONCLUIR INSCRIÇÃO'}
           </button>
+
+          {todosParcelados && itens.length > 1 && (
+            <p className="carrinho-resumo-nota">
+              💡 O valor mensal é a soma das mensalidades. Cada curso segue o seu próprio número de parcelas.
+            </p>
+          )}
 
           <p className="carrinho-resumo-nota">
             🔒 Sua inscrição fica com status "pendente de pagamento" até a confirmação.

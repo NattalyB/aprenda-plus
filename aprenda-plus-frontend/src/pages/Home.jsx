@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { listarCursos } from '../services/cursoService';
 import { useSearch } from '../context/SearchContext';
 import CursoModal from '../components/CursoModal';
+import PrecoCurso from '../components/PrecoCurso';
 import { getImagemCurso } from '../utils/imagensCursos';
 
 function Home() {
@@ -62,7 +63,7 @@ function Home() {
                     <div className="course-img-placeholder">Aprenda+</div>
                   )}
                   <h4>{curso.nome}</h4>
-                  <div className="course-price">R$ {curso.valor}</div>
+                  <PrecoCurso curso={curso} variante="card" />
                   <div className="course-buttons">
                     <button className="btn-details" onClick={() => setCursoSelecionado(curso)}>
                       MAIS DETALHES

@@ -1145,7 +1145,7 @@ body {
   align-items: center;
   justify-content: center;
   padding: 2rem 1rem;
-  background: linear-gradient(135deg, #001e42 0%, #00306b 100%);
+  background: #001e42;
   box-sizing: border-box;
 }
 
@@ -1483,4 +1483,70 @@ body {
   background: #f9fafb;
   color: #9ca3af;
   font-weight: 500;
+}
+
+/* ===== Preço dos cursos (mensalidade + total) ===== */
+.preco {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.preco-principal {
+  color: #0f8f6a;
+  font-weight: 800;
+  font-size: 1.25rem;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.preco-principal small {
+  font-size: 0.7em;
+  font-weight: 600;
+  margin-left: 2px;
+}
+
+.preco-detalhe {
+  font-size: 0.78rem;
+  color: #6b7280;
+}
+
+.preco-card {
+  margin: 0.35rem 0 0.85rem;
+}
+
+.preco-modal .preco-principal {
+  font-size: 1.6rem;
+}
+
+.preco-carrinho {
+  align-items: flex-end;
+  text-align: right;
+}
+
+.preco-carrinho .preco-principal {
+  font-size: 1.15rem;
+}
+
+/* Linha "Por mês" no resumo do carrinho */
+.carrinho-resumo-mensal {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  padding: 1rem 0 0;
+  color: #1f2937;
+  font-weight: 600;
+}
+
+.carrinho-resumo-mensal-valor {
+  color: #0f8f6a;
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+
+.carrinho-resumo-mensal-valor small {
+  font-size: 0.65em;
+  font-weight: 600;
+  margin-left: 2px;
 }
