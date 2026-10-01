@@ -7,7 +7,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/alunos")
@@ -27,7 +29,14 @@ public class AlunoController {
     }
 
     @PostMapping
-    public ResponseEntity<Aluno> criar(@Valid @RequestBody Aluno aluno) {
+    public ResponseEntity<?> criar(@Valid @RequestBody Aluno aluno) {
+        // Na criação a senha é obrigatória
+        if (aluno.getSenhaHash() == null || aluno.getSenhaHash().isBlank()) {
+            Map<String, Object> resposta = new LinkedHashMap<>();
+            resposta.put("mensagem", "Verifique os dados preenchidos.");
+            resposta.put("erros", Map.of("senhaHash", "A senha é obrigatória."));
+            return ResponseEntity.badRequest().body(resposta);
+        }
         return ResponseEntity.ok(alunoService.salvar(aluno));
     }
 

@@ -45,7 +45,8 @@ public class Aluno {
     @Column(name = "cpf", nullable = false, unique = true, length = 11)
     private String cpf;
 
-    @NotBlank(message = "A senha é obrigatória.")
+    // Obrigatória só na criação (validado no AlunoController),
+    // na edição pode vir vazia para manter a senha atual
     @Column(name = "senha_hash", nullable = false)
     private String senhaHash;
 
