@@ -1,12 +1,13 @@
 package com.aprendaplus.service;
 
-import com.aprendaplus.entity.Aluno;
-import com.aprendaplus.repository.AlunoRepository;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import com.aprendaplus.entity.Aluno;
+import com.aprendaplus.repository.AlunoRepository;
 
 @Service
 public class AlunoService {
@@ -26,11 +27,21 @@ public class AlunoService {
     }
 
     public Aluno salvar(Aluno aluno) {
-        // Só criptografa se a senha ainda não estiver criptografada
-        // (evita criptografar de novo numa edição que não mexeu na senha)
-        if (aluno.getSenhaHash() != null && !aluno.getSenhaHash().startsWith("$2a$")) {
-            aluno.setSenhaHash(encoder.encode(aluno.getSenhaHash()));
+        String senha = aluno.getSenhaHash();
+        boolean senhaVazia = senha == null || senha.isBlank();
+
+        if (senhaVazia) {
+            // Edição sem senha nova: mantém a senha que já está salva no banco
+            if (aluno.getIdAluno() != null) {
+                Aluno alunoExistente = buscarPorId(aluno.getIdAluno());
+                aluno.setSenhaHash(alunoExistente.getSenhaHash());
+            }
+        } else if (!senha.startsWith("$2")) {
+            // Senha nova digitada: criptografa
+            // (se já começar com "$2", ela já é um hash BCrypt e não criptografa de novo)
+            aluno.setSenhaHash(encoder.encode(senha));
         }
+
         return alunoRepository.save(aluno);
     }
 
