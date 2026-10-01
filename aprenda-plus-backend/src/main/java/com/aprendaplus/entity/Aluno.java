@@ -1,6 +1,12 @@
 package com.aprendaplus.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Past;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -13,42 +19,67 @@ public class Aluno {
     @Column(name = "id")
     private Integer idAluno;
 
+    @NotBlank(message = "O nome completo é obrigatório.")
+    @Size(max = 150, message = "O nome completo deve ter no máximo 150 caracteres.")
     @Column(name = "nome_completo", nullable = false, length = 150)
     private String nomeCompleto;
 
+    @NotBlank(message = "O telefone é obrigatório.")
+    @Size(max = 20, message = "O telefone deve ter no máximo 20 caracteres.")
     @Column(name = "telefone", nullable = false, length = 20)
     private String telefone;
 
+    @NotBlank(message = "O e-mail é obrigatório.")
+    @Email(message = "Informe um e-mail válido.")
+    @Size(max = 150, message = "O e-mail deve ter no máximo 150 caracteres.")
     @Column(name = "email", nullable = false, unique = true, length = 150)
     private String email;
 
+    @NotNull(message = "A data de nascimento é obrigatória.")
+    @Past(message = "A data de nascimento deve ser uma data no passado.")
     @Column(name = "data_nascimento", nullable = false)
     private LocalDate dataNascimento;
 
+    @NotBlank(message = "O CPF é obrigatório.")
+    @Pattern(regexp = "\\d{11}", message = "O CPF deve conter exatamente 11 números.")
     @Column(name = "cpf", nullable = false, unique = true, length = 11)
     private String cpf;
 
+    @NotBlank(message = "A senha é obrigatória.")
     @Column(name = "senha_hash", nullable = false)
     private String senhaHash;
 
+    @NotBlank(message = "A rua é obrigatória.")
+    @Size(max = 150, message = "A rua deve ter no máximo 150 caracteres.")
     @Column(name = "rua", length = 150)
     private String rua;
 
+    @NotBlank(message = "O número é obrigatório.")
+    @Size(max = 10, message = "O número deve ter no máximo 10 caracteres.")
     @Column(name = "numero", length = 10)
     private String numero;
 
+    @Size(max = 100, message = "O complemento deve ter no máximo 100 caracteres.")
     @Column(name = "complemento", length = 100)
     private String complemento;
 
+    @NotBlank(message = "O CEP é obrigatório.")
+    @Pattern(regexp = "\\d{5}-?\\d{3}", message = "Informe um CEP válido (ex: 00000-000).")
     @Column(name = "cep", length = 9)
     private String cep;
 
+    @NotBlank(message = "O bairro é obrigatório.")
+    @Size(max = 100, message = "O bairro deve ter no máximo 100 caracteres.")
     @Column(name = "bairro", length = 100)
     private String bairro;
 
+    @NotBlank(message = "A cidade é obrigatória.")
+    @Size(max = 100, message = "A cidade deve ter no máximo 100 caracteres.")
     @Column(name = "cidade", length = 100)
     private String cidade;
 
+    @NotBlank(message = "A UF é obrigatória.")
+    @Pattern(regexp = "[A-Za-z]{2}", message = "A UF deve ter 2 letras (ex: RS).")
     @Column(name = "estado", length = 2)
     private String estado;
 

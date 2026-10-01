@@ -2,6 +2,7 @@ package com.aprendaplus.controller;
 
 import com.aprendaplus.entity.Aluno;
 import com.aprendaplus.service.AlunoService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -26,12 +27,12 @@ public class AlunoController {
     }
 
     @PostMapping
-    public ResponseEntity<Aluno> criar(@RequestBody Aluno aluno) {
+    public ResponseEntity<Aluno> criar(@Valid @RequestBody Aluno aluno) {
         return ResponseEntity.ok(alunoService.salvar(aluno));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Aluno> atualizar(@PathVariable Integer id, @RequestBody Aluno aluno) {
+    public ResponseEntity<Aluno> atualizar(@PathVariable Integer id, @Valid @RequestBody Aluno aluno) {
         aluno.setIdAluno(id);
         return ResponseEntity.ok(alunoService.salvar(aluno));
     }
