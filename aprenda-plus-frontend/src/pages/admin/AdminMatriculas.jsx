@@ -2,15 +2,45 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { listarMatriculas, deletarMatricula } from '../../services/matriculaService';
 
+const normalizar = (texto) =>
+  (texto || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+// Aceita "2026-09-30" ou "2026-09-30T14:20:00" -> 30/09/2026
+const formatarData = (data) => {
+  if (!data) return '-';
+  const [ano, mes, dia] = String(data).slice(0, 10).split('-');
+  return `${dia}/${mes}/${ano}`;
+};
+
+const STATUS_MATRICULA = [
+  { valor: '', label: 'Todas' },
+  { valor: 'ativa', label: 'Ativa' },
+  { valor: 'trancada', label: 'Trancada' },
+  { valor: 'concluida', label: 'Concluída' },
+  { valor: 'cancelada', label: 'Cancelada' },
+];
+
+const LABEL_STATUS = Object.fromEntries(
+  STATUS_MATRICULA.filter((s) => s.valor).map((s) => [s.valor, s.label])
+);
+
 function AdminMatriculas() {
   const [matriculas, setMatriculas] = useState([]);
   const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState(null);
+  const [busca, setBusca] = useState('');
+  const [statusFiltro, setStatusFiltro] = useState('');
 
   const carregar = () => {
-    listarMatriculas().then((response) => {
-      setMatriculas(response.data);
-      setCarregando(false);
-    });
+    listarMatriculas()
+      .then((response) => {
+        setMatriculas(response.data);
+        setCarregando(false);
+      })
+      .catch(() => {
+        setErro('Não foi possível carregar as matrículas.');
+        setCarregando(false);
+      });
   };
 
   useEffect(() => {
@@ -23,46 +53,118 @@ function AdminMatriculas() {
     }
   };
 
-  if (carregando) return <p>Carregando...</p>;
+  const termo = normalizar(busca.trim());
+  const termoNumeros = busca.replace(/\D/g, '');
+
+  const matriculasFiltradas = matriculas.filter((matricula) => {
+    const textoConfere =
+      !termo ||
+      normalizar(matricula.aluno?.nomeCompleto).includes(termo) ||
+      normalizar(matricula.turma?.nome).includes(termo) ||
+      (termoNumeros.length > 0 && (matricula.aluno?.cpf || '').includes(termoNumeros));
+    const statusConfere = !statusFiltro || matricula.status === statusFiltro;
+    return textoConfere && statusConfere;
+  });
+
+  if (carregando) return <p>Carregando matrículas...</p>;
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1>Matrículas</h1>
-        <Link to="/admin/matriculas/novo">
-          <button>+ Nova matrícula</button>
+      <div className="admin-header">
+        <div>
+          <h1 className="admin-titulo">Matrículas</h1>
+          <p className="admin-subtitulo">
+            {matriculasFiltradas.length} de {matriculas.length} matrícula(s)
+          </p>
+        </div>
+        <Link to="/admin/matriculas/novo" className="admin-btn admin-btn-primary">
+          + Nova matrícula
         </Link>
       </div>
 
-      <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '1rem' }}>
-        <thead>
-          <tr style={{ textAlign: 'left', borderBottom: '1px solid #444' }}>
-            <th>ID</th>
-            <th>Aluno</th>
-            <th>Turma</th>
-            <th>Data</th>
-            <th>Status</th>
-            <th>Ações</th>
-          </tr>
-        </thead>
-        <tbody>
-          {matriculas.map((matricula) => (
-            <tr key={matricula.idMatricula} style={{ borderBottom: '1px solid #333' }}>
-              <td>{matricula.idMatricula}</td>
-              <td>{matricula.aluno?.nomeCompleto}</td>
-              <td>{matricula.turma?.nome}</td>
-              <td>{matricula.dataMatricula}</td>
-              <td>{matricula.status}</td>
-              <td style={{ display: 'flex', gap: '0.5rem' }}>
-                <Link to={`/admin/matriculas/${matricula.idMatricula}/editar`}>
-                  <button>Editar</button>
-                </Link>
-                <button onClick={() => handleExcluir(matricula.idMatricula)}>Excluir</button>
-              </td>
-            </tr>
+      {erro && <div className="form-erro">{erro}</div>}
+
+      <div className="admin-filtros">
+        <div className="admin-busca">
+          <span className="admin-busca-icone">🔍</span>
+          <input
+            type="text"
+            name="buscaMatricula"
+            placeholder="Buscar por aluno, CPF ou turma..."
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+          />
+        </div>
+
+        <div className="admin-chips">
+          {STATUS_MATRICULA.map((s) => (
+            <button
+              key={s.valor}
+              type="button"
+              className={statusFiltro === s.valor ? 'admin-chip ativo' : 'admin-chip'}
+              onClick={() => setStatusFiltro(s.valor)}
+            >
+              {s.label}
+            </button>
           ))}
-        </tbody>
-      </table>
+        </div>
+      </div>
+
+      <div className="admin-card">
+        <div className="admin-table-wrapper">
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Aluno</th>
+                <th>Turma</th>
+                <th>Data</th>
+                <th>Status</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {matriculasFiltradas.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="admin-vazio">
+                    {busca || statusFiltro ? 'Nenhuma matrícula encontrada com esses filtros.' : 'Nenhuma matrícula registrada ainda.'}
+                  </td>
+                </tr>
+              ) : (
+                matriculasFiltradas.map((matricula) => (
+                  <tr key={matricula.idMatricula}>
+                    <td>{matricula.idMatricula}</td>
+                    <td>{matricula.aluno?.nomeCompleto || '-'}</td>
+                    <td>{matricula.turma?.nome || '-'}</td>
+                    <td>{formatarData(matricula.dataMatricula)}</td>
+                    <td>
+                      <span className={`status-badge status-${matricula.status}`}>
+                        {LABEL_STATUS[matricula.status] || matricula.status}
+                      </span>
+                    </td>
+                    <td>
+                      <div className="admin-acoes">
+                        <Link
+                          to={`/admin/matriculas/${matricula.idMatricula}/editar`}
+                          className="admin-btn admin-btn-sm admin-btn-editar"
+                        >
+                          Editar
+                        </Link>
+                        <button
+                          className="admin-btn admin-btn-sm admin-btn-excluir"
+                          onClick={() => handleExcluir(matricula.idMatricula)}
+                        >
+                          Excluir
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }

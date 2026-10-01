@@ -1099,3 +1099,110 @@ body {
   background: #ffedd5;
   color: #9a3412;
 }
+
+/* Status de períodos letivos */
+.status-encerrado {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
+.status-cancelado {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* Status de turmas */
+.status-inscricoes_abertas {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-inscricoes_encerradas {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status-em_andamento {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.status-encerrada {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
+.status-cancelada {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* ===== Login do admin ===== */
+.admin-login-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  background: linear-gradient(135deg, #001e42 0%, #00306b 100%);
+  box-sizing: border-box;
+}
+
+.admin-login-logo {
+  max-width: 200px;
+  margin-bottom: 1.5rem;
+}
+
+.admin-login-badge {
+  display: table;
+  margin: 0 auto 0.75rem;
+}
+
+/* Seletor de status com cara de etiqueta (usado nas inscrições) */
+.status-select {
+  border: none;
+  border-radius: 999px;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.status-select:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0, 180, 216, 0.25);
+}
+
+/* Status de inscrições */
+.status-pendente_pagamento {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status-confirmada {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-aguardando_vaga {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.status-concluida {
+  background: #ede9fe;
+  color: #5b21b6;
+}
+
+/* Status de matrículas */
+.status-ativa {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-trancada {
+  background: #fef3c7;
+  color: #92400e;
+}

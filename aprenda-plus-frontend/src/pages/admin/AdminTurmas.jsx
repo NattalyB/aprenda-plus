@@ -2,15 +2,35 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { listarTurmas, deletarTurma } from '../../services/turmaService';
 
+const normalizar = (texto) =>
+  (texto || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+const STATUS_TURMA = {
+  inscricoes_abertas: 'Inscrições abertas',
+  inscricoes_encerradas: 'Inscrições encerradas',
+  em_andamento: 'Em andamento',
+  encerrada: 'Encerrada',
+  cancelada: 'Cancelada',
+};
+
 function AdminTurmas() {
   const [turmas, setTurmas] = useState([]);
   const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState(null);
+  const [busca, setBusca] = useState('');
+  const [cursoFiltro, setCursoFiltro] = useState('');
+  const [statusFiltro, setStatusFiltro] = useState('');
 
   const carregar = () => {
-    listarTurmas().then((response) => {
-      setTurmas(response.data);
-      setCarregando(false);
-    });
+    listarTurmas()
+      .then((response) => {
+        setTurmas(response.data);
+        setCarregando(false);
+      })
+      .catch(() => {
+        setErro('Não foi possível carregar as turmas.');
+        setCarregando(false);
+      });
   };
 
   useEffect(() => {
@@ -23,48 +43,135 @@ function AdminTurmas() {
     }
   };
 
-  if (carregando) return <p>Carregando...</p>;
+  // Lista de cursos (sem repetir) que aparecem nas turmas
+  const cursosDisponiveis = [];
+  turmas.forEach((t) => {
+    if (t.curso && !cursosDisponiveis.some((c) => c.idCurso === t.curso.idCurso)) {
+      cursosDisponiveis.push(t.curso);
+    }
+  });
+
+  const termo = normalizar(busca.trim());
+
+  const turmasFiltradas = turmas.filter((turma) => {
+    const nomeConfere = !termo || normalizar(turma.nome).includes(termo);
+    const cursoConfere = !cursoFiltro || String(turma.curso?.idCurso) === cursoFiltro;
+    const statusConfere = !statusFiltro || turma.status === statusFiltro;
+    return nomeConfere && cursoConfere && statusConfere;
+  });
+
+  if (carregando) return <p>Carregando turmas...</p>;
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1>Turmas cadastradas</h1>
-        <Link to="/admin/turmas/novo">
-          <button>+ Nova turma</button>
+      <div className="admin-header">
+        <div>
+          <h1 className="admin-titulo">Turmas cadastradas</h1>
+          <p className="admin-subtitulo">
+            {turmasFiltradas.length} de {turmas.length} turma(s)
+          </p>
+        </div>
+        <Link to="/admin/turmas/novo" className="admin-btn admin-btn-primary">
+          + Nova turma
         </Link>
       </div>
 
-      <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '1rem' }}>
-        <thead>
-          <tr style={{ textAlign: 'left', borderBottom: '1px solid #444' }}>
-            <th>ID</th>
-            <th>Nome</th>
-            <th>Curso</th>
-            <th>Período letivo</th>
-            <th>Vagas</th>
-            <th>Status</th>
-            <th>Ações</th>
-          </tr>
-        </thead>
-        <tbody>
-          {turmas.map((turma) => (
-            <tr key={turma.idTurma} style={{ borderBottom: '1px solid #333' }}>
-              <td>{turma.idTurma}</td>
-              <td>{turma.nome}</td>
-              <td>{turma.curso?.nome}</td>
-              <td>{turma.periodoLetivo?.nome}</td>
-              <td>{turma.capacidadeMaxima}</td>
-              <td>{turma.status}</td>
-              <td style={{ display: 'flex', gap: '0.5rem' }}>
-                <Link to={`/admin/turmas/${turma.idTurma}/editar`}>
-                  <button>Editar</button>
-                </Link>
-                <button onClick={() => handleExcluir(turma.idTurma)}>Excluir</button>
-              </td>
-            </tr>
+      {erro && <div className="form-erro">{erro}</div>}
+
+      <div className="admin-filtros">
+        <div className="admin-busca">
+          <span className="admin-busca-icone">🔍</span>
+          <input
+            type="text"
+            name="buscaTurma"
+            placeholder="Buscar turma pelo nome..."
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+          />
+        </div>
+
+        <select
+          name="filtroCurso"
+          className="admin-filtro-select"
+          value={cursoFiltro}
+          onChange={(e) => setCursoFiltro(e.target.value)}
+        >
+          <option value="">Todos os cursos</option>
+          {cursosDisponiveis.map((curso) => (
+            <option key={curso.idCurso} value={String(curso.idCurso)}>{curso.nome}</option>
           ))}
-        </tbody>
-      </table>
+        </select>
+
+        <select
+          name="filtroStatus"
+          className="admin-filtro-select"
+          value={statusFiltro}
+          onChange={(e) => setStatusFiltro(e.target.value)}
+        >
+          <option value="">Todos os status</option>
+          {Object.entries(STATUS_TURMA).map(([valor, label]) => (
+            <option key={valor} value={valor}>{label}</option>
+          ))}
+        </select>
+      </div>
+
+      <div className="admin-card">
+        <div className="admin-table-wrapper">
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Nome</th>
+                <th>Curso</th>
+                <th>Período letivo</th>
+                <th>Vagas</th>
+                <th>Status</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {turmasFiltradas.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="admin-vazio">
+                    {busca || cursoFiltro || statusFiltro ? 'Nenhuma turma encontrada com esses filtros.' : 'Nenhuma turma cadastrada ainda.'}
+                  </td>
+                </tr>
+              ) : (
+                turmasFiltradas.map((turma) => (
+                  <tr key={turma.idTurma}>
+                    <td>{turma.idTurma}</td>
+                    <td>{turma.nome}</td>
+                    <td>{turma.curso?.nome || '-'}</td>
+                    <td>{turma.periodoLetivo?.nome || '-'}</td>
+                    <td>{turma.capacidadeMaxima}</td>
+                    <td>
+                      <span className={`status-badge status-${turma.status}`}>
+                        {STATUS_TURMA[turma.status] || turma.status}
+                      </span>
+                    </td>
+                    <td>
+                      <div className="admin-acoes">
+                        <Link
+                          to={`/admin/turmas/${turma.idTurma}/editar`}
+                          className="admin-btn admin-btn-sm admin-btn-editar"
+                        >
+                          Editar
+                        </Link>
+                        <button
+                          className="admin-btn admin-btn-sm admin-btn-excluir"
+                          onClick={() => handleExcluir(turma.idTurma)}
+                        >
+                          Excluir
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }

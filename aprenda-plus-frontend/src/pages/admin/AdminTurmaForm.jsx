@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, Link } from 'react-router-dom';
 import { buscarTurmaPorId, criarTurma, atualizarTurma } from '../../services/turmaService';
 import { listarCursos } from '../../services/cursoService';
 import { listarPeriodosLetivos } from '../../services/periodoLetivoService';
@@ -58,51 +58,113 @@ function AdminTurmaForm() {
       .then(() => {
         navigate('/admin/turmas');
       })
-      .catch(() => {
-        setErro('Não foi possível salvar a turma.');
+      .catch((error) => {
+        const errosCampos = error.response?.data?.erros;
+        if (errosCampos) {
+          setErro(Object.values(errosCampos).join(' '));
+        } else {
+          setErro('Não foi possível salvar a turma. Confira os campos.');
+        }
         setEnviando(false);
       });
   };
 
   return (
-    <div style={{ maxWidth: '500px' }}>
-      <h1>{modoEdicao ? 'Editar turma' : 'Nova turma'}</h1>
-      {erro && <p style={{ color: 'red' }}>{erro}</p>}
+    <div>
+      <div className="admin-header">
+        <div>
+          <h1 className="admin-titulo">{modoEdicao ? 'Editar turma' : 'Nova turma'}</h1>
+          <p className="admin-subtitulo">
+            {modoEdicao ? 'Atualize as informações da turma e salve.' : 'Defina o curso, o período e os detalhes da nova turma.'}
+          </p>
+        </div>
+      </div>
 
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-        <input name="nome" placeholder="Nome da turma (ex: Turma A - Noite)" value={form.nome} onChange={handleChange} required />
+      <div className="form-card admin-form-card">
+        {erro && <div className="form-erro">{erro}</div>}
 
-        <select value={form.curso?.idCurso || ''} onChange={handleCursoChange} required>
-          <option value="">Selecione o curso</option>
-          {cursos.map((curso) => (
-            <option key={curso.idCurso} value={curso.idCurso}>{curso.nome}</option>
-          ))}
-        </select>
+        <form onSubmit={handleSubmit}>
+          {/* ===== Identificação ===== */}
+          <h2 className="form-section-title">Identificação</h2>
+          <div className="form-grid">
+            <div className="form-field">
+              <label htmlFor="nome">Nome da turma</label>
+              <input id="nome" name="nome" placeholder="Ex: Turma A - Noite" value={form.nome || ''} onChange={handleChange} required />
+            </div>
 
-        <select value={form.periodoLetivo?.idPeriodoLetivo || ''} onChange={handlePeriodoChange} required>
-          <option value="">Selecione o período letivo</option>
-          {periodos.map((periodo) => (
-            <option key={periodo.idPeriodoLetivo} value={periodo.idPeriodoLetivo}>{periodo.nome}</option>
-          ))}
-        </select>
+            <div className="form-row">
+              <div className="form-field">
+                <label htmlFor="curso">Curso</label>
+                <select id="curso" name="curso" value={form.curso?.idCurso || ''} onChange={handleCursoChange} required>
+                  <option value="">Selecione o curso</option>
+                  {cursos.map((curso) => (
+                    <option key={curso.idCurso} value={curso.idCurso}>{curso.nome}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-field">
+                <label htmlFor="periodoLetivo">Período letivo</label>
+                <select id="periodoLetivo" name="periodoLetivo" value={form.periodoLetivo?.idPeriodoLetivo || ''} onChange={handlePeriodoChange} required>
+                  <option value="">Selecione o período</option>
+                  {periodos.map((periodo) => (
+                    <option key={periodo.idPeriodoLetivo} value={periodo.idPeriodoLetivo}>{periodo.nome}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
 
-        <input name="cargaHoraria" type="number" placeholder="Carga horária (h)" value={form.cargaHoraria || ''} onChange={handleChange} />
-        <input name="modalidade" placeholder="Modalidade (EAD, presencial...)" value={form.modalidade || ''} onChange={handleChange} />
-        <input name="capacidadeMaxima" type="number" placeholder="Capacidade máxima de alunos" value={form.capacidadeMaxima} onChange={handleChange} required />
-        <input name="diasHorarios" placeholder="Dias e horários (ex: seg/qua 19h-22h)" value={form.diasHorarios || ''} onChange={handleChange} />
+          {/* ===== Detalhes ===== */}
+          <h2 className="form-section-title">Detalhes</h2>
+          <div className="form-grid">
+            <div className="form-row">
+              <div className="form-field">
+                <label htmlFor="capacidadeMaxima">Capacidade máxima</label>
+                <input id="capacidadeMaxima" name="capacidadeMaxima" type="number" placeholder="Ex: 40" value={form.capacidadeMaxima || ''} onChange={handleChange} required />
+              </div>
+              <div className="form-field">
+                <label htmlFor="cargaHoraria">Carga horária (horas)</label>
+                <input id="cargaHoraria" name="cargaHoraria" type="number" placeholder="Ex: 3000" value={form.cargaHoraria || ''} onChange={handleChange} />
+              </div>
+            </div>
 
-        <select name="status" value={form.status} onChange={handleChange}>
-          <option value="inscricoes_abertas">Inscrições abertas</option>
-          <option value="inscricoes_encerradas">Inscrições encerradas</option>
-          <option value="em_andamento">Em andamento</option>
-          <option value="encerrada">Encerrada</option>
-          <option value="cancelada">Cancelada</option>
-        </select>
+            <div className="form-row">
+              <div className="form-field">
+                <label htmlFor="modalidade">Modalidade</label>
+                <input id="modalidade" name="modalidade" placeholder="EAD, presencial ou híbrido" value={form.modalidade || ''} onChange={handleChange} />
+              </div>
+              <div className="form-field">
+                <label htmlFor="diasHorarios">Dias e horários</label>
+                <input id="diasHorarios" name="diasHorarios" placeholder="Ex: seg/qua 19h-22h" value={form.diasHorarios || ''} onChange={handleChange} />
+              </div>
+            </div>
+          </div>
 
-        <button type="submit" disabled={enviando}>
-          {enviando ? 'Salvando...' : 'Salvar'}
-        </button>
-      </form>
+          {/* ===== Status ===== */}
+          <h2 className="form-section-title">Status</h2>
+          <div className="form-grid">
+            <div className="form-field">
+              <label htmlFor="status">Situação da turma</label>
+              <select id="status" name="status" value={form.status || 'inscricoes_abertas'} onChange={handleChange}>
+                <option value="inscricoes_abertas">Inscrições abertas</option>
+                <option value="inscricoes_encerradas">Inscrições encerradas</option>
+                <option value="em_andamento">Em andamento</option>
+                <option value="encerrada">Encerrada</option>
+                <option value="cancelada">Cancelada</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="form-acoes">
+            <Link to="/admin/turmas" className="admin-btn admin-btn-secundario">
+              Cancelar
+            </Link>
+            <button type="submit" className="form-btn" disabled={enviando}>
+              {enviando ? 'SALVANDO...' : 'SALVAR'}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

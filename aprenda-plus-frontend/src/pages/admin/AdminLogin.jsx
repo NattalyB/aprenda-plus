@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import logo from '../../assets/logo-aprenda-plus-branco.png';
 import { loginFuncionario, salvarSessaoAdmin } from '../../services/authAdminService';
 
 function AdminLogin() {
@@ -20,34 +21,51 @@ function AdminLogin() {
     loginFuncionario(form.email, form.senha)
       .then((response) => {
         salvarSessaoAdmin(response.data);
-        navigate('/admin');
+        navigate('/admin/alunos');
       })
       .catch((error) => {
         setEnviando(false);
         if (error.response?.status === 401) {
           setErro('E-mail ou senha inválidos.');
         } else {
-          setErro('Não foi possível fazer login.');
+          setErro('Não foi possível fazer login. Tente novamente.');
         }
       });
   };
 
   return (
-    <div style={{ maxWidth: '400px', margin: '4rem auto' }}>
-      <h1>Painel Administrativo</h1>
-      {erro && <p style={{ color: 'red' }}>{erro}</p>}
+    <div className="admin-login-page">
+      <img src={logo} alt="Aprenda Plus" className="admin-login-logo" />
 
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-        <input name="email" type="email" placeholder="E-mail" value={form.email} onChange={handleChange} required />
-        <input name="senha" type="password" placeholder="Senha" value={form.senha} onChange={handleChange} required />
-        <button type="submit" disabled={enviando}>
-          {enviando ? 'Entrando...' : 'Entrar'}
-        </button>
-      </form>
+      <div className="form-card form-card-sm">
+        <span className="admin-badge admin-login-badge">PAINEL ADMIN</span>
+        <h1 className="form-title">Área restrita</h1>
+        <p className="form-subtitle">Entre com sua conta de funcionário.</p>
 
-      <p style={{ marginTop: '1rem' }}>
-        <a href="mailto:suporte@aprendaplus.com">Esqueci minha senha / Fale com o suporte</a>
-      </p>
+        {erro && <div className="form-erro">{erro}</div>}
+
+        <form onSubmit={handleSubmit}>
+          <div className="form-grid">
+            <div className="form-field">
+              <label htmlFor="email">E-mail</label>
+              <input id="email" name="email" type="email" placeholder="seuemail@aprendaplus.com" value={form.email} onChange={handleChange} required />
+            </div>
+
+            <div className="form-field">
+              <label htmlFor="senha">Senha</label>
+              <input id="senha" name="senha" type="password" placeholder="Digite sua senha" value={form.senha} onChange={handleChange} required />
+            </div>
+          </div>
+
+          <button type="submit" className="form-btn" disabled={enviando}>
+            {enviando ? 'ENTRANDO...' : 'ENTRAR'}
+          </button>
+        </form>
+
+        <p className="form-rodape">
+          Esqueceu a senha? <a href="mailto:suporte@aprendaplus.com">Fale com o suporte</a>
+        </p>
+      </div>
     </div>
   );
 }

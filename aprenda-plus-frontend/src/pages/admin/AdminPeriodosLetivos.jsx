@@ -2,15 +2,40 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { listarPeriodosLetivos, deletarPeriodoLetivo } from '../../services/periodoLetivoService';
 
+const normalizar = (texto) =>
+  (texto || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+// 2026-08-01 -> 01/08/2026
+const formatarData = (data) => {
+  if (!data) return '-';
+  const [ano, mes, dia] = data.split('-');
+  return `${dia}/${mes}/${ano}`;
+};
+
+const STATUS = [
+  { valor: '', label: 'Todos' },
+  { valor: 'ativo', label: 'Ativo' },
+  { valor: 'encerrado', label: 'Encerrado' },
+  { valor: 'cancelado', label: 'Cancelado' },
+];
+
 function AdminPeriodosLetivos() {
   const [periodos, setPeriodos] = useState([]);
   const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState(null);
+  const [busca, setBusca] = useState('');
+  const [statusFiltro, setStatusFiltro] = useState('');
 
   const carregar = () => {
-    listarPeriodosLetivos().then((response) => {
-      setPeriodos(response.data);
-      setCarregando(false);
-    });
+    listarPeriodosLetivos()
+      .then((response) => {
+        setPeriodos(response.data);
+        setCarregando(false);
+      })
+      .catch(() => {
+        setErro('Não foi possível carregar os períodos letivos.');
+        setCarregando(false);
+      });
   };
 
   useEffect(() => {
@@ -23,46 +48,111 @@ function AdminPeriodosLetivos() {
     }
   };
 
-  if (carregando) return <p>Carregando...</p>;
+  const termo = normalizar(busca.trim());
+
+  const periodosFiltrados = periodos.filter((periodo) => {
+    const nomeConfere = !termo || normalizar(periodo.nome).includes(termo);
+    const statusConfere = !statusFiltro || periodo.status === statusFiltro;
+    return nomeConfere && statusConfere;
+  });
+
+  if (carregando) return <p>Carregando períodos letivos...</p>;
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1>Períodos letivos cadastrados</h1>
-        <Link to="/admin/periodos-letivos/novo">
-          <button>+ Novo período</button>
+      <div className="admin-header">
+        <div>
+          <h1 className="admin-titulo">Períodos letivos</h1>
+          <p className="admin-subtitulo">
+            {periodosFiltrados.length} de {periodos.length} período(s)
+          </p>
+        </div>
+        <Link to="/admin/periodos-letivos/novo" className="admin-btn admin-btn-primary">
+          + Novo período
         </Link>
       </div>
 
-      <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '1rem' }}>
-        <thead>
-          <tr style={{ textAlign: 'left', borderBottom: '1px solid #444' }}>
-            <th>ID</th>
-            <th>Nome</th>
-            <th>Início</th>
-            <th>Fim</th>
-            <th>Status</th>
-            <th>Ações</th>
-          </tr>
-        </thead>
-        <tbody>
-          {periodos.map((periodo) => (
-            <tr key={periodo.idPeriodoLetivo} style={{ borderBottom: '1px solid #333' }}>
-              <td>{periodo.idPeriodoLetivo}</td>
-              <td>{periodo.nome}</td>
-              <td>{periodo.dataInicio}</td>
-              <td>{periodo.dataFim}</td>
-              <td>{periodo.status}</td>
-              <td style={{ display: 'flex', gap: '0.5rem' }}>
-                <Link to={`/admin/periodos-letivos/${periodo.idPeriodoLetivo}/editar`}>
-                  <button>Editar</button>
-                </Link>
-                <button onClick={() => handleExcluir(periodo.idPeriodoLetivo)}>Excluir</button>
-              </td>
-            </tr>
+      {erro && <div className="form-erro">{erro}</div>}
+
+      <div className="admin-filtros">
+        <div className="admin-busca">
+          <span className="admin-busca-icone">🔍</span>
+          <input
+            type="text"
+            name="buscaPeriodo"
+            placeholder="Buscar período pelo nome..."
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+          />
+        </div>
+
+        <div className="admin-chips">
+          {STATUS.map((s) => (
+            <button
+              key={s.valor}
+              type="button"
+              className={statusFiltro === s.valor ? 'admin-chip ativo' : 'admin-chip'}
+              onClick={() => setStatusFiltro(s.valor)}
+            >
+              {s.label}
+            </button>
           ))}
-        </tbody>
-      </table>
+        </div>
+      </div>
+
+      <div className="admin-card">
+        <div className="admin-table-wrapper">
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Nome</th>
+                <th>Início</th>
+                <th>Fim</th>
+                <th>Status</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {periodosFiltrados.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="admin-vazio">
+                    {busca || statusFiltro ? 'Nenhum período encontrado com esses filtros.' : 'Nenhum período letivo cadastrado ainda.'}
+                  </td>
+                </tr>
+              ) : (
+                periodosFiltrados.map((periodo) => (
+                  <tr key={periodo.idPeriodoLetivo}>
+                    <td>{periodo.idPeriodoLetivo}</td>
+                    <td>{periodo.nome}</td>
+                    <td>{formatarData(periodo.dataInicio)}</td>
+                    <td>{formatarData(periodo.dataFim)}</td>
+                    <td>
+                      <span className={`status-badge status-${periodo.status}`}>{periodo.status}</span>
+                    </td>
+                    <td>
+                      <div className="admin-acoes">
+                        <Link
+                          to={`/admin/periodos-letivos/${periodo.idPeriodoLetivo}/editar`}
+                          className="admin-btn admin-btn-sm admin-btn-editar"
+                        >
+                          Editar
+                        </Link>
+                        <button
+                          className="admin-btn admin-btn-sm admin-btn-excluir"
+                          onClick={() => handleExcluir(periodo.idPeriodoLetivo)}
+                        >
+                          Excluir
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }
