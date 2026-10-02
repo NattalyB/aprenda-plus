@@ -1,8 +1,16 @@
 package com.aprendaplus.entity;
 
-import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "funcionario")
@@ -31,6 +39,8 @@ public class Funcionario {
     @Column(name = "data_admissao", nullable = false)
     private LocalDate dataAdmissao = LocalDate.now();
 
+    // WRITE_ONLY: a API recebe a senha, mas nunca devolve o hash nas respostas
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     @Column(name = "senha_hash", nullable = false)
     private String senhaHash;
 

@@ -1,14 +1,22 @@
 package com.aprendaplus.entity;
 
-import jakarta.persistence.*;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Past;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "aluno")
@@ -46,7 +54,9 @@ public class Aluno {
     private String cpf;
 
     // Obrigatória só na criação (validado no AlunoController),
-    // na edição pode vir vazia para manter a senha atual
+    // na edição pode vir vazia para manter a senha atual.
+    // WRITE_ONLY: a API recebe a senha, mas nunca devolve o hash nas respostas
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     @Column(name = "senha_hash", nullable = false)
     private String senhaHash;
 
