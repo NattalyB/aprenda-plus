@@ -1649,3 +1649,228 @@ body {
   font-size: 0.92rem;
   line-height: 1.6;
 }
+
+/* =========================================================
+   RESPONSIVIDADE (tablet e celular)
+   ========================================================= */
+
+/* Garante que nenhuma imagem fique maior que a tela */
+img {
+  max-width: 100%;
+}
+
+/* Botões dos cards ocupam a largura disponível igualmente */
+.course-buttons button {
+  flex: 1;
+}
+
+.btn-cart,
+.btn-login,
+.btn-signup,
+.header-saudacao {
+  white-space: nowrap;
+}
+
+/* ===== Tablet (até 900px) ===== */
+@media (max-width: 900px) {
+  /* Header em duas linhas: logo + botões em cima, busca embaixo */
+  .header {
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 12px 20px;
+  }
+
+  .logo-container {
+    order: 1;
+  }
+
+  .header-actions {
+    order: 2;
+    gap: 10px;
+  }
+
+  .search-container {
+    order: 3;
+    width: 100%;
+  }
+
+  /* Banner */
+  .hero-banner {
+    margin: 16px 20px;
+    padding: 36px 28px;
+  }
+
+  .hero-text h2 {
+    font-size: 26px;
+  }
+
+  /* Conteúdo */
+  .main-content {
+    padding: 16px 20px 36px;
+  }
+
+  /* Rodapé */
+  .footer {
+    padding: 32px 20px 18px;
+  }
+}
+
+/* ===== Celular (até 600px) ===== */
+@media (max-width: 600px) {
+  /* Header */
+  .header {
+    padding: 10px 14px;
+  }
+
+  .logo-img {
+    height: 34px;
+  }
+
+  .header-actions {
+    gap: 8px;
+  }
+
+  .btn-cart,
+  .btn-login,
+  .btn-signup {
+    padding: 7px 10px;
+    font-size: 13px;
+  }
+
+  .header-saudacao {
+    font-size: 14px;
+  }
+
+  /* Banner */
+  .hero-banner {
+    margin: 12px 14px;
+    padding: 28px 20px;
+  }
+
+  .hero-text h2 {
+    font-size: 21px;
+  }
+
+  /* Conteúdo e cards */
+  .main-content {
+    padding: 12px 14px 32px;
+  }
+
+  .section-title {
+    font-size: 17px;
+    margin-bottom: 20px;
+  }
+
+  .courses-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .btn-details,
+  .btn-buy {
+    padding: 10px 8px;
+    font-size: 12px;
+  }
+
+  /* Rodapé: logo e contato um embaixo do outro, centralizados */
+  .footer-top {
+    flex-direction: column;
+    gap: 16px;
+    text-align: center;
+  }
+
+  .footer-logo {
+    justify-content: center;
+  }
+
+  /* Modal */
+  .modal-overlay {
+    padding: 10px;
+  }
+
+  .modal-card {
+    max-height: 92vh;
+  }
+
+  .modal-header {
+    padding: 24px 20px 20px;
+  }
+
+  .modal-header h2 {
+    font-size: 20px;
+    padding-right: 36px; /* não encostar no botão de fechar */
+  }
+
+  .modal-stats {
+    padding: 16px 20px;
+    gap: 8px;
+  }
+
+  .modal-stat {
+    padding: 10px 4px;
+  }
+
+  .modal-stat-value {
+    font-size: 12.5px;
+  }
+
+  .modal-body {
+    padding: 20px;
+  }
+
+  /* Preço em cima e botão ocupando a largura toda embaixo */
+  .modal-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+    padding: 16px 20px 20px;
+  }
+
+  .modal-buy-btn {
+    width: 100%;
+    padding: 13px;
+    font-size: 14px;
+  }
+
+  /* Telas de formulário e carrinho */
+  .carrinho-page {
+    padding: 1.5rem 0.9rem 2.5rem;
+  }
+
+  .carrinho-titulo {
+    font-size: 1.5rem;
+  }
+
+  .carrinho-estado {
+    padding: 2.25rem 1.25rem;
+  }
+
+  .form-title {
+    font-size: 1.6rem;
+  }
+
+  /* Avisos (toast) mais perto do topo no celular */
+  .aviso {
+    top: 12px;
+  }
+}
+
+/* ===== Telas bem estreitas (até 400px) ===== */
+@media (max-width: 400px) {
+  /* Botão do carrinho só com ícone e número */
+  .btn-cart-texto {
+    display: none;
+  }
+
+  .header-saudacao {
+    display: none;
+  }
+
+  .pagamento-opcao {
+    padding: 0.6rem 0.25rem;
+  }
+
+  .pagamento-opcao-sub {
+    font-size: 0.65rem;
+  }
+}

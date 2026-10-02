@@ -11,6 +11,9 @@ function Header() {
   const { termoBusca, setTermoBusca } = useSearch();
   const [qtdCarrinho, setQtdCarrinho] = useState(0);
 
+  // Mostra só o primeiro nome na saudação ("Maria Silva" -> "Maria")
+  const primeiroNome = (getNomeAluno() || '').split(' ')[0];
+
   useEffect(() => {
     const atualizarQtdCarrinho = () => {
       if (!estaLogado()) {
@@ -47,6 +50,7 @@ function Header() {
       <div className="search-container">
         <input
           type="text"
+          name="busca"
           placeholder="Pesquisar cursos..."
           value={termoBusca}
           onChange={(e) => setTermoBusca(e.target.value)}
@@ -56,12 +60,14 @@ function Header() {
 
       <div className="header-actions">
         <Link to="/carrinho">
-          <button className="btn-cart">🛒 Carrinho ({qtdCarrinho})</button>
+          <button className="btn-cart">
+            🛒 <span className="btn-cart-texto">Carrinho</span> ({qtdCarrinho})
+          </button>
         </Link>
 
         {logado ? (
           <>
-            <span>Olá, {getNomeAluno()}</span>
+            <span className="header-saudacao">Olá, {primeiroNome}</span>
             <button className="btn-login" onClick={handleLogout}>Sair</button>
           </>
         ) : (
