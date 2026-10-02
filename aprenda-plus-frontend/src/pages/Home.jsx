@@ -5,6 +5,10 @@ import CursoModal from '../components/CursoModal';
 import PrecoCurso from '../components/PrecoCurso';
 import { getImagemCurso } from '../utils/imagensCursos';
 
+// Remove acentos e deixa minúsculo, pra busca "analise" encontrar "Análise"
+const normalizar = (texto) =>
+  (texto || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+
 function Home() {
   const [cursos, setCursos] = useState([]);
   const [carregando, setCarregando] = useState(true);
@@ -27,8 +31,10 @@ function Home() {
   if (carregando) return <p style={{ textAlign: 'center', padding: '2rem' }}>Carregando cursos...</p>;
   if (erro) return <p style={{ color: 'red', textAlign: 'center', padding: '2rem' }}>{erro}</p>;
 
+  const termo = normalizar(termoBusca);
+
   const cursosFiltrados = cursos.filter((curso) =>
-    curso.nome.toLowerCase().includes(termoBusca.toLowerCase())
+    normalizar(curso.nome).includes(termo)
   );
 
   return (
