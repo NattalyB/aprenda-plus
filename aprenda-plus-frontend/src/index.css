@@ -1550,3 +1550,102 @@ body {
   font-weight: 600;
   margin-left: 2px;
 }
+
+/* ===== Forma de pagamento (carrinho) ===== */
+.pagamento-secao {
+  padding: 1rem 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.pagamento-secao h3 {
+  margin: 0 0 0.75rem;
+  font-size: 0.95rem;
+  color: #001e42;
+}
+
+.pagamento-opcoes {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+}
+
+.pagamento-opcao {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.75rem 0.4rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  background: #fff;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.pagamento-opcao:hover:not(:disabled) {
+  border-color: #9ca3af;
+}
+
+.pagamento-opcao.ativa {
+  border-color: #0f8f6a;
+  background: #f0fdf4;
+}
+
+.pagamento-opcao:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.pagamento-opcao-icone {
+  font-size: 1.3rem;
+}
+
+.pagamento-opcao-titulo {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.pagamento-opcao-sub {
+  font-size: 0.7rem;
+  color: #6b7280;
+  text-align: center;
+}
+
+.pagamento-opcao.ativa .pagamento-opcao-sub {
+  color: #0f8f6a;
+  font-weight: 600;
+}
+
+.pagamento-parcelas {
+  margin-top: 0.85rem;
+}
+
+.carrinho-pagamento-dica {
+  margin: 0.75rem 0 0;
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.carrinho-resumo-desconto {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-top: 1rem;
+  color: #0f8f6a;
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+
+/* Caixa com a forma de pagamento na tela de sucesso */
+.carrinho-sucesso-pagamento {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+  margin: 0.75rem 0 1.25rem;
+  color: #166534;
+  font-size: 0.92rem;
+  line-height: 1.6;
+}

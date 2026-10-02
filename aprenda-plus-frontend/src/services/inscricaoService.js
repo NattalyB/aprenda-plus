@@ -2,12 +2,12 @@ import api from './api';
 
 export const listarInscricoes = () => api.get('/inscricoes');
 export const buscarInscricaoPorId = (id) => api.get(`/inscricoes/${id}`);
-export const criarInscricao = (idAluno, idTurma, valorTotal) => {
+export const criarInscricao = (idAluno, idTurma, valorTotal, formaPagamento) => {
   return api.post('/inscricoes', {
     aluno: { idAluno },
     turma: { idTurma },
     valorTotal,
-    formaPagamento: 'A definir',
+    formaPagamento: formaPagamento || 'A definir',
   });
 };
 export const atualizarInscricao = (id, inscricao) => api.put(`/inscricoes/${id}`, inscricao);

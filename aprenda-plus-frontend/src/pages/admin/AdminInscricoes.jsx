@@ -1,11 +1,9 @@
 import { useState, useEffect } from 'react';
 import { listarInscricoes, atualizarInscricao, deletarInscricao } from '../../services/inscricaoService';
+import { formatarValor } from '../../utils/precoCurso';
 
 const normalizar = (texto) =>
   (texto || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-
-const formatarValor = (valor) =>
-  Number(valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 const STATUS_INSCRICAO = {
   pendente_pagamento: 'Pendente de pagamento',
@@ -110,6 +108,7 @@ function AdminInscricoes() {
                 <th>Aluno</th>
                 <th>Turma</th>
                 <th>Valor</th>
+                <th>Pagamento</th>
                 <th>Status</th>
                 <th>Ações</th>
               </tr>
@@ -117,7 +116,7 @@ function AdminInscricoes() {
             <tbody>
               {inscricoesFiltradas.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="admin-vazio">
+                  <td colSpan={7} className="admin-vazio">
                     {busca || statusFiltro ? 'Nenhuma inscrição encontrada com esses filtros.' : 'Nenhuma inscrição registrada ainda.'}
                   </td>
                 </tr>
@@ -128,6 +127,7 @@ function AdminInscricoes() {
                     <td>{inscricao.aluno?.nomeCompleto || '-'}</td>
                     <td>{inscricao.turma?.nome || '-'}</td>
                     <td>{formatarValor(inscricao.valorTotal)}</td>
+                    <td>{inscricao.formaPagamento || '-'}</td>
                     <td>
                       <select
                         name={`status-${inscricao.idInscricao}`}
