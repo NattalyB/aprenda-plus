@@ -1,26 +1,15 @@
 import api from './api';
 
-const getAlunoId = () => localStorage.getItem('idAluno');
-
 // Avisa os componentes (ex: Header) que o carrinho mudou
 const avisarCarrinhoAtualizado = () => {
   window.dispatchEvent(new Event('carrinho-atualizado'));
 };
 
-// Busca o carrinho existente do aluno, ou cria um novo se não existir
-const getOuCriarCarrinho = () => {
-  const alunoId = getAlunoId();
-  return api.get('/carrinhos').then((response) => {
-    const carrinhoExistente = response.data.find((c) => c.aluno?.idAluno === Number(alunoId));
-    if (carrinhoExistente) {
-      return carrinhoExistente;
-    }
-    return api.post('/carrinhos', { aluno: { idAluno: alunoId } }).then((res) => res.data);
-  });
-};
+// Busca (ou cria) o carrinho do aluno logado. O backend identifica o aluno pelo token.
+const getMeuCarrinho = () => api.get('/carrinhos/meu').then((response) => response.data);
 
 export const adicionarAoCarrinho = (idCurso) => {
-  return getOuCriarCarrinho()
+  return getMeuCarrinho()
     .then((carrinho) => {
       return api.post('/itens-carrinho', {
         carrinho: { idCarrinho: carrinho.idCarrinho },
@@ -33,12 +22,9 @@ export const adicionarAoCarrinho = (idCurso) => {
     });
 };
 
+// Lista só os itens do carrinho do aluno logado
 export const listarItensDoCarrinho = () => {
-  return getOuCriarCarrinho().then((carrinho) => {
-    return api.get('/itens-carrinho').then((response) => {
-      return response.data.filter((item) => item.carrinho?.idCarrinho === carrinho.idCarrinho);
-    });
-  });
+  return api.get('/itens-carrinho/meus').then((response) => response.data);
 };
 
 export const removerItemDoCarrinho = (idItem) => {

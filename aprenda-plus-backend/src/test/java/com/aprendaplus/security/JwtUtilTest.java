@@ -6,14 +6,13 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class JwtUtilTest {
 
-    private final JwtUtil jwtUtil = new JwtUtil();
+private final JwtUtil jwtUtil = new JwtUtil("chave-usada-somente-nos-testes-com-mais-de-32-caracteres");
+@Test
+void deveGerarTokenValido() {
+String token = jwtUtil.gerarToken("teste@teste.com");
 
-    @Test
-    void deveGerarTokenValido() {
-        String token = jwtUtil.gerarToken("teste@teste.com");
-
-        assertNotNull(token);
-        assertFalse(token.isEmpty());
+    assertNotNull(token);
+    assertFalse(token.isEmpty());
     }
 
     @Test

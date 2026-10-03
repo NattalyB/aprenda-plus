@@ -1,39 +1,60 @@
 package com.aprendaplus.security;
 
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
-import org.springframework.stereotype.Component;
+import java.nio.charset.StandardCharsets;
+import java.util.Date;
 
 import javax.crypto.SecretKey;
-import java.util.Date;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
 
 @Component
 public class JwtUtil {
 
-    // Chave secreta usada pra assinar os tokens.
-    // Em produção isso viria de uma variável de ambiente, não fixo no código.
-    private final SecretKey chave = Keys.hmacShaKeyFor(
-            "aprenda-plus-chave-secreta-para-jwt-com-pelo-menos-32-caracteres".getBytes()
-    );
+    private static final long VALIDADE_MS = 1000L * 60 * 60 * 2; // token válido por 2 horas
 
-    public String gerarToken(String email) {
+    private final SecretKey chave;
+
+    // A chave secreta vem da propriedade "jwt.secret" (application.properties),
+    // que em produção é preenchida pela variável de ambiente JWT_SECRET no Render
+    public JwtUtil(@Value("${jwt.secret}") String segredo) {
+        this.chave = Keys.hmacShaKeyFor(segredo.getBytes(StandardCharsets.UTF_8));
+    }
+
+    // Gera o token com o e-mail, o id e o papel (ALUNO ou ADMIN) do usuário
+    public String gerarToken(String email, Integer id, String papel) {
         long agora = System.currentTimeMillis();
-        long expiracao = agora + (1000 * 60 * 60 * 2); // token válido por 2 horas
 
         return Jwts.builder()
                 .subject(email)
+                .claim("id", id)
+                .claim("papel", papel)
                 .issuedAt(new Date(agora))
-                .expiration(new Date(expiracao))
+                .expiration(new Date(agora + VALIDADE_MS))
                 .signWith(chave)
                 .compact();
     }
 
-    public String extrairEmail(String token) {
+    // Versão antiga, mantida por compatibilidade (gera token sem papel)
+    public String gerarToken(String email) {
+        return gerarToken(email, null, null);
+    }
+
+    // Valida a assinatura e a validade do token e devolve os dados dele.
+    // Lança exceção se o token for inválido, adulterado ou estiver expirado.
+    public Claims validarToken(String token) {
         return Jwts.parser()
                 .verifyWith(chave)
                 .build()
                 .parseSignedClaims(token)
-                .getPayload()
-                .getSubject();
+                .getPayload();
+    }
+
+    public String extrairEmail(String token) {
+        return validarToken(token).getSubject();
     }
 }

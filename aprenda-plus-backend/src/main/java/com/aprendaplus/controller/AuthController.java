@@ -42,7 +42,7 @@ public class AuthController {
             return ResponseEntity.status(401).body(Map.of("erro", "E-mail ou senha inválidos"));
         }
 
-        String token = jwtUtil.gerarToken(aluno.getEmail());
+        String token = jwtUtil.gerarToken(aluno.getEmail(), aluno.getIdAluno(), "ALUNO");
 
         Map<String, Object> response = new HashMap<>();
         response.put("token", token);
@@ -60,7 +60,7 @@ public class AuthController {
             return ResponseEntity.status(401).body(Map.of("erro", "E-mail ou senha inválidos"));
         }
 
-        String token = jwtUtil.gerarToken(funcionario.getEmail());
+        String token = jwtUtil.gerarToken(funcionario.getEmail(), funcionario.getIdFuncionario(), "ADMIN");
         return ResponseEntity.ok(new LoginFuncionarioResponse(
                 token,
                 funcionario.getIdFuncionario(),
