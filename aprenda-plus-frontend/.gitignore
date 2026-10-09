@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Relatório de cobertura dos testes (gerado pelo Jest)
+coverage
