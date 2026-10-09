@@ -224,6 +224,22 @@ describe('concluir inscrição', () => {
     expect(screen.getByText('CONCLUIR INSCRIÇÃO')).toBeEnabled();
   });
 
+  test('se o servidor recusar a compra, mostra a mensagem do servidor', async () => {
+    logarAluno();
+    criarInscricao.mockRejectedValue({
+      message: 'Request failed with status code 400',
+      response: { data: { mensagem: 'O curso "Engenharia de Software" pode ser pago em no máximo 24x.' } },
+    });
+    renderizar(<Carrinho />);
+    await screen.findByText('Meu carrinho');
+
+    fireEvent.click(screen.getByText('Pix'));
+    fireEvent.click(screen.getByText('CONCLUIR INSCRIÇÃO'));
+
+    expect(await screen.findByText('O curso "Engenharia de Software" pode ser pago em no máximo 24x.')).toBeInTheDocument();
+    expect(removerItemDoCarrinho).not.toHaveBeenCalled();
+  });
+
   test('erro sem mensagem mostra o texto padrão', async () => {
     logarAluno();
     criarInscricao.mockRejectedValue({});

@@ -138,7 +138,8 @@ function Carrinho() {
         setFinalizando(false);
       })
       .catch((error) => {
-        setErro(error.message || 'Não foi possível concluir a inscrição.');
+        // Se o servidor recusou (ex.: parcelas acima do limite), mostra a mensagem dele
+        setErro(error.response?.data?.mensagem || error.message || 'Não foi possível concluir a inscrição.');
         setFinalizando(false);
       });
   };

@@ -26,4 +26,14 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(resposta);
     }
+
+    // Captura erros de regra do sistema (ex.: forma de pagamento inválida)
+    // e devolve 400 com a mensagem pronta para mostrar na tela
+    @ExceptionHandler(RegraDeNegocioException.class)
+    public ResponseEntity<Map<String, Object>> tratarRegraDeNegocio(RegraDeNegocioException ex) {
+        Map<String, Object> resposta = new LinkedHashMap<>();
+        resposta.put("mensagem", ex.getMessage());
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(resposta);
+    }
 }

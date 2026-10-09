@@ -44,7 +44,7 @@ Projeto final do curso **Desenvolvimento Full Stack** do programa **+PraTi / Cod
 - **Formas de pagamento:**
   - **Pix** à vista com **5% de desconto**;
   - **Cartão de crédito** e **boleto**, parcelados sem juros. O limite de parcelas é o do curso com o menor limite entre os que estão no carrinho.
-- **Conclusão da inscrição:** cria uma inscrição para cada curso na primeira turma disponível, com status *pendente de pagamento*, e esvazia o carrinho.
+- **Conclusão da inscrição:** cria uma inscrição para cada curso na primeira turma disponível, com status *pendente de pagamento*, e esvazia o carrinho. O valor de cada inscrição é **calculado pelo servidor** a partir do preço do curso, e não pelo navegador.
 - **Avisos visuais (toasts)** de sucesso, erro e alerta.
 - **Layout responsivo** para celular, tablet e computador.
 
@@ -125,11 +125,11 @@ Requisição ─▶ AuthInterceptor ─▶ Controller ─▶ Service ─▶ Repo
 ```
 
 - **Controller:** recebe as requisições HTTP e valida os dados com `@Valid`.
-- **Service:** concentra as regras de negócio (ex.: criptografar a senha, manter a senha atual quando o admin edita um aluno sem informar senha nova).
+- **Service:** concentra as regras de negócio (ex.: criptografar a senha, manter a senha atual quando o admin edita um aluno sem informar senha nova, calcular o valor da inscrição com o desconto do Pix e conferir o limite de parcelas).
 - **Repository:** interfaces do Spring Data JPA.
 - **Entity:** classes que representam as tabelas do banco.
 - **Security:** geração e validação do JWT e controle de acesso às rotas.
-- **Exception:** tratamento centralizado dos erros de validação (`GlobalExceptionHandler`), que devolve quais campos falharam.
+- **Exception:** tratamento centralizado dos erros (`GlobalExceptionHandler`). Erros de validação devolvem quais campos falharam; erros de regra de negócio (`RegraDeNegocioException`) devolvem uma mensagem pronta para mostrar na tela.
 
 ### Organização do front-end
 
@@ -151,7 +151,7 @@ aprenda-plus/
 │   │   ├── config/                # CORS e registro da proteção da API
 │   │   ├── controller/            # Endpoints REST
 │   │   ├── entity/                # Entidades JPA
-│   │   ├── exception/             # Tratamento de erros de validação
+│   │   ├── exception/             # Tratamento centralizado de erros
 │   │   ├── repository/            # Acesso ao banco
 │   │   ├── security/              # JWT e controle de acesso
 │   │   └── service/               # Regras de negócio
@@ -249,8 +249,8 @@ A meta do projeto era **cobertura mínima de 70%**. Os dois lados ficaram bem ac
 
 | | Testes | Cobertura | Ferramentas |
 |---|---|---|---|
-| **Back-end** | 224 | **99%** das instruções, 89% dos desvios (*branches*) | JUnit 5, Mockito, MockMvc, JaCoCo |
-| **Front-end** | 235 | **99,7%** das instruções, 97,6% dos desvios, 100% das funções | Jest, Testing Library |
+| **Back-end** | 246 | **99%** das instruções, 89% dos desvios (*branches*) | JUnit 5, Mockito, MockMvc, JaCoCo |
+| **Front-end** | 236 | **99,7%** das instruções, 97,6% dos desvios, 100% das funções | Jest, Testing Library |
 
 ### Back-end
 
@@ -263,9 +263,9 @@ O relatório de cobertura é gerado em `target/site/jacoco/index.html`.
 
 O que é testado:
 
-- **Services:** regras de negócio, incluindo a criptografia de senha, a manutenção da senha atual na edição e os casos de registro não encontrado.
+- **Services:** regras de negócio, incluindo a criptografia de senha, a manutenção da senha atual na edição, os casos de registro não encontrado e o **cálculo do valor da inscrição** (desconto do Pix com arredondamento em centavos, valor cheio no cartão e no boleto, limite de parcelas do curso e formas de pagamento inválidas).
 - **Controllers:** todas as rotas (listar, buscar, criar, editar e excluir), a validação dos dados recebidos e as mensagens de erro.
-- **Segurança:** geração e validação do JWT (inclusive tokens adulterados ou assinados com outra chave), as permissões de cada perfil e a regra de que um aluno só mexe no **próprio** carrinho.
+- **Segurança:** geração e validação do JWT (inclusive tokens adulterados ou assinados com outra chave), as permissões de cada perfil, a regra de que um aluno só mexe no **próprio** carrinho e a tentativa de criar uma inscrição adulterada (em nome de outro aluno, já confirmada ou pagando R$ 0,01).
 - **Configuração:** registro da proteção da API e liberação de CORS só para os endereços autorizados.
 
 > As entidades (classes só com getters e setters) ficam fora do cálculo de cobertura, por não terem lógica a testar.
@@ -286,7 +286,7 @@ O que é testado:
 
 - **Services e utils:** todas as rotas da API, o envio automático do token, o logout quando a sessão expira e os cálculos de preço e mensalidade.
 - **Componentes:** cabeçalho (busca, sugestões, teclado e contador do carrinho), modal do curso, avisos e rota protegida do admin.
-- **Páginas:** Home, login, cadastro, carrinho (Pix com desconto, cartão, boleto, limite de parcelas, curso sem turma), além de todas as listas e formulários do painel admin.
+- **Páginas:** Home, login, cadastro, carrinho (Pix com desconto, cartão, boleto, limite de parcelas, curso sem turma e mensagem de erro vinda do servidor), além de todas as listas e formulários do painel admin.
 
 ![Cobertura do front-end](docs/cobertura-frontend.png)
 
@@ -305,6 +305,13 @@ O que é testado:
 | **Admin** | Todas as rotas |
 
 - **Cada aluno só vê e altera o próprio carrinho:** a identidade vem do token assinado pelo servidor, não de dados enviados pelo navegador.
+- **Inscrição à prova de adulteração:** quando um aluno finaliza a compra, o navegador só informa a **turma** e a **forma de pagamento**. Todo o resto é definido pelo servidor:
+  - o **aluno** é sempre o do token (não dá para se inscrever em nome de outra pessoa);
+  - o **status** sempre começa como *pendente de pagamento* (o aluno não consegue se autoconfirmar);
+  - o **valor** é recalculado a partir do preço do curso gravado no banco, com o desconto do Pix aplicado no servidor;
+  - o **número de parcelas** é conferido com o limite do curso. Se alguém tentar parcelar acima do permitido ou usar uma forma de pagamento inexistente, a API recusa com uma mensagem clara.
+
+  Assim, mesmo que alguém altere a requisição pelas ferramentas do navegador (por exemplo, mudando o valor para R$ 0,01), a inscrição é gravada com o valor correto.
 - **Chave secreta fora do código:** em produção, a chave que assina os tokens fica em uma variável de ambiente no Render (`JWT_SECRET`), já que o repositório é público.
 - **CORS** liberado apenas para o site publicado e para o ambiente de desenvolvimento local.
 - **Validação dupla:** os formulários validam no navegador, e a API valida de novo no servidor (Bean Validation), já que é possível chamar a API sem passar pelo site.
@@ -318,6 +325,8 @@ O que é testado:
 - **Inscrição × Matrícula.** O fluxo foi pensado em duas etapas: o aluno se **inscreve** e escolhe como vai pagar (status *pendente de pagamento*). Depois que a secretaria confirma, ela cria a **matrícula** pelo painel admin. A tabela de pagamentos, ligada à matrícula, já está modelada para controlar as parcelas.
 - **Mensalidade calculada, não digitada.** O admin cadastra o **valor total** e o **número de parcelas** do curso, e o sistema calcula a mensalidade. Assim ela nunca fica diferente do valor total.
 - **Desconto de 5% no Pix**, como é comum em instituições de ensino. O valor já é gravado com desconto na inscrição.
+- **O servidor é a fonte da verdade do preço.** O front-end calcula os valores só para mostrar ao aluno; o valor que vale é o calculado pelo back-end com `BigDecimal` (arredondamento em centavos), a partir do preço do curso no banco. Nunca se confia em um valor enviado pelo navegador.
+- **Admin com liberdade no painel.** O recálculo e as travas valem para as compras feitas pelos alunos. O admin continua podendo criar e editar inscrições livremente, por exemplo para registrar uma negociação feita pela secretaria.
 - **`ddl-auto=validate`.** O banco tem valores padrão e gatilhos criados por scripts SQL. Para evitar que o Hibernate altere a estrutura sem ninguém saber, ele só confere se o banco está correto. Alterações (como a coluna `numero_parcelas`) são feitas por script.
 - **Interceptor em vez do Spring Security completo.** O controle de acesso foi feito com um `HandlerInterceptor`: uma solução enxuta, fácil de entender e que não conflita com a configuração de CORS.
 - **`HashRouter` no front-end.** O GitHub Pages não sabe lidar com as rotas do React (dar F5 em `/carrinho` daria erro 404). Com o `HashRouter`, as URLs ficam no formato `/#/carrinho` e funcionam em qualquer situação.
@@ -359,7 +368,8 @@ O comando gera a versão de produção e publica a pasta `dist` na branch `gh-pa
 
 ## 🔭 Melhorias futuras
 
-- Identificar o aluno pelo token também na criação de inscrições (hoje a API recebe o id enviado pelo front-end).
+- Permitir que o aluno escolha a turma desejada (hoje a inscrição é feita na primeira turma disponível do curso).
+- Criar todas as inscrições do carrinho em uma única operação no servidor, para que um erro em um curso não deixe a compra pela metade.
 - Integrar um gateway de pagamento real e gerar automaticamente as parcelas na tabela de pagamentos ao confirmar a matrícula.
 - Área do aluno para acompanhar as próprias inscrições, matrículas e pagamentos.
 - Tela de cadastro de funcionários no painel admin.
