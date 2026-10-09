@@ -2,7 +2,6 @@ package com.aprendaplus.controller;
 
 import com.aprendaplus.entity.CursoProfessor;
 import com.aprendaplus.service.CursoProfessorService;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -13,6 +12,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.Arrays;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -26,7 +26,10 @@ class CursoProfessorControllerTest {
     @MockitoBean
     private CursoProfessorService cursoProfessorService;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    // Um vínculo precisa dos dois lados preenchidos (com o id de cada um)
+    private static final String VINCULO_VALIDO = """
+            { "curso": { "idCurso": 1 }, "professor": { "idProfessor": 2 } }
+            """;
 
     @Test
     void deveRetornarListaDeVinculos() throws Exception {
@@ -35,7 +38,8 @@ class CursoProfessorControllerTest {
         when(cursoProfessorService.listarTodos()).thenReturn(Arrays.asList(vinculo));
 
         mockMvc.perform(get("/curso-professor"))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1));
     }
 
     @Test
@@ -46,7 +50,9 @@ class CursoProfessorControllerTest {
 
         mockMvc.perform(post("/curso-professor")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(vinculo)))
+                        .content(VINCULO_VALIDO))
                 .andExpect(status().isOk());
+
+        verify(cursoProfessorService).salvar(any(CursoProfessor.class));
     }
 }

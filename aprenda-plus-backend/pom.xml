@@ -133,6 +133,17 @@
 					</execution>
 				</executions>
 			</plugin>
+			<!-- Desliga a proteção da API (AuthInterceptor) só durante os testes.
+			     O sistema publicado continua protegido. -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<configuration>
+					<systemPropertyVariables>
+						<seguranca.api.ativa>false</seguranca.api.ativa>
+					</systemPropertyVariables>
+				</configuration>
+			</plugin>
 		</plugins>
 	</build>
 

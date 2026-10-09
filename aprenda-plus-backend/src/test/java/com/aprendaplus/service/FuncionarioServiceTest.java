@@ -58,4 +58,28 @@ class FuncionarioServiceTest {
 
         verify(funcionarioRepository, times(1)).deleteById(1);
     }
+
+    @Test
+    void naoDeveRecriptografarSenhaJaCriptografada() {
+        Funcionario funcionario = new Funcionario();
+        funcionario.setSenhaHash("$2a$10$hashJaCriptografado");
+
+        when(funcionarioRepository.save(any(Funcionario.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Funcionario resultado = funcionarioService.salvar(funcionario);
+
+        assertEquals("$2a$10$hashJaCriptografado", resultado.getSenhaHash());
+    }
+
+    @Test
+    void deveSalvarFuncionarioSemSenhaSemCriptografar() {
+        Funcionario funcionario = new Funcionario();
+        funcionario.setNomeCompleto("Sem Senha");
+
+        when(funcionarioRepository.save(any(Funcionario.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Funcionario resultado = funcionarioService.salvar(funcionario);
+
+        assertNull(resultado.getSenhaHash());
+    }
 }
