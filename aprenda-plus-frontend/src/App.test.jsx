@@ -25,7 +25,7 @@ beforeEach(() => {
 test('a página inicial mostra cabeçalho, cursos e rodapé', async () => {
   abrir('#/');
 
-  expect(await screen.findByText('CURSOS MAIS VENDIDOS')).toBeInTheDocument();
+  expect(await screen.findByText('NOSSOS CURSOS')).toBeInTheDocument();
   expect(screen.getByPlaceholderText('Pesquisar cursos...')).toBeInTheDocument();
   expect(screen.getByText('FALE CONOSCO')).toBeInTheDocument();
 });

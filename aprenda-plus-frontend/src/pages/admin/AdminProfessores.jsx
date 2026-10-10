@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import ColunaOrdenavel from '../../components/admin/ColunaOrdenavel';
+import { useOrdenacao } from '../../utils/ordenacao';
 import { Link } from 'react-router-dom';
 import { listarProfessores, deletarProfessor } from '../../services/professorService';
 
@@ -9,6 +11,15 @@ const normalizar = (texto) =>
 // 12345678901 -> 123.456.789-01
 const formatarCpf = (cpf) =>
   cpf && cpf.length === 11 ? cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4') : cpf;
+
+// Como pegar o valor de cada coluna na hora de ordenar
+const CAMPOS_ORDENACAO = {
+  id: (p) => p.idProfessor,
+  nome: (p) => p.nomeCompleto,
+  email: (p) => p.email,
+  cpf: (p) => p.cpf,
+  status: (p) => p.status,
+};
 
 function AdminProfessores() {
   const [professores, setProfessores] = useState([]);
@@ -48,6 +59,8 @@ function AdminProfessores() {
     return nomeConfere || cpfConfere;
   });
 
+  const { ordenados, ordem, alternar } = useOrdenacao(professoresFiltrados, CAMPOS_ORDENACAO);
+
   if (carregando) return <p>Carregando professores...</p>;
 
   return (
@@ -82,11 +95,11 @@ function AdminProfessores() {
           <table className="admin-table">
             <thead>
               <tr>
-                <th>ID</th>
-                <th>Nome</th>
-                <th>E-mail</th>
-                <th>CPF</th>
-                <th>Status</th>
+                <ColunaOrdenavel coluna="id" ordem={ordem} onOrdenar={alternar}>ID</ColunaOrdenavel>
+                <ColunaOrdenavel coluna="nome" ordem={ordem} onOrdenar={alternar}>Nome</ColunaOrdenavel>
+                <ColunaOrdenavel coluna="email" ordem={ordem} onOrdenar={alternar}>E-mail</ColunaOrdenavel>
+                <ColunaOrdenavel coluna="cpf" ordem={ordem} onOrdenar={alternar}>CPF</ColunaOrdenavel>
+                <ColunaOrdenavel coluna="status" ordem={ordem} onOrdenar={alternar}>Status</ColunaOrdenavel>
                 <th>Ações</th>
               </tr>
             </thead>
@@ -98,7 +111,7 @@ function AdminProfessores() {
                   </td>
                 </tr>
               ) : (
-                professoresFiltrados.map((professor) => (
+                ordenados.map((professor) => (
                   <tr key={professor.idProfessor}>
                     <td>{professor.idProfessor}</td>
                     <td>{professor.nomeCompleto}</td>

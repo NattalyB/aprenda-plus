@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import ColunaOrdenavel from '../../components/admin/ColunaOrdenavel';
+import { useOrdenacao } from '../../utils/ordenacao';
 import { Link } from 'react-router-dom';
 import { listarAlunos, deletarAluno } from '../../services/alunoService';
 
@@ -9,6 +11,15 @@ const normalizar = (texto) =>
 // 12345678901 -> 123.456.789-01
 const formatarCpf = (cpf) =>
   cpf && cpf.length === 11 ? cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4') : cpf;
+
+// Como pegar o valor de cada coluna na hora de ordenar
+const CAMPOS_ORDENACAO = {
+  id: (a) => a.idAluno,
+  nome: (a) => a.nomeCompleto,
+  email: (a) => a.email,
+  cpf: (a) => a.cpf,
+  status: (a) => a.status,
+};
 
 function AdminAlunos() {
   const [alunos, setAlunos] = useState([]);
@@ -48,6 +59,8 @@ function AdminAlunos() {
     return nomeConfere || cpfConfere;
   });
 
+  const { ordenados, ordem, alternar } = useOrdenacao(alunosFiltrados, CAMPOS_ORDENACAO);
+
   if (carregando) return <p>Carregando alunos...</p>;
 
   return (
@@ -82,11 +95,11 @@ function AdminAlunos() {
           <table className="admin-table">
             <thead>
               <tr>
-                <th>ID</th>
-                <th>Nome</th>
-                <th>E-mail</th>
-                <th>CPF</th>
-                <th>Status</th>
+                <ColunaOrdenavel coluna="id" ordem={ordem} onOrdenar={alternar}>ID</ColunaOrdenavel>
+                <ColunaOrdenavel coluna="nome" ordem={ordem} onOrdenar={alternar}>Nome</ColunaOrdenavel>
+                <ColunaOrdenavel coluna="email" ordem={ordem} onOrdenar={alternar}>E-mail</ColunaOrdenavel>
+                <ColunaOrdenavel coluna="cpf" ordem={ordem} onOrdenar={alternar}>CPF</ColunaOrdenavel>
+                <ColunaOrdenavel coluna="status" ordem={ordem} onOrdenar={alternar}>Status</ColunaOrdenavel>
                 <th>Ações</th>
               </tr>
             </thead>
@@ -98,7 +111,7 @@ function AdminAlunos() {
                   </td>
                 </tr>
               ) : (
-                alunosFiltrados.map((aluno) => (
+                ordenados.map((aluno) => (
                   <tr key={aluno.idAluno}>
                     <td>{aluno.idAluno}</td>
                     <td>{aluno.nomeCompleto}</td>

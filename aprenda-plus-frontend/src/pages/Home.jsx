@@ -46,7 +46,7 @@ function Home() {
       </section>
 
       <main className="main-content">
-        <h3 className="section-title">CURSOS MAIS VENDIDOS</h3>
+        <h3 className="section-title">NOSSOS CURSOS</h3>
 
         {cursosFiltrados.length === 0 ? (
           <p style={{ textAlign: 'center' }}>Nenhum curso encontrado.</p>

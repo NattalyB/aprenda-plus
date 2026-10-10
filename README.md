@@ -61,6 +61,7 @@ Projeto final do curso **Desenvolvimento Full Stack** do programa **+PraTi / Cod
   - Matrículas
 - **Inscrições:** listagem com a forma de pagamento escolhida pelo aluno e troca de status direto na tabela.
 - **Filtros em todas as listas:** busca por nome (e por CPF em alunos, professores e matrículas), além de filtros por categoria, curso ou status.
+- **Ordenação em todas as listas:** basta clicar no nome da coluna para ordenar (ID, nome de A-Z ou Z-A, valor, data, status...). Clicando de novo, a ordem inverte.
 - **Mensagens de erro detalhadas:** quando o back-end recusa um dado, o formulário mostra exatamente qual campo está errado.
 
 ---
@@ -250,7 +251,7 @@ A meta do projeto era **cobertura mínima de 70%**. Os dois lados ficaram bem ac
 | | Testes | Cobertura | Ferramentas |
 |---|---|---|---|
 | **Back-end** | 246 | **99%** das instruções, 89% dos desvios (*branches*) | JUnit 5, Mockito, MockMvc, JaCoCo |
-| **Front-end** | 236 | **99,7%** das instruções, 97,6% dos desvios, 100% das funções | Jest, Testing Library |
+| **Front-end** | 257 | **99,7%** das instruções, 97,6% dos desvios, 100% das funções | Jest, Testing Library |
 
 ### Back-end
 

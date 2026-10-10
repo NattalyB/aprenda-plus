@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import ColunaOrdenavel from '../../components/admin/ColunaOrdenavel';
+import { useOrdenacao } from '../../utils/ordenacao';
 import { Link } from 'react-router-dom';
 import { listarMatriculas, deletarMatricula } from '../../services/matriculaService';
 
@@ -23,6 +25,15 @@ const STATUS_MATRICULA = [
 const LABEL_STATUS = Object.fromEntries(
   STATUS_MATRICULA.filter((s) => s.valor).map((s) => [s.valor, s.label])
 );
+
+// Como pegar o valor de cada coluna na hora de ordenar
+const CAMPOS_ORDENACAO = {
+  id: (m) => m.idMatricula,
+  aluno: (m) => m.aluno?.nomeCompleto,
+  turma: (m) => m.turma?.nome,
+  data: (m) => m.dataMatricula,
+  status: (m) => LABEL_STATUS[m.status] || m.status,
+};
 
 function AdminMatriculas() {
   const [matriculas, setMatriculas] = useState([]);
@@ -65,6 +76,8 @@ function AdminMatriculas() {
     const statusConfere = !statusFiltro || matricula.status === statusFiltro;
     return textoConfere && statusConfere;
   });
+
+  const { ordenados, ordem, alternar } = useOrdenacao(matriculasFiltradas, CAMPOS_ORDENACAO);
 
   if (carregando) return <p>Carregando matrículas...</p>;
 
@@ -115,11 +128,11 @@ function AdminMatriculas() {
           <table className="admin-table">
             <thead>
               <tr>
-                <th>ID</th>
-                <th>Aluno</th>
-                <th>Turma</th>
-                <th>Data</th>
-                <th>Status</th>
+                <ColunaOrdenavel coluna="id" ordem={ordem} onOrdenar={alternar}>ID</ColunaOrdenavel>
+                <ColunaOrdenavel coluna="aluno" ordem={ordem} onOrdenar={alternar}>Aluno</ColunaOrdenavel>
+                <ColunaOrdenavel coluna="turma" ordem={ordem} onOrdenar={alternar}>Turma</ColunaOrdenavel>
+                <ColunaOrdenavel coluna="data" ordem={ordem} onOrdenar={alternar}>Data</ColunaOrdenavel>
+                <ColunaOrdenavel coluna="status" ordem={ordem} onOrdenar={alternar}>Status</ColunaOrdenavel>
                 <th>Ações</th>
               </tr>
             </thead>
@@ -131,7 +144,7 @@ function AdminMatriculas() {
                   </td>
                 </tr>
               ) : (
-                matriculasFiltradas.map((matricula) => (
+                ordenados.map((matricula) => (
                   <tr key={matricula.idMatricula}>
                     <td>{matricula.idMatricula}</td>
                     <td>{matricula.aluno?.nomeCompleto || '-'}</td>

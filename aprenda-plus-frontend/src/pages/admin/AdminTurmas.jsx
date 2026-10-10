@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import ColunaOrdenavel from '../../components/admin/ColunaOrdenavel';
+import { useOrdenacao } from '../../utils/ordenacao';
 import { Link } from 'react-router-dom';
 import { listarTurmas, deletarTurma } from '../../services/turmaService';
 
@@ -11,6 +13,16 @@ const STATUS_TURMA = {
   em_andamento: 'Em andamento',
   encerrada: 'Encerrada',
   cancelada: 'Cancelada',
+};
+
+// Como pegar o valor de cada coluna na hora de ordenar
+const CAMPOS_ORDENACAO = {
+  id: (t) => t.idTurma,
+  nome: (t) => t.nome,
+  curso: (t) => t.curso?.nome,
+  periodo: (t) => t.periodoLetivo?.nome,
+  vagas: (t) => t.capacidadeMaxima,
+  status: (t) => STATUS_TURMA[t.status] || t.status,
 };
 
 function AdminTurmas() {
@@ -59,6 +71,8 @@ function AdminTurmas() {
     const statusConfere = !statusFiltro || turma.status === statusFiltro;
     return nomeConfere && cursoConfere && statusConfere;
   });
+
+  const { ordenados, ordem, alternar } = useOrdenacao(turmasFiltradas, CAMPOS_ORDENACAO);
 
   if (carregando) return <p>Carregando turmas...</p>;
 
@@ -120,12 +134,12 @@ function AdminTurmas() {
           <table className="admin-table">
             <thead>
               <tr>
-                <th>ID</th>
-                <th>Nome</th>
-                <th>Curso</th>
-                <th>Período letivo</th>
-                <th>Vagas</th>
-                <th>Status</th>
+                <ColunaOrdenavel coluna="id" ordem={ordem} onOrdenar={alternar}>ID</ColunaOrdenavel>
+                <ColunaOrdenavel coluna="nome" ordem={ordem} onOrdenar={alternar}>Nome</ColunaOrdenavel>
+                <ColunaOrdenavel coluna="curso" ordem={ordem} onOrdenar={alternar}>Curso</ColunaOrdenavel>
+                <ColunaOrdenavel coluna="periodo" ordem={ordem} onOrdenar={alternar}>Período letivo</ColunaOrdenavel>
+                <ColunaOrdenavel coluna="vagas" ordem={ordem} onOrdenar={alternar}>Vagas</ColunaOrdenavel>
+                <ColunaOrdenavel coluna="status" ordem={ordem} onOrdenar={alternar}>Status</ColunaOrdenavel>
                 <th>Ações</th>
               </tr>
             </thead>
@@ -137,7 +151,7 @@ function AdminTurmas() {
                   </td>
                 </tr>
               ) : (
-                turmasFiltradas.map((turma) => (
+                ordenados.map((turma) => (
                   <tr key={turma.idTurma}>
                     <td>{turma.idTurma}</td>
                     <td>{turma.nome}</td>

@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import ColunaOrdenavel from '../../components/admin/ColunaOrdenavel';
+import { useOrdenacao } from '../../utils/ordenacao';
 import { listarInscricoes, atualizarInscricao, deletarInscricao } from '../../services/inscricaoService';
 import { formatarValor } from '../../utils/precoCurso';
 
@@ -11,6 +13,16 @@ const STATUS_INSCRICAO = {
   aguardando_vaga: 'Aguardando vaga',
   concluida: 'Concluída',
   cancelada: 'Cancelada',
+};
+
+// Como pegar o valor de cada coluna na hora de ordenar
+const CAMPOS_ORDENACAO = {
+  id: (i) => i.idInscricao,
+  aluno: (i) => i.aluno?.nomeCompleto,
+  turma: (i) => i.turma?.nome,
+  valor: (i) => (i.valorTotal == null ? null : Number(i.valorTotal)),
+  pagamento: (i) => i.formaPagamento,
+  status: (i) => STATUS_INSCRICAO[i.status] || i.status,
 };
 
 function AdminInscricoes() {
@@ -59,6 +71,8 @@ function AdminInscricoes() {
     return textoConfere && statusConfere;
   });
 
+  const { ordenados, ordem, alternar } = useOrdenacao(inscricoesFiltradas, CAMPOS_ORDENACAO);
+
   if (carregando) return <p>Carregando inscrições...</p>;
 
   return (
@@ -104,12 +118,12 @@ function AdminInscricoes() {
           <table className="admin-table">
             <thead>
               <tr>
-                <th>ID</th>
-                <th>Aluno</th>
-                <th>Turma</th>
-                <th>Valor</th>
-                <th>Pagamento</th>
-                <th>Status</th>
+                <ColunaOrdenavel coluna="id" ordem={ordem} onOrdenar={alternar}>ID</ColunaOrdenavel>
+                <ColunaOrdenavel coluna="aluno" ordem={ordem} onOrdenar={alternar}>Aluno</ColunaOrdenavel>
+                <ColunaOrdenavel coluna="turma" ordem={ordem} onOrdenar={alternar}>Turma</ColunaOrdenavel>
+                <ColunaOrdenavel coluna="valor" ordem={ordem} onOrdenar={alternar}>Valor</ColunaOrdenavel>
+                <ColunaOrdenavel coluna="pagamento" ordem={ordem} onOrdenar={alternar}>Pagamento</ColunaOrdenavel>
+                <ColunaOrdenavel coluna="status" ordem={ordem} onOrdenar={alternar}>Status</ColunaOrdenavel>
                 <th>Ações</th>
               </tr>
             </thead>
@@ -121,7 +135,7 @@ function AdminInscricoes() {
                   </td>
                 </tr>
               ) : (
-                inscricoesFiltradas.map((inscricao) => (
+                ordenados.map((inscricao) => (
                   <tr key={inscricao.idInscricao}>
                     <td>{inscricao.idInscricao}</td>
                     <td>{inscricao.aluno?.nomeCompleto || '-'}</td>

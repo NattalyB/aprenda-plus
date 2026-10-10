@@ -919,6 +919,48 @@ body {
   white-space: nowrap;
 }
 
+.admin-ordenar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.admin-ordenar:hover,
+.admin-ordenar.ativa {
+  color: #0b1f3a;
+}
+
+.admin-ordenar:focus-visible {
+  outline: 2px solid #00b4d8;
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+.admin-ordenar-seta {
+  font-size: 0.95rem;
+  line-height: 1;
+  color: #6b7280;
+  opacity: 0.75;
+}
+
+.admin-ordenar:hover .admin-ordenar-seta {
+  opacity: 1;
+}
+
+.admin-ordenar.ativa .admin-ordenar-seta {
+  font-size: 0.8rem;
+  color: #00b4d8;
+  opacity: 1;
+}
+
 .admin-table td {
   padding: 0.85rem 1rem;
   border-bottom: 1px solid #f0f1f3;

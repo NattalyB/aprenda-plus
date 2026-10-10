@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import ColunaOrdenavel from '../../components/admin/ColunaOrdenavel';
+import { useOrdenacao } from '../../utils/ordenacao';
 import { Link } from 'react-router-dom';
 import { listarPeriodosLetivos, deletarPeriodoLetivo } from '../../services/periodoLetivoService';
 
@@ -18,6 +20,15 @@ const STATUS = [
   { valor: 'encerrado', label: 'Encerrado' },
   { valor: 'cancelado', label: 'Cancelado' },
 ];
+
+// Como pegar o valor de cada coluna na hora de ordenar
+const CAMPOS_ORDENACAO = {
+  id: (p) => p.idPeriodoLetivo,
+  nome: (p) => p.nome,
+  inicio: (p) => p.dataInicio,
+  fim: (p) => p.dataFim,
+  status: (p) => p.status,
+};
 
 function AdminPeriodosLetivos() {
   const [periodos, setPeriodos] = useState([]);
@@ -55,6 +66,8 @@ function AdminPeriodosLetivos() {
     const statusConfere = !statusFiltro || periodo.status === statusFiltro;
     return nomeConfere && statusConfere;
   });
+
+  const { ordenados, ordem, alternar } = useOrdenacao(periodosFiltrados, CAMPOS_ORDENACAO);
 
   if (carregando) return <p>Carregando períodos letivos...</p>;
 
@@ -105,11 +118,11 @@ function AdminPeriodosLetivos() {
           <table className="admin-table">
             <thead>
               <tr>
-                <th>ID</th>
-                <th>Nome</th>
-                <th>Início</th>
-                <th>Fim</th>
-                <th>Status</th>
+                <ColunaOrdenavel coluna="id" ordem={ordem} onOrdenar={alternar}>ID</ColunaOrdenavel>
+                <ColunaOrdenavel coluna="nome" ordem={ordem} onOrdenar={alternar}>Nome</ColunaOrdenavel>
+                <ColunaOrdenavel coluna="inicio" ordem={ordem} onOrdenar={alternar}>Início</ColunaOrdenavel>
+                <ColunaOrdenavel coluna="fim" ordem={ordem} onOrdenar={alternar}>Fim</ColunaOrdenavel>
+                <ColunaOrdenavel coluna="status" ordem={ordem} onOrdenar={alternar}>Status</ColunaOrdenavel>
                 <th>Ações</th>
               </tr>
             </thead>
@@ -121,7 +134,7 @@ function AdminPeriodosLetivos() {
                   </td>
                 </tr>
               ) : (
-                periodosFiltrados.map((periodo) => (
+                ordenados.map((periodo) => (
                   <tr key={periodo.idPeriodoLetivo}>
                     <td>{periodo.idPeriodoLetivo}</td>
                     <td>{periodo.nome}</td>

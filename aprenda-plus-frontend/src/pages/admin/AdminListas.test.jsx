@@ -146,6 +146,99 @@ describe.each(listas)('lista de $nome', ({ Pagina, listar, deletar, registro, ca
 // Filtros de cada lista
 // ===================================================================
 
+// Colunas que ordenam em cada lista (ID sempre começa ativo, em ordem crescente)
+const colunasOrdenaveis = {
+  Alunos: ['ID', 'Nome', 'E-mail', 'CPF', 'Status'],
+  Professores: ['ID', 'Nome', 'E-mail', 'CPF', 'Status'],
+  Cursos: ['ID', 'Nome', 'Categoria', 'Modalidade', 'Valor'],
+  Disciplinas: ['ID', 'Nome', 'Curso', 'Carga horária'],
+  'Períodos letivos': ['ID', 'Nome', 'Início', 'Fim', 'Status'],
+  Turmas: ['ID', 'Nome', 'Curso', 'Período letivo', 'Vagas', 'Status'],
+  Inscrições: ['ID', 'Aluno', 'Turma', 'Valor', 'Pagamento', 'Status'],
+  Matrículas: ['ID', 'Aluno', 'Turma', 'Data', 'Status'],
+};
+
+const cabecalho = (nome) => screen.getByRole('columnheader', { name: nome });
+
+describe.each(listas)('ordenação da lista de $nome', ({ nome, Pagina, listar, registro }) => {
+  test('todas as colunas podem ser ordenadas nos dois sentidos', async () => {
+    // Dois registros, para a lista ter o que comparar em cada coluna
+    // (o segundo é uma cópia com outro id, ex.: idCurso 6)
+    const campoId = Object.keys(registro).find((campo) => campo.startsWith('id'));
+    const outro = { ...registro, [campoId]: registro[campoId] + 1 };
+    listar.mockResolvedValue({ data: [registro, outro] });
+    renderizar(<Pagina />);
+    await waitFor(() => expect(linhas()).toHaveLength(2));
+
+    expect(cabecalho('ID')).toHaveAttribute('aria-sort', 'ascending');
+
+    colunasOrdenaveis[nome].slice(1).forEach((coluna) => {
+      fireEvent.click(screen.getByRole('button', { name: coluna }));
+      expect(cabecalho(coluna)).toHaveAttribute('aria-sort', 'ascending');
+      expect(cabecalho('ID')).toHaveAttribute('aria-sort', 'none');
+
+      fireEvent.click(screen.getByRole('button', { name: coluna }));
+      expect(cabecalho(coluna)).toHaveAttribute('aria-sort', 'descending');
+    });
+
+    // A coluna Ações não ordena
+    expect(screen.queryByRole('button', { name: 'Ações' })).not.toBeInTheDocument();
+  });
+});
+
+describe('Cursos: ordenação', () => {
+  beforeEach(() =>
+    listarCursos.mockResolvedValue({
+      data: [
+        { idCurso: 2, nome: 'Design Gráfico', categoria: 'profissionalizante', modalidade: 'EAD', valor: 6500 },
+        { idCurso: 10, nome: 'Administração de Empresas', categoria: 'superior', modalidade: 'presencial', valor: 36000 },
+        { idCurso: 1, nome: 'Ciência de Dados', categoria: 'superior', modalidade: 'híbrido', valor: 12000 },
+      ],
+    })
+  );
+
+  const nomesNaTela = () => linhas().map((linha) => linha.cells[1].textContent);
+
+  test('começa pelo ID crescente e inverte ao clicar', async () => {
+    renderizar(<AdminCursos />);
+    await screen.findByText('Design Gráfico');
+
+    expect(nomesNaTela()).toEqual(['Ciência de Dados', 'Design Gráfico', 'Administração de Empresas']);
+
+    fireEvent.click(screen.getByRole('button', { name: 'ID' }));
+    expect(nomesNaTela()).toEqual(['Administração de Empresas', 'Design Gráfico', 'Ciência de Dados']);
+  });
+
+  test('ordena o nome de A-Z e Z-A', async () => {
+    renderizar(<AdminCursos />);
+    await screen.findByText('Design Gráfico');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Nome' }));
+    expect(nomesNaTela()).toEqual(['Administração de Empresas', 'Ciência de Dados', 'Design Gráfico']);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Nome' }));
+    expect(nomesNaTela()).toEqual(['Design Gráfico', 'Ciência de Dados', 'Administração de Empresas']);
+  });
+
+  test('ordena o valor pelo número, não pelo texto', async () => {
+    renderizar(<AdminCursos />);
+    await screen.findByText('Design Gráfico');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Valor' }));
+    expect(nomesNaTela()).toEqual(['Design Gráfico', 'Ciência de Dados', 'Administração de Empresas']);
+  });
+
+  test('a ordenação continua valendo junto com o filtro', async () => {
+    renderizar(<AdminCursos />);
+    await screen.findByText('Design Gráfico');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Superior' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Nome' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Nome' }));
+    expect(nomesNaTela()).toEqual(['Ciência de Dados', 'Administração de Empresas']);
+  });
+});
+
 describe('Alunos: busca por nome ou CPF', () => {
   const alunos = [
     { idAluno: 1, nomeCompleto: 'João Souza', cpf: '11122233344', status: 'ativo' },

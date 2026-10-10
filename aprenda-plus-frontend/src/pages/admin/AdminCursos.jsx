@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import ColunaOrdenavel from '../../components/admin/ColunaOrdenavel';
+import { useOrdenacao } from '../../utils/ordenacao';
 import { Link } from 'react-router-dom';
 import { listarCursos, deletarCurso } from '../../services/cursoService';
 
@@ -13,6 +15,15 @@ const CATEGORIAS = [
   { valor: 'superior', label: 'Superior' },
   { valor: 'profissionalizante', label: 'Profissionalizante' },
 ];
+
+// Como pegar o valor de cada coluna na hora de ordenar
+const CAMPOS_ORDENACAO = {
+  id: (c) => c.idCurso,
+  nome: (c) => c.nome,
+  categoria: (c) => c.categoria,
+  modalidade: (c) => c.modalidade,
+  valor: (c) => (c.valor == null ? null : Number(c.valor)),
+};
 
 function AdminCursos() {
   const [cursos, setCursos] = useState([]);
@@ -50,6 +61,8 @@ function AdminCursos() {
     const categoriaConfere = !categoria || curso.categoria === categoria;
     return nomeConfere && categoriaConfere;
   });
+
+  const { ordenados, ordem, alternar } = useOrdenacao(cursosFiltrados, CAMPOS_ORDENACAO);
 
   if (carregando) return <p>Carregando cursos...</p>;
 
@@ -100,11 +113,11 @@ function AdminCursos() {
           <table className="admin-table">
             <thead>
               <tr>
-                <th>ID</th>
-                <th>Nome</th>
-                <th>Categoria</th>
-                <th>Modalidade</th>
-                <th>Valor</th>
+                <ColunaOrdenavel coluna="id" ordem={ordem} onOrdenar={alternar}>ID</ColunaOrdenavel>
+                <ColunaOrdenavel coluna="nome" ordem={ordem} onOrdenar={alternar}>Nome</ColunaOrdenavel>
+                <ColunaOrdenavel coluna="categoria" ordem={ordem} onOrdenar={alternar}>Categoria</ColunaOrdenavel>
+                <ColunaOrdenavel coluna="modalidade" ordem={ordem} onOrdenar={alternar}>Modalidade</ColunaOrdenavel>
+                <ColunaOrdenavel coluna="valor" ordem={ordem} onOrdenar={alternar}>Valor</ColunaOrdenavel>
                 <th>Ações</th>
               </tr>
             </thead>
@@ -116,7 +129,7 @@ function AdminCursos() {
                   </td>
                 </tr>
               ) : (
-                cursosFiltrados.map((curso) => (
+                ordenados.map((curso) => (
                   <tr key={curso.idCurso}>
                     <td>{curso.idCurso}</td>
                     <td>{curso.nome}</td>

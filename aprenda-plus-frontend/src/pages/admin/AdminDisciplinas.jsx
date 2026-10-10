@@ -1,9 +1,19 @@
 import { useState, useEffect } from 'react';
+import ColunaOrdenavel from '../../components/admin/ColunaOrdenavel';
+import { useOrdenacao } from '../../utils/ordenacao';
 import { Link } from 'react-router-dom';
 import { listarDisciplinas, deletarDisciplina } from '../../services/disciplinaService';
 
 const normalizar = (texto) =>
   (texto || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+// Como pegar o valor de cada coluna na hora de ordenar
+const CAMPOS_ORDENACAO = {
+  id: (d) => d.idDisciplina,
+  nome: (d) => d.nome,
+  curso: (d) => d.curso?.nome,
+  cargaHoraria: (d) => d.cargaHoraria,
+};
 
 function AdminDisciplinas() {
   const [disciplinas, setDisciplinas] = useState([]);
@@ -49,6 +59,8 @@ function AdminDisciplinas() {
     const cursoConfere = !cursoFiltro || String(disciplina.curso?.idCurso) === cursoFiltro;
     return nomeConfere && cursoConfere;
   });
+
+  const { ordenados, ordem, alternar } = useOrdenacao(disciplinasFiltradas, CAMPOS_ORDENACAO);
 
   if (carregando) return <p>Carregando disciplinas...</p>;
 
@@ -98,10 +110,10 @@ function AdminDisciplinas() {
           <table className="admin-table">
             <thead>
               <tr>
-                <th>ID</th>
-                <th>Nome</th>
-                <th>Curso</th>
-                <th>Carga horária</th>
+                <ColunaOrdenavel coluna="id" ordem={ordem} onOrdenar={alternar}>ID</ColunaOrdenavel>
+                <ColunaOrdenavel coluna="nome" ordem={ordem} onOrdenar={alternar}>Nome</ColunaOrdenavel>
+                <ColunaOrdenavel coluna="curso" ordem={ordem} onOrdenar={alternar}>Curso</ColunaOrdenavel>
+                <ColunaOrdenavel coluna="cargaHoraria" ordem={ordem} onOrdenar={alternar}>Carga horária</ColunaOrdenavel>
                 <th>Ações</th>
               </tr>
             </thead>
@@ -113,7 +125,7 @@ function AdminDisciplinas() {
                   </td>
                 </tr>
               ) : (
-                disciplinasFiltradas.map((disciplina) => (
+                ordenados.map((disciplina) => (
                   <tr key={disciplina.idDisciplina}>
                     <td>{disciplina.idDisciplina}</td>
                     <td>{disciplina.nome}</td>
