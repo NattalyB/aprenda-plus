@@ -63,6 +63,7 @@ Projeto final do curso **Desenvolvimento Full Stack** do programa **+PraTi / Cod
 - **Filtros em todas as listas:** busca por nome (e por CPF em alunos, professores e matrículas), além de filtros por categoria, curso ou status.
 - **Ordenação em todas as listas:** basta clicar no nome da coluna para ordenar (ID, nome de A-Z ou Z-A, valor, data, status...). Clicando de novo, a ordem inverte.
 - **Mensagens de erro detalhadas:** quando o back-end recusa um dado, o formulário mostra exatamente qual campo está errado.
+- **Exclusão segura:** não é possível excluir um registro que ainda está em uso (por exemplo, uma turma com inscrições). O painel explica o motivo, em vez de apagar e deixar dados "órfãos".
 
 ---
 
@@ -130,7 +131,7 @@ Requisição ─▶ AuthInterceptor ─▶ Controller ─▶ Service ─▶ Repo
 - **Repository:** interfaces do Spring Data JPA.
 - **Entity:** classes que representam as tabelas do banco.
 - **Security:** geração e validação do JWT e controle de acesso às rotas.
-- **Exception:** tratamento centralizado dos erros (`GlobalExceptionHandler`). Erros de validação devolvem quais campos falharam; erros de regra de negócio (`RegraDeNegocioException`) devolvem uma mensagem pronta para mostrar na tela.
+- **Exception:** tratamento centralizado dos erros (`GlobalExceptionHandler`). Erros de validação devolvem quais campos falharam; erros de regra de negócio (`RegraDeNegocioException`) devolvem uma mensagem pronta para mostrar na tela; e conflitos no banco (registro em uso ou dado repetido) devolvem 409 com uma explicação clara.
 
 ### Organização do front-end
 
@@ -250,8 +251,8 @@ A meta do projeto era **cobertura mínima de 70%**. Os dois lados ficaram bem ac
 
 | | Testes | Cobertura | Ferramentas |
 |---|---|---|---|
-| **Back-end** | 246 | **99%** das instruções, 89% dos desvios (*branches*) | JUnit 5, Mockito, MockMvc, JaCoCo |
-| **Front-end** | 257 | **99,7%** das instruções, 97,6% dos desvios, 100% das funções | Jest, Testing Library |
+| **Back-end** | 249 | **99%** das instruções, 89% dos desvios (*branches*) | JUnit 5, Mockito, MockMvc, JaCoCo |
+| **Front-end** | 273 | **99,7%** das instruções, 97,6% dos desvios, 100% das funções | Jest, Testing Library |
 
 ### Back-end
 
@@ -267,7 +268,7 @@ O que é testado:
 - **Services:** regras de negócio, incluindo a criptografia de senha, a manutenção da senha atual na edição, os casos de registro não encontrado e o **cálculo do valor da inscrição** (desconto do Pix com arredondamento em centavos, valor cheio no cartão e no boleto, limite de parcelas do curso e formas de pagamento inválidas).
 - **Controllers:** todas as rotas (listar, buscar, criar, editar e excluir), a validação dos dados recebidos e as mensagens de erro.
 - **Segurança:** geração e validação do JWT (inclusive tokens adulterados ou assinados com outra chave), as permissões de cada perfil, a regra de que um aluno só mexe no **próprio** carrinho e a tentativa de criar uma inscrição adulterada (em nome de outro aluno, já confirmada ou pagando R$ 0,01).
-- **Configuração:** registro da proteção da API e liberação de CORS só para os endereços autorizados.
+- **Configuração e erros:** registro da proteção da API, liberação de CORS só para os endereços autorizados e as mensagens devolvidas quando o banco recusa uma exclusão ou um dado repetido.
 
 > As entidades (classes só com getters e setters) ficam fora do cálculo de cobertura, por não terem lógica a testar.
 
@@ -287,7 +288,7 @@ O que é testado:
 
 - **Services e utils:** todas as rotas da API, o envio automático do token, o logout quando a sessão expira e os cálculos de preço e mensalidade.
 - **Componentes:** cabeçalho (busca, sugestões, teclado e contador do carrinho), modal do curso, avisos e rota protegida do admin.
-- **Páginas:** Home, login, cadastro, carrinho (Pix com desconto, cartão, boleto, limite de parcelas, curso sem turma e mensagem de erro vinda do servidor), além de todas as listas e formulários do painel admin.
+- **Páginas:** Home, login, cadastro, carrinho (Pix com desconto, cartão, boleto, limite de parcelas, curso sem turma e mensagem de erro vinda do servidor), além de todas as listas e formulários do painel admin (incluindo a ordenação por coluna e o erro ao excluir um registro em uso).
 
 ![Cobertura do front-end](docs/cobertura-frontend.png)
 

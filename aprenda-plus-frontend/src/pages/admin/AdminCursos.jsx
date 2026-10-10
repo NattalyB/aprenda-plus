@@ -50,7 +50,15 @@ function AdminCursos() {
 
   const handleExcluir = (id) => {
     if (window.confirm('Tem certeza que deseja excluir este curso?')) {
-      deletarCurso(id).then(() => carregar());
+      deletarCurso(id)
+        .then(() => {
+          setErro(null);
+          carregar();
+        })
+        // Se o servidor recusar (ex.: registro ligado a outros cadastros), mostra o motivo
+        .catch((error) =>
+          setErro(error.response?.data?.mensagem || 'Não foi possível excluir este curso.')
+        );
     }
   };
 

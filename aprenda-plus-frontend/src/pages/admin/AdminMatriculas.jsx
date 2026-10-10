@@ -60,7 +60,15 @@ function AdminMatriculas() {
 
   const handleExcluir = (id) => {
     if (window.confirm('Tem certeza que deseja excluir esta matrícula?')) {
-      deletarMatricula(id).then(() => carregar());
+      deletarMatricula(id)
+        .then(() => {
+          setErro(null);
+          carregar();
+        })
+        // Se o servidor recusar (ex.: registro ligado a outros cadastros), mostra o motivo
+        .catch((error) =>
+          setErro(error.response?.data?.mensagem || 'Não foi possível excluir esta matrícula.')
+        );
     }
   };
 

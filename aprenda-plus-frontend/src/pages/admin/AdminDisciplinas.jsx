@@ -40,7 +40,15 @@ function AdminDisciplinas() {
 
   const handleExcluir = (id) => {
     if (window.confirm('Tem certeza que deseja excluir esta disciplina?')) {
-      deletarDisciplina(id).then(() => carregar());
+      deletarDisciplina(id)
+        .then(() => {
+          setErro(null);
+          carregar();
+        })
+        // Se o servidor recusar (ex.: registro ligado a outros cadastros), mostra o motivo
+        .catch((error) =>
+          setErro(error.response?.data?.mensagem || 'Não foi possível excluir esta disciplina.')
+        );
     }
   };
 

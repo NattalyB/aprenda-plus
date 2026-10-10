@@ -45,7 +45,15 @@ function AdminProfessores() {
 
   const handleExcluir = (id) => {
     if (window.confirm('Tem certeza que deseja excluir este professor?')) {
-      deletarProfessor(id).then(() => carregar());
+      deletarProfessor(id)
+        .then(() => {
+          setErro(null);
+          carregar();
+        })
+        // Se o servidor recusar (ex.: registro ligado a outros cadastros), mostra o motivo
+        .catch((error) =>
+          setErro(error.response?.data?.mensagem || 'Não foi possível excluir este professor.')
+        );
     }
   };
 

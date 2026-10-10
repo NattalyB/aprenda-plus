@@ -130,6 +130,32 @@ describe.each(listas)('lista de $nome', ({ Pagina, listar, deletar, registro, ca
     expect(deletar).toHaveBeenCalledWith(5);
   });
 
+  test('se o servidor recusar a exclusão, mostra o motivo e mantém o registro', async () => {
+    listar.mockResolvedValue({ data: [registro] });
+    deletar.mockRejectedValue({
+      response: { data: { mensagem: 'Não é possível excluir: existem outros cadastros ligados a este registro.' } },
+    });
+    renderizar(<Pagina />);
+    await waitFor(() => expect(linhas()).toHaveLength(1));
+
+    fireEvent.click(screen.getByText('Excluir'));
+
+    expect(await screen.findByText('Não é possível excluir: existem outros cadastros ligados a este registro.')).toBeInTheDocument();
+    expect(linhas()).toHaveLength(1);
+    expect(listar).toHaveBeenCalledTimes(1);
+  });
+
+  test('erro na exclusão sem mensagem do servidor mostra um texto padrão', async () => {
+    listar.mockResolvedValue({ data: [registro] });
+    deletar.mockRejectedValue(new Error('Network Error'));
+    renderizar(<Pagina />);
+    await waitFor(() => expect(linhas()).toHaveLength(1));
+
+    fireEvent.click(screen.getByText('Excluir'));
+
+    expect(await screen.findByText(/Não foi possível excluir/)).toBeInTheDocument();
+  });
+
   test('se cancelar a confirmação, não exclui', async () => {
     window.confirm.mockReturnValue(false);
     listar.mockResolvedValue({ data: [registro] });
