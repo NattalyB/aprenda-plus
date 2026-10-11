@@ -149,7 +149,7 @@ function AdminTurmaForm() {
                 <option value="inscricoes_abertas">Inscrições abertas</option>
                 <option value="inscricoes_encerradas">Inscrições encerradas</option>
                 <option value="em_andamento">Em andamento</option>
-                <option value="encerrada">Encerrada</option>
+                <option value="encerrada">Concluída</option>
                 <option value="cancelada">Cancelada</option>
               </select>
             </div>

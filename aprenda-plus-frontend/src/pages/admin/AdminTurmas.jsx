@@ -11,7 +11,7 @@ const STATUS_TURMA = {
   inscricoes_abertas: 'Inscrições abertas',
   inscricoes_encerradas: 'Inscrições encerradas',
   em_andamento: 'Em andamento',
-  encerrada: 'Encerrada',
+  encerrada: 'Concluída',
   cancelada: 'Cancelada',
 };
 

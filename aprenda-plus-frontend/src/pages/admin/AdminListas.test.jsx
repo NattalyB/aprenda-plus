@@ -452,6 +452,8 @@ describe('Turmas: busca, curso e status', () => {
   test('mostra o status com nome legível', async () => {
     renderizar(<AdminTurmas />);
     expect(await screen.findByText('Inscrições abertas', { selector: 'span' })).toBeInTheDocument();
+    // Turma que já terminou aparece como "Concluída" (no banco continua "encerrada")
+    expect(screen.getByText('Concluída', { selector: 'span' })).toBeInTheDocument();
     // Status desconhecido aparece como veio do banco
     expect(screen.getByText('status_novo')).toBeInTheDocument();
   });
