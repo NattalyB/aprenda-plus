@@ -14,8 +14,6 @@ export const calcularHorasTotais = (disciplinas, idsSelecionados) =>
     .reduce((total, d) => total + (Number(d.cargaHoraria) || 0), 0);
 
 function CursosDisciplinasProfessor({ cursos, disciplinas, cursosSelecionados, disciplinasSelecionadas, onAlterar }) {
-  const disciplinasDoCurso = (idCurso) => disciplinas.filter((d) => pertenceAoCurso(d, idCurso));
-
   const alternarCurso = (idCurso) => {
     if (cursosSelecionados.includes(idCurso)) {
       // Desmarcou o curso: saem as disciplinas dele que não fazem parte
@@ -42,6 +40,18 @@ function CursosDisciplinasProfessor({ cursos, disciplinas, cursosSelecionados, d
   const inativasSelecionadas = selecionadas.filter(estaInativa);
   const horasTotais = calcularHorasTotais(disciplinas, disciplinasSelecionadas);
   const cursosMarcados = cursos.filter((c) => cursosSelecionados.includes(c.idCurso));
+
+  // Cada disciplina aparece uma vez só, mesmo que seja de mais de um curso marcado
+  const disciplinasDosCursosMarcados = disciplinas
+    .filter((d) => cursosSelecionados.some((idCurso) => pertenceAoCurso(d, idCurso)))
+    .sort((a, b) => (a.nome || '').localeCompare(b.nome || '', 'pt-BR'));
+
+  // Nomes dos cursos marcados aos quais a disciplina pertence: "ADS · Eng. de Software"
+  const cursosMarcadosDa = (disciplina) =>
+    cursosMarcados
+      .filter((curso) => pertenceAoCurso(disciplina, curso.idCurso))
+      .map((curso) => curso.nome)
+      .join(' · ');
 
   if (cursos.length === 0) {
     return <p className="prof-vinculos-vazio">Nenhum curso cadastrado ainda.</p>;
@@ -71,34 +81,32 @@ function CursosDisciplinasProfessor({ cursos, disciplinas, cursosSelecionados, d
       {cursosMarcados.length === 0 ? (
         <p className="prof-vinculos-dica">Marque um ou mais cursos para escolher as disciplinas.</p>
       ) : (
-        cursosMarcados.map((curso) => {
-          const lista = disciplinasDoCurso(curso.idCurso);
-          return (
-            <fieldset key={curso.idCurso} className="prof-disciplinas">
-              <legend>Disciplinas de {curso.nome}</legend>
-              {lista.length === 0 ? (
-                <p className="prof-vinculos-dica">Este curso ainda não tem disciplinas cadastradas.</p>
-              ) : (
-                <ul className="prof-disciplinas-lista">
-                  {lista.map((disciplina) => (
-                    <li key={disciplina.idDisciplina}>
-                      <label className={estaInativa(disciplina) ? 'prof-disciplina-opcao inativa' : 'prof-disciplina-opcao'}>
-                        <input
-                          type="checkbox"
-                          checked={disciplinasSelecionadas.includes(disciplina.idDisciplina)}
-                          onChange={() => alternarDisciplina(disciplina.idDisciplina)}
-                        />
-                        <span className="prof-disciplina-nome">{disciplina.nome}</span>
-                        <span className="prof-disciplina-horas">{disciplina.cargaHoraria || 0}h</span>
-                        {estaInativa(disciplina) && <span className="status-badge status-inativa">Inativa</span>}
-                      </label>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </fieldset>
-          );
-        })
+        <fieldset className="prof-disciplinas">
+          <legend>Disciplinas dos cursos marcados</legend>
+          {disciplinasDosCursosMarcados.length === 0 ? (
+            <p className="prof-vinculos-dica">Os cursos marcados ainda não têm disciplinas cadastradas.</p>
+          ) : (
+            <ul className="prof-disciplinas-lista">
+              {disciplinasDosCursosMarcados.map((disciplina) => (
+                <li key={disciplina.idDisciplina}>
+                  <label className={estaInativa(disciplina) ? 'prof-disciplina-opcao inativa' : 'prof-disciplina-opcao'}>
+                    <input
+                      type="checkbox"
+                      checked={disciplinasSelecionadas.includes(disciplina.idDisciplina)}
+                      onChange={() => alternarDisciplina(disciplina.idDisciplina)}
+                    />
+                    <span className="prof-disciplina-nome">
+                      {disciplina.nome}
+                      <small className="prof-disciplina-cursos">{cursosMarcadosDa(disciplina)}</small>
+                    </span>
+                    <span className="prof-disciplina-horas">{disciplina.cargaHoraria || 0}h</span>
+                    {estaInativa(disciplina) && <span className="status-badge status-inativa">Inativa</span>}
+                  </label>
+                </li>
+              ))}
+            </ul>
+          )}
+        </fieldset>
       )}
 
       <div className="prof-horas-total" data-testid="horas-totais">

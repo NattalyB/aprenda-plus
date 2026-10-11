@@ -257,7 +257,7 @@ A meta do projeto era **cobertura mínima de 70%**. Os dois lados ficaram bem ac
 | | Testes | Cobertura | Ferramentas |
 |---|---|---|---|
 | **Back-end** | 268 | **99%** das instruções, 89% dos desvios (*branches*) | JUnit 5, Mockito, MockMvc, JaCoCo |
-| **Front-end** | 318 | **99,7%** das instruções, 97,6% dos desvios, 100% das funções | Jest, Testing Library |
+| **Front-end** | 319 | **99,7%** das instruções, 97,6% dos desvios, 100% das funções | Jest, Testing Library |
 
 ### Back-end
 

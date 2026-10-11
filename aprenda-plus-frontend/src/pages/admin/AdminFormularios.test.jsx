@@ -218,7 +218,8 @@ describe('Professor: cursos e disciplinas', () => {
     listarDisciplinas.mockResolvedValue({ data: disciplinas });
   });
 
-  const caixa = (nome) => screen.getByRole('checkbox', { name: new RegExp(nome) });
+  // Caixa pelo começo do nome (o nome da disciplina vem antes dos cursos dela)
+  const caixa = (nome) => screen.getByRole('checkbox', { name: new RegExp(`^${nome}`) });
   const totalDeHoras = () => screen.getByTestId('horas-totais');
 
   const abrirNovo = async () => {
@@ -258,12 +259,14 @@ describe('Professor: cursos e disciplinas', () => {
     fireEvent.click(caixa('Banco de Dados'));
     fireEvent.click(caixa('Tipografia'));
 
-    expect(screen.getByText('Disciplinas de ADS')).toBeInTheDocument();
-    expect(screen.getByText('Disciplinas de Design')).toBeInTheDocument();
+    // Uma lista só, com as disciplinas dos dois cursos e o curso de cada uma
+    expect(screen.getByText('Disciplinas dos cursos marcados')).toBeInTheDocument();
+    expect(caixa('Banco de Dados')).toHaveAccessibleName(expect.stringContaining('ADS'));
+    expect(caixa('Tipografia')).toHaveAccessibleName(expect.stringContaining('Design'));
     expect(totalDeHoras()).toHaveTextContent('120h');
   });
 
-  test('disciplina de dois cursos aparece nos dois e conta uma vez só no total', async () => {
+  test('disciplina de dois cursos aparece uma vez só, com os dois cursos, e conta uma vez no total', async () => {
     listarDisciplinas.mockResolvedValue({
       data: [
         { idDisciplina: 50, nome: 'Lógica', cargaHoraria: 60, cursos: [{ idCurso: 1, nome: 'ADS' }, { idCurso: 2, nome: 'Design' }] },
@@ -273,11 +276,11 @@ describe('Professor: cursos e disciplinas', () => {
     fireEvent.click(caixa('ADS'));
     fireEvent.click(caixa('Design'));
 
-    const caixasLogica = screen.getAllByRole('checkbox', { name: /Lógica/ });
-    expect(caixasLogica).toHaveLength(2);
-    fireEvent.click(caixasLogica[0]);
+    expect(screen.getAllByRole('checkbox', { name: /Lógica/ })).toHaveLength(1);
+    expect(caixa('Lógica')).toHaveAccessibleName(expect.stringContaining('ADS · Design'));
+    fireEvent.click(caixa('Lógica'));
 
-    screen.getAllByRole('checkbox', { name: /Lógica/ }).forEach((c) => expect(c).toBeChecked());
+    expect(caixa('Lógica')).toBeChecked();
     expect(totalDeHoras()).toHaveTextContent('60h');
     expect(totalDeHoras()).toHaveTextContent('1 disciplina selecionada');
 
@@ -312,15 +315,23 @@ describe('Professor: cursos e disciplinas', () => {
 
     fireEvent.click(caixa('ADS'));
 
-    expect(screen.queryByText('Disciplinas de ADS')).not.toBeInTheDocument();
+    expect(screen.queryByRole('checkbox', { name: /Banco de Dados/ })).not.toBeInTheDocument();
     expect(totalDeHoras()).toHaveTextContent('40h');
+  });
+
+  test('as disciplinas aparecem em ordem alfabética', async () => {
+    await abrirNovo();
+    fireEvent.click(caixa('ADS'));
+
+    const nomes = screen.getAllByRole('checkbox').map((c) => c.closest('label').querySelector('.prof-disciplina-nome')?.firstChild?.textContent).filter(Boolean);
+    expect(nomes).toEqual(['Algoritmos', 'Banco de Dados', 'Cobol']);
   });
 
   test('curso sem disciplinas avisa', async () => {
     await abrirNovo();
     fireEvent.click(caixa('Redes'));
 
-    expect(screen.getByText('Este curso ainda não tem disciplinas cadastradas.')).toBeInTheDocument();
+    expect(screen.getByText('Os cursos marcados ainda não têm disciplinas cadastradas.')).toBeInTheDocument();
   });
 
   test('sem nenhum curso cadastrado avisa', async () => {
