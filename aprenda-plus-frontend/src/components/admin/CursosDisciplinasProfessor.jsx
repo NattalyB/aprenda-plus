@@ -3,6 +3,10 @@
 
 export const estaInativa = (disciplina) => disciplina.status === 'inativa';
 
+// Uma disciplina pode fazer parte de vários cursos
+export const pertenceAoCurso = (disciplina, idCurso) =>
+  (disciplina.cursos || []).some((curso) => curso.idCurso === idCurso);
+
 // Soma a carga horária das disciplinas selecionadas que estão ativas
 export const calcularHorasTotais = (disciplinas, idsSelecionados) =>
   disciplinas
@@ -10,16 +14,18 @@ export const calcularHorasTotais = (disciplinas, idsSelecionados) =>
     .reduce((total, d) => total + (Number(d.cargaHoraria) || 0), 0);
 
 function CursosDisciplinasProfessor({ cursos, disciplinas, cursosSelecionados, disciplinasSelecionadas, onAlterar }) {
-  const disciplinasDoCurso = (idCurso) => disciplinas.filter((d) => d.curso?.idCurso === idCurso);
+  const disciplinasDoCurso = (idCurso) => disciplinas.filter((d) => pertenceAoCurso(d, idCurso));
 
   const alternarCurso = (idCurso) => {
     if (cursosSelecionados.includes(idCurso)) {
-      // Desmarcou o curso: as disciplinas dele saem junto
-      const idsDoCurso = disciplinasDoCurso(idCurso).map((d) => d.idDisciplina);
-      onAlterar(
-        cursosSelecionados.filter((id) => id !== idCurso),
-        disciplinasSelecionadas.filter((id) => !idsDoCurso.includes(id))
-      );
+      // Desmarcou o curso: saem as disciplinas dele que não fazem parte
+      // de nenhum outro curso que continua marcado
+      const cursosRestantes = cursosSelecionados.filter((id) => id !== idCurso);
+      const continua = (idDisciplina) => {
+        const disciplina = disciplinas.find((d) => d.idDisciplina === idDisciplina);
+        return !disciplina || cursosRestantes.some((id) => pertenceAoCurso(disciplina, id));
+      };
+      onAlterar(cursosRestantes, disciplinasSelecionadas.filter(continua));
     } else {
       onAlterar([...cursosSelecionados, idCurso], disciplinasSelecionadas);
     }

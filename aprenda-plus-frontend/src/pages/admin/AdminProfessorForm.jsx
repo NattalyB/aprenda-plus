@@ -284,7 +284,7 @@ function AdminProfessorForm() {
                 {inativasParaConfirmar.map((disciplina) => (
                   <li key={disciplina.idDisciplina}>
                     A disciplina <strong>{disciplina.nome}</strong>
-                    {disciplina.curso?.nome ? ` (${disciplina.curso.nome})` : ''} está inativa e não será
+                    {disciplina.cursos?.length ? ` (${disciplina.cursos.map((c) => c.nome).join(', ')})` : ''} está inativa e não será
                     calculada nas horas totais de aula deste professor.
                   </li>
                 ))}

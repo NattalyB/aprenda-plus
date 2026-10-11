@@ -102,10 +102,11 @@ public class ProfessorService {
             throw new RegraDeNegocioException("Uma das disciplinas selecionadas não existe mais. Atualize a página.");
         }
 
-        // Cada disciplina precisa ser de um dos cursos marcados
+        // Cada disciplina precisa fazer parte de pelo menos um dos cursos marcados
         for (Disciplina disciplina : disciplinas.values()) {
-            Integer cursoDaDisciplina = disciplina.getCurso() == null ? null : disciplina.getCurso().getIdCurso();
-            if (!idsCursos.contains(cursoDaDisciplina)) {
+            boolean pertenceAUmCursoMarcado = disciplina.getCursos() != null && disciplina.getCursos().stream()
+                    .anyMatch(curso -> idsCursos.contains(curso.getIdCurso()));
+            if (!pertenceAUmCursoMarcado) {
                 throw new RegraDeNegocioException("A disciplina \"" + disciplina.getNome()
                         + "\" não pertence a nenhum dos cursos selecionados.");
             }

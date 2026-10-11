@@ -16,7 +16,7 @@ function AdminDisciplinaForm() {
     cargaHoraria: '',
     modalidade: '',
     preRequisitos: '',
-    curso: { idCurso: '' },
+    cursos: [],
     status: 'ativa',
   });
   const [erro, setErro] = useState(null);
@@ -36,16 +36,30 @@ function AdminDisciplinaForm() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleCursoChange = (e) => {
-    setForm({ ...form, curso: { idCurso: e.target.value } });
+  // A disciplina pode fazer parte de vários cursos
+  const cursosMarcados = (form.cursos || []).map((c) => c.idCurso);
+
+  const alternarCurso = (idCurso) => {
+    const novos = cursosMarcados.includes(idCurso)
+      ? (form.cursos || []).filter((c) => c.idCurso !== idCurso)
+      : [...(form.cursos || []), { idCurso }];
+    setForm({ ...form, cursos: novos });
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     setErro(null);
+
+    if (cursosMarcados.length === 0) {
+      setErro('Selecione pelo menos um curso para a disciplina.');
+      return;
+    }
+
     setEnviando(true);
 
-    const acao = modoEdicao ? atualizarDisciplina(id, form) : criarDisciplina(form);
+    // Para a API, basta mandar o id de cada curso
+    const dados = { ...form, cursos: cursosMarcados.map((idCurso) => ({ idCurso })) };
+    const acao = modoEdicao ? atualizarDisciplina(id, dados) : criarDisciplina(dados);
 
     acao
       .then(() => {
@@ -56,7 +70,7 @@ function AdminDisciplinaForm() {
         if (errosCampos) {
           setErro(Object.values(errosCampos).join(' '));
         } else {
-          setErro('Não foi possível salvar a disciplina. Confira os campos.');
+          setErro(error.response?.data?.mensagem || 'Não foi possível salvar a disciplina. Confira os campos.');
         }
         setEnviando(false);
       });
@@ -80,15 +94,25 @@ function AdminDisciplinaForm() {
           {/* ===== Informações da disciplina ===== */}
           <h2 className="form-section-title">Informações da disciplina</h2>
           <div className="form-grid">
-            <div className="form-field">
-              <label htmlFor="curso">Curso</label>
-              <select id="curso" name="curso" value={form.curso?.idCurso || ''} onChange={handleCursoChange} required>
-                <option value="">Selecione o curso</option>
+            <fieldset className="prof-cursos">
+              <legend>Cursos em que a disciplina é oferecida</legend>
+              <div className="prof-cursos-lista">
                 {cursos.map((curso) => (
-                  <option key={curso.idCurso} value={curso.idCurso}>{curso.nome}</option>
+                  <label
+                    key={curso.idCurso}
+                    className={cursosMarcados.includes(curso.idCurso) ? 'prof-curso-opcao marcado' : 'prof-curso-opcao'}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={cursosMarcados.includes(curso.idCurso)}
+                      onChange={() => alternarCurso(curso.idCurso)}
+                    />
+                    {curso.nome}
+                  </label>
                 ))}
-              </select>
-            </div>
+              </div>
+              <small className="form-dica">Marque um ou mais cursos. A carga horária é a mesma em todos.</small>
+            </fieldset>
 
             <div className="form-field">
               <label htmlFor="nome">Nome da disciplina</label>

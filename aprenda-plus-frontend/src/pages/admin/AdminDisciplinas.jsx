@@ -7,11 +7,19 @@ import { listarDisciplinas, deletarDisciplina } from '../../services/disciplinaS
 const normalizar = (texto) =>
   (texto || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
+// Nomes dos cursos da disciplina, em ordem alfabética: "ADS, Engenharia de Software"
+const nomesDosCursos = (disciplina) =>
+  (disciplina.cursos || [])
+    .map((c) => c.nome)
+    .filter(Boolean)
+    .sort((a, b) => a.localeCompare(b, 'pt-BR'))
+    .join(', ');
+
 // Como pegar o valor de cada coluna na hora de ordenar
 const CAMPOS_ORDENACAO = {
   id: (d) => d.idDisciplina,
   nome: (d) => d.nome,
-  curso: (d) => d.curso?.nome,
+  curso: (d) => nomesDosCursos(d),
   cargaHoraria: (d) => d.cargaHoraria,
   status: (d) => d.status || 'ativa',
 };
@@ -56,16 +64,18 @@ function AdminDisciplinas() {
   // Lista de cursos (sem repetir) que aparecem nas disciplinas
   const cursosDisponiveis = [];
   disciplinas.forEach((d) => {
-    if (d.curso && !cursosDisponiveis.some((c) => c.idCurso === d.curso.idCurso)) {
-      cursosDisponiveis.push(d.curso);
-    }
+    (d.cursos || []).forEach((curso) => {
+      if (!cursosDisponiveis.some((c) => c.idCurso === curso.idCurso)) {
+        cursosDisponiveis.push(curso);
+      }
+    });
   });
 
   const termo = normalizar(busca.trim());
 
   const disciplinasFiltradas = disciplinas.filter((disciplina) => {
     const nomeConfere = !termo || normalizar(disciplina.nome).includes(termo);
-    const cursoConfere = !cursoFiltro || String(disciplina.curso?.idCurso) === cursoFiltro;
+    const cursoConfere = !cursoFiltro || (disciplina.cursos || []).some((c) => String(c.idCurso) === cursoFiltro);
     return nomeConfere && cursoConfere;
   });
 
@@ -121,7 +131,7 @@ function AdminDisciplinas() {
               <tr>
                 <ColunaOrdenavel coluna="id" ordem={ordem} onOrdenar={alternar}>ID</ColunaOrdenavel>
                 <ColunaOrdenavel coluna="nome" ordem={ordem} onOrdenar={alternar}>Nome</ColunaOrdenavel>
-                <ColunaOrdenavel coluna="curso" ordem={ordem} onOrdenar={alternar}>Curso</ColunaOrdenavel>
+                <ColunaOrdenavel coluna="curso" ordem={ordem} onOrdenar={alternar}>Cursos</ColunaOrdenavel>
                 <ColunaOrdenavel coluna="cargaHoraria" ordem={ordem} onOrdenar={alternar}>Carga horária</ColunaOrdenavel>
                 <ColunaOrdenavel coluna="status" ordem={ordem} onOrdenar={alternar}>Status</ColunaOrdenavel>
                 <th>Ações</th>
@@ -139,7 +149,7 @@ function AdminDisciplinas() {
                   <tr key={disciplina.idDisciplina}>
                     <td>{disciplina.idDisciplina}</td>
                     <td>{disciplina.nome}</td>
-                    <td>{disciplina.curso?.nome || '-'}</td>
+                    <td>{nomesDosCursos(disciplina) || '-'}</td>
                     <td>{disciplina.cargaHoraria}h</td>
                     <td>
                       <span className={`status-badge status-${disciplina.status || 'ativa'}`}>

@@ -205,10 +205,10 @@ describe('Endereço pelo CEP', () => {
 describe('Professor: cursos e disciplinas', () => {
   // ADS tem 3 disciplinas (uma inativa); Design tem 1; Redes não tem nenhuma
   const disciplinas = [
-    { idDisciplina: 10, nome: 'Banco de Dados', cargaHoraria: 80, status: 'ativa', curso: { idCurso: 1, nome: 'ADS' } },
-    { idDisciplina: 11, nome: 'Algoritmos', cargaHoraria: 60, curso: { idCurso: 1, nome: 'ADS' } },
-    { idDisciplina: 12, nome: 'Cobol', cargaHoraria: 40, status: 'inativa', curso: { idCurso: 1, nome: 'ADS' } },
-    { idDisciplina: 20, nome: 'Tipografia', cargaHoraria: 40, status: 'ativa', curso: { idCurso: 2, nome: 'Design' } },
+    { idDisciplina: 10, nome: 'Banco de Dados', cargaHoraria: 80, status: 'ativa', cursos: [{ idCurso: 1, nome: 'ADS' }] },
+    { idDisciplina: 11, nome: 'Algoritmos', cargaHoraria: 60, cursos: [{ idCurso: 1, nome: 'ADS' }] },
+    { idDisciplina: 12, nome: 'Cobol', cargaHoraria: 40, status: 'inativa', cursos: [{ idCurso: 1, nome: 'ADS' }] },
+    { idDisciplina: 20, nome: 'Tipografia', cargaHoraria: 40, status: 'ativa', cursos: [{ idCurso: 2, nome: 'Design' }] },
   ];
 
   beforeEach(() => {
@@ -261,6 +261,46 @@ describe('Professor: cursos e disciplinas', () => {
     expect(screen.getByText('Disciplinas de ADS')).toBeInTheDocument();
     expect(screen.getByText('Disciplinas de Design')).toBeInTheDocument();
     expect(totalDeHoras()).toHaveTextContent('120h');
+  });
+
+  test('disciplina de dois cursos aparece nos dois e conta uma vez só no total', async () => {
+    listarDisciplinas.mockResolvedValue({
+      data: [
+        { idDisciplina: 50, nome: 'Lógica', cargaHoraria: 60, cursos: [{ idCurso: 1, nome: 'ADS' }, { idCurso: 2, nome: 'Design' }] },
+      ],
+    });
+    await abrirNovo();
+    fireEvent.click(caixa('ADS'));
+    fireEvent.click(caixa('Design'));
+
+    const caixasLogica = screen.getAllByRole('checkbox', { name: /Lógica/ });
+    expect(caixasLogica).toHaveLength(2);
+    fireEvent.click(caixasLogica[0]);
+
+    screen.getAllByRole('checkbox', { name: /Lógica/ }).forEach((c) => expect(c).toBeChecked());
+    expect(totalDeHoras()).toHaveTextContent('60h');
+    expect(totalDeHoras()).toHaveTextContent('1 disciplina selecionada');
+
+    // Desmarcando só o ADS, a disciplina continua (ainda está no Design)
+    fireEvent.click(caixa('ADS'));
+    expect(caixa('Lógica')).toBeChecked();
+    expect(totalDeHoras()).toHaveTextContent('60h');
+
+    // Desmarcando o Design também, aí ela sai
+    fireEvent.click(caixa('Design'));
+    expect(screen.queryByRole('checkbox', { name: /Lógica/ })).not.toBeInTheDocument();
+  });
+
+  test('disciplina selecionada que sumiu da lista não atrapalha ao desmarcar curso', async () => {
+    buscarVinculosProfessor.mockResolvedValue({ data: { cursos: [1], disciplinas: [10, 999] } });
+    atualizarProfessor.mockResolvedValue({ data: { idProfessor: 2 } });
+    await abrirEdicao();
+
+    fireEvent.click(caixa('Design'));
+    fireEvent.click(caixa('Design'));
+    salvar();
+
+    await waitFor(() => expect(salvarVinculosProfessor).toHaveBeenCalledWith('2', { cursos: [1], disciplinas: [10, 999] }));
   });
 
   test('desmarcar o curso tira as disciplinas dele', async () => {
@@ -336,7 +376,7 @@ describe('Professor: cursos e disciplinas', () => {
 
   test('várias inativas: o aviso do total fica no plural', async () => {
     listarDisciplinas.mockResolvedValue({
-      data: [...disciplinas, { idDisciplina: 13, nome: 'Pascal', cargaHoraria: 20, status: 'inativa', curso: { idCurso: 1, nome: 'ADS' } }],
+      data: [...disciplinas, { idDisciplina: 13, nome: 'Pascal', cargaHoraria: 20, status: 'inativa', cursos: [{ idCurso: 1, nome: 'ADS' }] }],
     });
     await abrirNovo();
     fireEvent.click(caixa('ADS'));
@@ -383,16 +423,16 @@ describe('Professor: cursos e disciplinas', () => {
     expect(salvarVinculosProfessor).toHaveBeenCalledWith(9, { cursos: [1], disciplinas: [10, 12] });
   });
 
-  test('inativa de curso sem nome no cadastro aparece só com o nome da disciplina', async () => {
+  test('inativa de vários cursos lista todos os cursos no aviso', async () => {
     listarDisciplinas.mockResolvedValue({
-      data: [{ idDisciplina: 30, nome: 'Avulsa', cargaHoraria: 10, status: 'inativa', curso: { idCurso: 1 } }],
+      data: [{ idDisciplina: 30, nome: 'Avulsa', cargaHoraria: 10, status: 'inativa', cursos: [{ idCurso: 1, nome: 'ADS' }, { idCurso: 2, nome: 'Design' }] }],
     });
     await abrirNovo();
     fireEvent.click(caixa('ADS'));
     fireEvent.click(caixa('Avulsa'));
     salvar();
 
-    expect(screen.getByRole('alertdialog')).toHaveTextContent('A disciplina Avulsa está inativa');
+    expect(screen.getByRole('alertdialog')).toHaveTextContent('A disciplina Avulsa (ADS, Design) está inativa');
   });
 
   test('se os cursos e disciplinas não carregarem, salva o professor sem mexer neles', async () => {
@@ -509,12 +549,16 @@ describe('Formulário de curso', () => {
 
 // ===================================================================
 describe('Formulário de disciplina', () => {
-  test('lista os cursos e cria a disciplina no curso escolhido', async () => {
+  const marcarCurso = (nome) => fireEvent.click(screen.getByRole('checkbox', { name: nome }));
+
+  test('lista os cursos e cria a disciplina nos cursos marcados', async () => {
     criarDisciplina.mockResolvedValue({});
     renderizar(<AdminDisciplinaForm />, { rota: '/admin/disciplinas/novo' });
 
-    expect(await screen.findByRole('option', { name: 'Design' })).toBeInTheDocument();
-    digita('Curso', '2');
+    await screen.findByRole('checkbox', { name: 'Design' });
+    marcarCurso('ADS');
+    marcarCurso('Design');
+    expect(screen.getByRole('checkbox', { name: 'ADS' })).toBeChecked();
     digita('Nome da disciplina', 'Tipografia');
     digita('Carga horária (horas)', '40');
     digita('Modalidade', 'EAD');
@@ -524,42 +568,96 @@ describe('Formulário de disciplina', () => {
     salvar();
 
     await waitFor(() => expect(endereco()).toHaveTextContent('/admin/disciplinas'));
-    expect(criarDisciplina).toHaveBeenCalledWith(expect.objectContaining({ nome: 'Tipografia', curso: { idCurso: '2' } }));
+    expect(criarDisciplina).toHaveBeenCalledWith(
+      expect.objectContaining({ nome: 'Tipografia', cursos: [{ idCurso: 1 }, { idCurso: 2 }] })
+    );
+  });
+
+  test('desmarcar um curso tira ele da disciplina', async () => {
+    criarDisciplina.mockResolvedValue({});
+    renderizar(<AdminDisciplinaForm />, { rota: '/admin/disciplinas/novo' });
+    await screen.findByRole('checkbox', { name: 'Design' });
+
+    marcarCurso('ADS');
+    marcarCurso('Design');
+    marcarCurso('ADS');
+    salvar();
+
+    await waitFor(() => expect(criarDisciplina).toHaveBeenCalledWith(expect.objectContaining({ cursos: [{ idCurso: 2 }] })));
+  });
+
+  test('sem nenhum curso marcado, avisa e não salva', async () => {
+    renderizar(<AdminDisciplinaForm />, { rota: '/admin/disciplinas/novo' });
+    await screen.findByRole('checkbox', { name: 'Design' });
+
+    salvar();
+
+    expect(screen.getByText('Selecione pelo menos um curso para a disciplina.')).toBeInTheDocument();
+    expect(criarDisciplina).not.toHaveBeenCalled();
   });
 
   test('nova disciplina começa ativa e pode ser marcada como inativa', async () => {
     criarDisciplina.mockResolvedValue({});
     renderizar(<AdminDisciplinaForm />, { rota: '/admin/disciplinas/novo' });
+    await screen.findByRole('checkbox', { name: 'ADS' });
 
     expect(screen.getByLabelText('Situação da disciplina')).toHaveValue('ativa');
     digita('Situação da disciplina', 'inativa');
+    marcarCurso('ADS');
     salvar();
 
     await waitFor(() => expect(criarDisciplina).toHaveBeenCalledWith(expect.objectContaining({ status: 'inativa' })));
   });
 
-  test('editar disciplina', async () => {
-    buscarDisciplinaPorId.mockResolvedValue({ data: { idDisciplina: 9, nome: 'Banco de Dados', curso: { idCurso: 1 } } });
+  test('editar disciplina mostra os cursos dela marcados', async () => {
+    buscarDisciplinaPorId.mockResolvedValue({
+      data: { idDisciplina: 9, nome: 'Banco de Dados', cursos: [{ idCurso: 1, nome: 'ADS' }, { idCurso: 2, nome: 'Design' }] },
+    });
     atualizarDisciplina.mockResolvedValue({});
     renderizar(<AdminDisciplinaForm />, { rota: '/admin/disciplinas/9/editar', caminho: '/admin/disciplinas/:id/editar' });
 
     expect(await screen.findByDisplayValue('Banco de Dados')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole('checkbox', { name: 'Design' })).toBeChecked());
+    expect(screen.getByRole('checkbox', { name: 'ADS' })).toBeChecked();
     salvar();
 
-    await waitFor(() => expect(atualizarDisciplina).toHaveBeenCalledWith('9', expect.objectContaining({ nome: 'Banco de Dados' })));
+    await waitFor(() =>
+      expect(atualizarDisciplina).toHaveBeenCalledWith(
+        '9',
+        expect.objectContaining({ nome: 'Banco de Dados', cursos: [{ idCurso: 1 }, { idCurso: 2 }] })
+      )
+    );
+  });
+
+  test('disciplina antiga sem lista de cursos abre sem nenhum marcado', async () => {
+    buscarDisciplinaPorId.mockResolvedValue({ data: { idDisciplina: 9, nome: 'Banco de Dados' } });
+    renderizar(<AdminDisciplinaForm />, { rota: '/admin/disciplinas/9/editar', caminho: '/admin/disciplinas/:id/editar' });
+
+    expect(await screen.findByDisplayValue('Banco de Dados')).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: 'ADS' })).not.toBeChecked();
+    marcarCurso('ADS');
+    expect(screen.getByRole('checkbox', { name: 'ADS' })).toBeChecked();
   });
 
   test('erros', async () => {
-    criarDisciplina.mockRejectedValueOnce(erroDeValidacao({ nome: 'Nome obrigatório.' }));
     renderizar(<AdminDisciplinaForm />, { rota: '/admin/disciplinas/novo' });
+    await screen.findByRole('checkbox', { name: 'ADS' });
+    marcarCurso('ADS');
+
+    criarDisciplina.mockRejectedValueOnce(erroDeValidacao({ nome: 'Nome obrigatório.' }));
     salvar();
     expect(await screen.findByText('Nome obrigatório.')).toBeInTheDocument();
+
+    criarDisciplina.mockRejectedValueOnce({ response: { data: { mensagem: 'Um dos cursos selecionados não existe mais. Atualize a página.' } } });
+    salvar();
+    expect(await screen.findByText('Um dos cursos selecionados não existe mais. Atualize a página.')).toBeInTheDocument();
 
     criarDisciplina.mockRejectedValueOnce(new Error('offline'));
     salvar();
     expect(await screen.findByText('Não foi possível salvar a disciplina. Confira os campos.')).toBeInTheDocument();
   });
 });
+
 
 // ===================================================================
 describe('Formulário de período letivo', () => {

@@ -130,7 +130,7 @@ class ProfessorServiceTest {
         Disciplina disciplina = new Disciplina();
         disciplina.setIdDisciplina(id);
         disciplina.setNome(nome);
-        disciplina.setCurso(curso(idCurso));
+        disciplina.setCursos(new ArrayList<>(List.of(curso(idCurso))));
         return disciplina;
     }
 
@@ -286,9 +286,23 @@ class ProfessorServiceTest {
     }
 
     @Test
+    void disciplinaEmVariosCursosBastaUmEstarMarcado() {
+        // "Banco de Dados" é do curso 1 e do curso 2; o professor só marcou o curso 2
+        Disciplina bancoDeDados = disciplina(10, 1, "Banco de Dados");
+        bancoDeDados.getCursos().add(curso(2));
+        when(professorRepository.findById(1)).thenReturn(Optional.of(professor));
+        when(cursoRepository.findAllById(any())).thenReturn(List.of(curso(2)));
+        when(disciplinaRepository.findAllById(any())).thenReturn(List.of(bancoDeDados));
+
+        VinculosProfessor resultado = professorService.salvarVinculos(1, new VinculosProfessor(List.of(2), List.of(10)));
+
+        assertEquals(List.of(10), resultado.disciplinas());
+    }
+
+    @Test
     void disciplinaSemCursoEhRecusada() {
         Disciplina semCurso = disciplina(30, 1, "Avulsa");
-        semCurso.setCurso(null);
+        semCurso.setCursos(null);
         when(professorRepository.findById(1)).thenReturn(Optional.of(professor));
         when(cursoRepository.findAllById(any())).thenReturn(List.of(curso(1)));
         when(disciplinaRepository.findAllById(any())).thenReturn(List.of(semCurso));

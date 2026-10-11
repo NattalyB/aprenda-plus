@@ -68,7 +68,7 @@ const listas = [
   },
   {
     nome: 'Disciplinas', Pagina: AdminDisciplinas, listar: listarDisciplinas, deletar: deletarDisciplina,
-    registro: { idDisciplina: 5, nome: 'Banco de Dados', cargaHoraria: 80, curso: { idCurso: 1, nome: 'ADS' } },
+    registro: { idDisciplina: 5, nome: 'Banco de Dados', cargaHoraria: 80, cursos: [{ idCurso: 1, nome: 'ADS' }] },
     carregando: 'Carregando disciplinas...', vazio: 'Nenhuma disciplina cadastrada ainda.', erro: 'Não foi possível carregar as disciplinas.',
   },
   {
@@ -177,7 +177,7 @@ const colunasOrdenaveis = {
   Alunos: ['ID', 'Nome', 'E-mail', 'CPF', 'Status'],
   Professores: ['ID', 'Nome', 'E-mail', 'CPF', 'Status'],
   Cursos: ['ID', 'Nome', 'Categoria', 'Modalidade', 'Valor'],
-  Disciplinas: ['ID', 'Nome', 'Curso', 'Carga horária', 'Status'],
+  Disciplinas: ['ID', 'Nome', 'Cursos', 'Carga horária', 'Status'],
   'Períodos letivos': ['ID', 'Nome', 'Início', 'Fim', 'Status'],
   Turmas: ['ID', 'Nome', 'Curso', 'Período letivo', 'Vagas', 'Status'],
   Inscrições: ['ID', 'Aluno', 'Turma', 'Valor', 'Pagamento', 'Status'],
@@ -375,9 +375,9 @@ describe('Disciplinas: busca e curso', () => {
   beforeEach(() =>
     listarDisciplinas.mockResolvedValue({
       data: [
-        { idDisciplina: 1, nome: 'Banco de Dados', cargaHoraria: 80, curso: { idCurso: 1, nome: 'ADS' } },
-        { idDisciplina: 2, nome: 'Estatística', cargaHoraria: 60, curso: { idCurso: 2, nome: 'Ciência de Dados' } },
-        { idDisciplina: 3, nome: 'Lógica', cargaHoraria: 40, status: 'inativa', curso: { idCurso: 1, nome: 'ADS' } },
+        { idDisciplina: 1, nome: 'Banco de Dados', cargaHoraria: 80, cursos: [{ idCurso: 1, nome: 'ADS' }] },
+        { idDisciplina: 2, nome: 'Estatística', cargaHoraria: 60, cursos: [{ idCurso: 2, nome: 'Ciência de Dados' }, { idCurso: 1, nome: 'ADS' }] },
+        { idDisciplina: 3, nome: 'Lógica', cargaHoraria: 40, status: 'inativa', cursos: [{ idCurso: 1, nome: 'ADS' }] },
         { idDisciplina: 4, nome: 'Sem curso', cargaHoraria: 10 },
       ],
     })
@@ -390,8 +390,19 @@ describe('Disciplinas: busca e curso', () => {
     const opcoes = document.querySelectorAll('select[name="filtroCurso"] option');
     expect(opcoes).toHaveLength(3); // "Todos os cursos" + ADS + Ciência de Dados
 
+    // ADS: Banco de Dados, Lógica e também Estatística (que é de dois cursos)
     seleciona('filtroCurso', '1');
-    expect(linhas()).toHaveLength(2);
+    expect(linhas()).toHaveLength(3);
+
+    seleciona('filtroCurso', '2');
+    expect(linhas()).toHaveLength(1);
+  });
+
+  test('disciplina de vários cursos mostra todos, em ordem alfabética', async () => {
+    renderizar(<AdminDisciplinas />);
+    await screen.findByText('Banco de Dados');
+
+    expect(screen.getByText('ADS, Ciência de Dados')).toBeInTheDocument();
   });
 
   test('mostra o status: sem status é ativa', async () => {

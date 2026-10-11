@@ -2,6 +2,8 @@ package com.aprendaplus.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "disciplina")
@@ -12,9 +14,14 @@ public class Disciplina {
     @Column(name = "id")
     private Integer idDisciplina;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "curso_id", nullable = false)
-    private Curso curso;
+    // Uma disciplina pode fazer parte de vários cursos (ex.: Banco de Dados no ADS e em Eng. de Software).
+    // A ligação fica na tabela curso_disciplina.
+    @ManyToMany
+    @JoinTable(
+            name = "curso_disciplina",
+            joinColumns = @JoinColumn(name = "disciplina_id"),
+            inverseJoinColumns = @JoinColumn(name = "curso_id"))
+    private List<Curso> cursos = new ArrayList<>();
 
     @Column(name = "nome", nullable = false, length = 150)
     private String nome;
@@ -49,8 +56,8 @@ public class Disciplina {
     public Integer getIdDisciplina() { return idDisciplina; }
     public void setIdDisciplina(Integer idDisciplina) { this.idDisciplina = idDisciplina; }
 
-    public Curso getCurso() { return curso; }
-    public void setCurso(Curso curso) { this.curso = curso; }
+    public List<Curso> getCursos() { return cursos; }
+    public void setCursos(List<Curso> cursos) { this.cursos = cursos; }
 
     public String getNome() { return nome; }
     public void setNome(String nome) { this.nome = nome; }
