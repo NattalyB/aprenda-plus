@@ -1,11 +1,15 @@
 package com.aprendaplus.service;
 
 import com.aprendaplus.entity.Aluno;
+import com.aprendaplus.entity.Carrinho;
+import com.aprendaplus.entity.ItemCarrinho;
 import com.aprendaplus.entity.Curso;
 import com.aprendaplus.entity.Inscricao;
 import com.aprendaplus.entity.Turma;
 import com.aprendaplus.exception.RegraDeNegocioException;
+import com.aprendaplus.repository.CarrinhoRepository;
 import com.aprendaplus.repository.InscricaoRepository;
+import com.aprendaplus.repository.ItemCarrinhoRepository;
 import com.aprendaplus.repository.TurmaRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,6 +35,12 @@ class InscricaoServiceTest {
 
     @Mock
     private TurmaRepository turmaRepository;
+
+    @Mock
+    private CarrinhoRepository carrinhoRepository;
+
+    @Mock
+    private ItemCarrinhoRepository itemCarrinhoRepository;
 
     @InjectMocks
     private InscricaoService inscricaoService;
@@ -198,7 +208,7 @@ class InscricaoServiceTest {
         RegraDeNegocioException erro = assertThrows(RegraDeNegocioException.class,
                 () -> inscricaoService.criarInscricaoDoAluno(pedido("Cartão de crédito · 12x"), 7));
 
-        assertEquals("O curso \"Desenvolvimento Full Stack\" pode ser pago em no máximo 10x.", erro.getMessage());
+        assertEquals("Este pedido pode ser parcelado em no máximo 10x.", erro.getMessage());
         verify(inscricaoRepository, never()).save(any());
     }
 
@@ -295,5 +305,74 @@ class InscricaoServiceTest {
 
         assertThrows(RegraDeNegocioException.class,
                 () -> inscricaoService.criarInscricaoDoAluno(pedido("pix"), 7));
+    }
+
+    // ===== Vários cursos no carrinho: vale o MAIOR limite de parcelas =====
+
+    // Coloca no carrinho do aluno 7 cursos com os limites de parcelas informados
+    private void carrinhoComCursosDe(Integer... limites) {
+        Carrinho carrinho = new Carrinho();
+        carrinho.setIdCarrinho(30);
+        when(carrinhoRepository.findFirstByAluno_IdAluno(7)).thenReturn(Optional.of(carrinho));
+
+        List<ItemCarrinho> itens = Arrays.stream(limites).map(limite -> {
+            Curso curso = new Curso();
+            curso.setNumeroParcelas(limite);
+            ItemCarrinho item = new ItemCarrinho();
+            item.setCurso(curso);
+            return item;
+        }).toList();
+        when(itemCarrinhoRepository.findByCarrinho_IdCarrinho(30)).thenReturn(itens);
+    }
+
+    @Test
+    void cursoCurtoPodeSerParceladoAteOLimiteDoCursoMaisLongoDoCarrinho() {
+        // Técnico (até 12x) junto com Redes (até 36x) no carrinho: pode 36x
+        turmaDoCurso("4800.00", 12);
+        carrinhoComCursosDe(12, 36);
+        saveDevolveAPropriaInscricao();
+
+        Inscricao salva = inscricaoService.criarInscricaoDoAluno(pedido("Boleto bancário · 36x"), 7);
+
+        assertEquals("Boleto bancário · 36x", salva.getFormaPagamento());
+        assertEquals(new BigDecimal("4800.00"), salva.getValorTotal());
+    }
+
+    @Test
+    void acimaDoMaiorLimiteDoCarrinhoContinuaRecusado() {
+        turmaDoCurso("4800.00", 12);
+        carrinhoComCursosDe(12, 36);
+
+        RegraDeNegocioException erro = assertThrows(RegraDeNegocioException.class,
+                () -> inscricaoService.criarInscricaoDoAluno(pedido("Cartão de crédito · 48x"), 7));
+
+        assertEquals("Este pedido pode ser parcelado em no máximo 36x.", erro.getMessage());
+        verify(inscricaoRepository, never()).save(any());
+    }
+
+    @Test
+    void cursoDoCarrinhoSemLimiteOuSemCursoNaoAumentaOMaximo() {
+        turmaDoCurso("4800.00", 12);
+        Carrinho carrinho = new Carrinho();
+        carrinho.setIdCarrinho(30);
+        when(carrinhoRepository.findFirstByAluno_IdAluno(7)).thenReturn(Optional.of(carrinho));
+        Curso semLimite = new Curso();
+        ItemCarrinho itemSemLimite = new ItemCarrinho();
+        itemSemLimite.setCurso(semLimite);
+        ItemCarrinho itemSemCurso = new ItemCarrinho();
+        when(itemCarrinhoRepository.findByCarrinho_IdCarrinho(30)).thenReturn(List.of(itemSemLimite, itemSemCurso));
+
+        assertThrows(RegraDeNegocioException.class,
+                () -> inscricaoService.criarInscricaoDoAluno(pedido("Cartão de crédito · 13x"), 7));
+    }
+
+    @Test
+    void alunoSemCarrinhoUsaOLimiteDoProprioCurso() {
+        turmaDoCurso("4800.00", 12);
+        saveDevolveAPropriaInscricao();
+
+        Inscricao salva = inscricaoService.criarInscricaoDoAluno(pedido("Cartão de crédito · 12x"), 7);
+
+        assertEquals("Cartão de crédito · 12x", salva.getFormaPagamento());
     }
 }

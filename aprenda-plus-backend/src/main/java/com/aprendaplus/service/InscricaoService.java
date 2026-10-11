@@ -5,7 +5,10 @@ import com.aprendaplus.entity.Curso;
 import com.aprendaplus.entity.Inscricao;
 import com.aprendaplus.entity.Turma;
 import com.aprendaplus.exception.RegraDeNegocioException;
+import com.aprendaplus.entity.ItemCarrinho;
+import com.aprendaplus.repository.CarrinhoRepository;
 import com.aprendaplus.repository.InscricaoRepository;
+import com.aprendaplus.repository.ItemCarrinhoRepository;
 import com.aprendaplus.repository.TurmaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -32,6 +35,12 @@ public class InscricaoService {
 
     @Autowired
     private TurmaRepository turmaRepository;
+
+    @Autowired
+    private CarrinhoRepository carrinhoRepository;
+
+    @Autowired
+    private ItemCarrinhoRepository itemCarrinhoRepository;
 
     public List<Inscricao> listarTodos() {
         return inscricaoRepository.findAll();
@@ -66,7 +75,9 @@ public class InscricaoService {
             throw new RegraDeNegocioException("Não foi possível identificar o valor do curso desta turma.");
         }
 
-        Pagamento pagamento = calcularPagamento(curso, dados.getFormaPagamento());
+        // Quem compra vários cursos juntos pode parcelar até o MAIOR limite entre eles
+        int maximoDoPedido = Math.max(maximoDeParcelas(curso), maximoDoCarrinho(idAluno));
+        Pagamento pagamento = calcularPagamento(curso, dados.getFormaPagamento(), maximoDoPedido);
 
         Aluno aluno = new Aluno();
         aluno.setIdAluno(idAluno);
@@ -95,7 +106,7 @@ public class InscricaoService {
     // Resultado do cálculo: o texto salvo na inscrição e o valor final
     record Pagamento(String descricao, BigDecimal valor) {}
 
-    Pagamento calcularPagamento(Curso curso, String formaPagamento) {
+    Pagamento calcularPagamento(Curso curso, String formaPagamento, int maximo) {
         String forma = normalizar(formaPagamento);
         BigDecimal valorCurso = curso.getValor().setScale(2, RoundingMode.HALF_UP);
 
@@ -114,10 +125,8 @@ public class InscricaoService {
         }
 
         int parcelas = lerParcelas(forma);
-        int maximo = maximoDeParcelas(curso);
         if (parcelas < 1 || parcelas > maximo) {
-            throw new RegraDeNegocioException(
-                    "O curso \"" + curso.getNome() + "\" pode ser pago em no máximo " + maximo + "x.");
+            throw new RegraDeNegocioException("Este pedido pode ser parcelado em no máximo " + maximo + "x.");
         }
 
         String nome = cartao ? "Cartão de crédito" : "Boleto bancário";
@@ -128,6 +137,20 @@ public class InscricaoService {
     private int lerParcelas(String forma) {
         Matcher m = PARCELAS.matcher(forma);
         return m.find() ? Integer.parseInt(m.group(1)) : 1;
+    }
+
+    // Maior limite de parcelas entre os cursos que estão no carrinho do aluno
+    // (o carrinho só é esvaziado depois que todas as inscrições são criadas)
+    private int maximoDoCarrinho(Integer idAluno) {
+        return carrinhoRepository.findFirstByAluno_IdAluno(idAluno)
+                .map(carrinho -> itemCarrinhoRepository.findByCarrinho_IdCarrinho(carrinho.getIdCarrinho()))
+                .orElse(List.of())
+                .stream()
+                .map(ItemCarrinho::getCurso)
+                .filter(cursoDoItem -> cursoDoItem != null)
+                .mapToInt(this::maximoDeParcelas)
+                .max()
+                .orElse(1);
     }
 
     // Curso sem limite cadastrado só pode ser pago à vista

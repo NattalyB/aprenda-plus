@@ -77,16 +77,16 @@ describe('forma de pagamento', () => {
     expect(screen.getByText('CONCLUIR INSCRIÇÃO')).toBeDisabled();
   });
 
-  test('o máximo de parcelas é o do curso com menor limite', async () => {
+  test('o máximo de parcelas é o do curso com MAIOR limite', async () => {
     logarAluno();
     renderizar(<Carrinho />);
     await screen.findByText('Meu carrinho');
 
-    // 24x e 12x no carrinho: oferece até 12x
-    expect(screen.getAllByText('até 12x')).toHaveLength(2);
+    // 24x e 12x no carrinho: oferece até 24x
+    expect(screen.getAllByText('até 24x')).toHaveLength(2);
 
     fireEvent.click(screen.getByText('Cartão'));
-    expect(screen.getByLabelText('Número de parcelas').querySelectorAll('option')).toHaveLength(12);
+    expect(screen.getByLabelText('Número de parcelas').querySelectorAll('option')).toHaveLength(24);
   });
 
   test('Pix aplica 5% de desconto no total', async () => {
@@ -106,8 +106,8 @@ describe('forma de pagamento', () => {
     await screen.findByText('Meu carrinho');
 
     fireEvent.click(screen.getByText('Cartão'));
-    expect(screen.getByLabelText('Número de parcelas')).toHaveValue('12');
-    expect(textoSemEspacoEspecial(resumo().getByText('12x de').parentElement)).toContain('R$ 1.500,00');
+    expect(screen.getByLabelText('Número de parcelas')).toHaveValue('24');
+    expect(textoSemEspacoEspecial(resumo().getByText('24x de').parentElement)).toContain('R$ 750,00');
 
     fireEvent.change(screen.getByLabelText('Número de parcelas'), { target: { value: '6' } });
     expect(textoSemEspacoEspecial(resumo().getByText('6x de').parentElement)).toContain('R$ 3.000,00');
@@ -194,7 +194,8 @@ describe('concluir inscrição', () => {
     fireEvent.click(screen.getByText('CONCLUIR INSCRIÇÃO'));
 
     expect(await screen.findByText('Inscrição concluída!')).toBeInTheDocument();
-    expect(criarInscricao).toHaveBeenCalledWith('7', 100, 12000, 'Boleto bancário · 12x');
+    expect(criarInscricao).toHaveBeenCalledWith('7', 100, 12000, 'Boleto bancário · 24x');
+    expect(criarInscricao).toHaveBeenCalledWith('7', 200, 6000, 'Boleto bancário · 24x');
     expect(screen.getByText(/boletos serão enviados/)).toBeInTheDocument();
   });
 

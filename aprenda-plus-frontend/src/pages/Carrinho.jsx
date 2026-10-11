@@ -29,10 +29,11 @@ function Carrinho() {
   const [pedidoConcluido, setPedidoConcluido] = useState(null);
   const logado = estaLogado();
 
-  // Máximo de parcelas: o menor limite entre os cursos do carrinho
+  // Máximo de parcelas: o MAIOR limite entre os cursos do carrinho
+  // (ex.: um curso de 12x e outro de 36x juntos podem ser pagos em até 36x)
   const getMaxParcelas = (lista) => {
     if (lista.length === 0) return 1;
-    return Math.max(1, Math.min(...lista.map((item) => Number(item.curso.numeroParcelas) || 1)));
+    return Math.max(1, ...lista.map((item) => Number(item.curso.numeroParcelas) || 1));
   };
 
   const carregarCarrinho = () => {

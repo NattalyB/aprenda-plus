@@ -44,7 +44,7 @@ Projeto final do curso **Desenvolvimento Full Stack** do programa **+PraTi / Cod
 - **Carrinho de compras** com contador no topo da página, que se atualiza na hora.
 - **Formas de pagamento:**
   - **Pix** à vista com **5% de desconto**;
-  - **Cartão de crédito** e **boleto**, parcelados sem juros. O limite de parcelas é o do curso com o menor limite entre os que estão no carrinho.
+  - **Cartão de crédito** e **boleto**, parcelados sem juros. O limite de parcelas é o do curso com o **maior** limite entre os que estão no carrinho (ex.: um curso de 12x junto com outro de 36x pode ser pago em até 36x).
 - **Conclusão da inscrição:** cria uma inscrição para cada curso na primeira turma disponível, com status *pendente de pagamento*, e esvazia o carrinho. O valor de cada inscrição é **calculado pelo servidor** a partir do preço do curso, e não pelo navegador.
 - **Avisos visuais (toasts)** de sucesso, erro e alerta.
 - **Layout responsivo** para celular, tablet e computador.
@@ -256,7 +256,7 @@ A meta do projeto era **cobertura mínima de 70%**. Os dois lados ficaram bem ac
 
 | | Testes | Cobertura | Ferramentas |
 |---|---|---|---|
-| **Back-end** | 268 | **99%** das instruções, 89% dos desvios (*branches*) | JUnit 5, Mockito, MockMvc, JaCoCo |
+| **Back-end** | 272 | **99%** das instruções, 89% dos desvios (*branches*) | JUnit 5, Mockito, MockMvc, JaCoCo |
 | **Front-end** | 319 | **99,7%** das instruções, 97,6% dos desvios, 100% das funções | Jest, Testing Library |
 
 ### Back-end
@@ -316,7 +316,7 @@ O que é testado:
   - o **aluno** é sempre o do token (não dá para se inscrever em nome de outra pessoa);
   - o **status** sempre começa como *pendente de pagamento* (o aluno não consegue se autoconfirmar);
   - o **valor** é recalculado a partir do preço do curso gravado no banco, com o desconto do Pix aplicado no servidor;
-  - o **número de parcelas** é conferido com o limite do curso. Se alguém tentar parcelar acima do permitido ou usar uma forma de pagamento inexistente, a API recusa com uma mensagem clara.
+  - o **número de parcelas** é conferido com o maior limite entre os cursos do carrinho do aluno. Se alguém tentar parcelar acima do permitido ou usar uma forma de pagamento inexistente, a API recusa com uma mensagem clara.
 
   Assim, mesmo que alguém altere a requisição pelas ferramentas do navegador (por exemplo, mudando o valor para R$ 0,01), a inscrição é gravada com o valor correto.
 - **Chave secreta fora do código:** em produção, a chave que assina os tokens fica em uma variável de ambiente no Render (`JWT_SECRET`), já que o repositório é público.
