@@ -177,7 +177,7 @@ const colunasOrdenaveis = {
   Alunos: ['ID', 'Nome', 'E-mail', 'CPF', 'Status'],
   Professores: ['ID', 'Nome', 'E-mail', 'CPF', 'Status'],
   Cursos: ['ID', 'Nome', 'Categoria', 'Modalidade', 'Valor'],
-  Disciplinas: ['ID', 'Nome', 'Curso', 'Carga horária'],
+  Disciplinas: ['ID', 'Nome', 'Curso', 'Carga horária', 'Status'],
   'Períodos letivos': ['ID', 'Nome', 'Início', 'Fim', 'Status'],
   Turmas: ['ID', 'Nome', 'Curso', 'Período letivo', 'Vagas', 'Status'],
   Inscrições: ['ID', 'Aluno', 'Turma', 'Valor', 'Pagamento', 'Status'],
@@ -377,7 +377,7 @@ describe('Disciplinas: busca e curso', () => {
       data: [
         { idDisciplina: 1, nome: 'Banco de Dados', cargaHoraria: 80, curso: { idCurso: 1, nome: 'ADS' } },
         { idDisciplina: 2, nome: 'Estatística', cargaHoraria: 60, curso: { idCurso: 2, nome: 'Ciência de Dados' } },
-        { idDisciplina: 3, nome: 'Lógica', cargaHoraria: 40, curso: { idCurso: 1, nome: 'ADS' } },
+        { idDisciplina: 3, nome: 'Lógica', cargaHoraria: 40, status: 'inativa', curso: { idCurso: 1, nome: 'ADS' } },
         { idDisciplina: 4, nome: 'Sem curso', cargaHoraria: 10 },
       ],
     })
@@ -392,6 +392,14 @@ describe('Disciplinas: busca e curso', () => {
 
     seleciona('filtroCurso', '1');
     expect(linhas()).toHaveLength(2);
+  });
+
+  test('mostra o status: sem status é ativa', async () => {
+    renderizar(<AdminDisciplinas />);
+    await screen.findByText('Banco de Dados');
+
+    expect(screen.getByText('Inativa', { selector: 'span' })).toBeInTheDocument();
+    expect(screen.getAllByText('Ativa', { selector: 'span' })).toHaveLength(3);
   });
 
   test('busca pelo nome', async () => {

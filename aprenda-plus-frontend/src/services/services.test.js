@@ -219,3 +219,15 @@ test('mostrarAviso dispara o evento com a mensagem e o tipo', () => {
   expect(ouvinte.mock.calls[1][0].detail).toEqual({ mensagem: 'Ops', tipo: 'erro' });
   window.removeEventListener('mostrar-aviso', ouvinte);
 });
+
+describe('cursos e disciplinas do professor', () => {
+  test('buscar usa GET /professores/{id}/vinculos', () => {
+    professorService.buscarVinculosProfessor(4);
+    expect(api.get).toHaveBeenCalledWith('/professores/4/vinculos');
+  });
+
+  test('salvar usa PUT com os ids dos cursos e disciplinas', () => {
+    professorService.salvarVinculosProfessor(4, { cursos: [1], disciplinas: [10] });
+    expect(api.put).toHaveBeenCalledWith('/professores/4/vinculos', { cursos: [1], disciplinas: [10] });
+  });
+});

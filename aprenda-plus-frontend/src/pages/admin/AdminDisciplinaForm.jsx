@@ -17,6 +17,7 @@ function AdminDisciplinaForm() {
     modalidade: '',
     preRequisitos: '',
     curso: { idCurso: '' },
+    status: 'ativa',
   });
   const [erro, setErro] = useState(null);
   const [enviando, setEnviando] = useState(false);
@@ -122,6 +123,19 @@ function AdminDisciplinaForm() {
             <div className="form-field">
               <label htmlFor="conteudo">Conteúdo</label>
               <textarea id="conteudo" name="conteudo" placeholder="Principais assuntos abordados" value={form.conteudo || ''} onChange={handleChange} rows={5} />
+            </div>
+          </div>
+
+          {/* ===== Status ===== */}
+          <h2 className="form-section-title">Status</h2>
+          <div className="form-grid">
+            <div className="form-field">
+              <label htmlFor="status">Situação da disciplina</label>
+              <select id="status" name="status" value={form.status || 'ativa'} onChange={handleChange}>
+                <option value="ativa">Ativa</option>
+                <option value="inativa">Inativa</option>
+              </select>
+              <small className="form-dica">Disciplinas inativas não contam nas horas de aula dos professores.</small>
             </div>
           </div>
 

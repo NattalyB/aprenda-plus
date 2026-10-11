@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { buscarAlunoPorId, criarAluno, atualizarAluno } from '../../services/alunoService';
+import CampoCep from '../../components/CampoCep';
 
 function AdminAlunoForm() {
   const navigate = useNavigate();
@@ -135,7 +136,11 @@ function AdminAlunoForm() {
             <div className="form-row">
               <div className="form-field">
                 <label htmlFor="cep">CEP</label>
-                <input id="cep" name="cep" placeholder="00000-000" value={form.cep || ''} onChange={handleChange} required />
+                <CampoCep
+                  value={form.cep || ''}
+                  onChange={handleChange}
+                  onEnderecoEncontrado={(endereco) => setForm((atual) => ({ ...atual, ...endereco }))}
+                />
               </div>
               <div className="form-field">
                 <label htmlFor="bairro">Bairro</label>

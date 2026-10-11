@@ -34,6 +34,10 @@ public class Disciplina {
     @Column(name = "pre_requisitos", columnDefinition = "TEXT")
     private String preRequisitos;
 
+    // "ativa" ou "inativa". Disciplina inativa não conta nas horas de aula do professor.
+    @Column(name = "status", nullable = false, length = 20)
+    private String status = "ativa";
+
     @Column(name = "criado_em", insertable = false, updatable = false)
     private LocalDateTime criadoEm;
 
@@ -65,6 +69,9 @@ public class Disciplina {
 
     public String getPreRequisitos() { return preRequisitos; }
     public void setPreRequisitos(String preRequisitos) { this.preRequisitos = preRequisitos; }
+
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 
     public LocalDateTime getCriadoEm() { return criadoEm; }
     public LocalDateTime getAtualizadoEm() { return atualizadoEm; }

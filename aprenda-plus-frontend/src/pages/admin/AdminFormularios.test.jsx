@@ -12,12 +12,19 @@ import AdminTurmaForm from './AdminTurmaForm';
 import AdminMatriculaForm from './AdminMatriculaForm';
 
 import { buscarAlunoPorId, criarAluno, atualizarAluno, listarAlunos } from '../../services/alunoService';
-import { buscarProfessorPorId, criarProfessor, atualizarProfessor } from '../../services/professorService';
+import {
+  buscarProfessorPorId,
+  criarProfessor,
+  atualizarProfessor,
+  buscarVinculosProfessor,
+  salvarVinculosProfessor,
+} from '../../services/professorService';
 import { buscarCursoPorId, criarCurso, atualizarCurso, listarCursos } from '../../services/cursoService';
-import { buscarDisciplinaPorId, criarDisciplina, atualizarDisciplina } from '../../services/disciplinaService';
+import { buscarDisciplinaPorId, criarDisciplina, atualizarDisciplina, listarDisciplinas } from '../../services/disciplinaService';
 import { buscarPeriodoLetivoPorId, criarPeriodoLetivo, atualizarPeriodoLetivo, listarPeriodosLetivos } from '../../services/periodoLetivoService';
 import { buscarTurmaPorId, criarTurma, atualizarTurma, listarTurmas } from '../../services/turmaService';
 import { buscarMatriculaPorId, criarMatricula, atualizarMatricula } from '../../services/matriculaService';
+import { buscarEnderecoPorCep } from '../../services/cepService';
 
 jest.mock('../../services/alunoService');
 jest.mock('../../services/professorService');
@@ -26,6 +33,10 @@ jest.mock('../../services/disciplinaService');
 jest.mock('../../services/periodoLetivoService');
 jest.mock('../../services/turmaService');
 jest.mock('../../services/matriculaService');
+jest.mock('../../services/cepService', () => ({
+  ...jest.requireActual('../../services/cepService'),
+  buscarEnderecoPorCep: jest.fn(),
+}));
 
 const digita = (rotulo, valor) =>
   fireEvent.change(screen.getByLabelText(rotulo), { target: { value: valor } });
@@ -43,6 +54,9 @@ beforeEach(() => {
   listarPeriodosLetivos.mockResolvedValue({ data: [{ idPeriodoLetivo: 4, nome: '2026/2' }] });
   listarAlunos.mockResolvedValue({ data: [{ idAluno: 7, nomeCompleto: 'Maria Silva', cpf: '12345678900' }] });
   listarTurmas.mockResolvedValue({ data: [{ idTurma: 3, nome: 'Turma A', curso: { nome: 'ADS' } }, { idTurma: 8, nome: 'Turma Z' }] });
+  listarDisciplinas.mockResolvedValue({ data: [] });
+  buscarVinculosProfessor.mockResolvedValue({ data: { cursos: [], disciplinas: [] } });
+  salvarVinculosProfessor.mockResolvedValue({});
 });
 
 // ===================================================================
@@ -170,6 +184,261 @@ describe('Formulário de professor', () => {
 });
 
 // ===================================================================
+describe('Endereço pelo CEP', () => {
+  test.each([
+    ['professor', AdminProfessorForm, '/admin/professores/novo'],
+    ['aluno', AdminAlunoForm, '/admin/alunos/novo'],
+  ])('no cadastro de %s, o CEP preenche o endereço', async (_, Formulario, rota) => {
+    buscarEnderecoPorCep.mockResolvedValue({ rua: 'Rua Araçá', bairro: 'Igara', cidade: 'Canoas', estado: 'RS' });
+    renderizar(<Formulario />, { rota });
+
+    digita('CEP', '92035540');
+
+    await waitFor(() => expect(screen.getByLabelText('Rua/Av')).toHaveValue('Rua Araçá'));
+    expect(screen.getByLabelText('CEP')).toHaveValue('92035-540');
+    expect(screen.getByLabelText('Bairro')).toHaveValue('Igara');
+    expect(screen.getByLabelText('Cidade')).toHaveValue('Canoas');
+    expect(screen.getByLabelText('UF')).toHaveValue('RS');
+  });
+});
+
+describe('Professor: cursos e disciplinas', () => {
+  // ADS tem 3 disciplinas (uma inativa); Design tem 1; Redes não tem nenhuma
+  const disciplinas = [
+    { idDisciplina: 10, nome: 'Banco de Dados', cargaHoraria: 80, status: 'ativa', curso: { idCurso: 1, nome: 'ADS' } },
+    { idDisciplina: 11, nome: 'Algoritmos', cargaHoraria: 60, curso: { idCurso: 1, nome: 'ADS' } },
+    { idDisciplina: 12, nome: 'Cobol', cargaHoraria: 40, status: 'inativa', curso: { idCurso: 1, nome: 'ADS' } },
+    { idDisciplina: 20, nome: 'Tipografia', cargaHoraria: 40, status: 'ativa', curso: { idCurso: 2, nome: 'Design' } },
+  ];
+
+  beforeEach(() => {
+    listarCursos.mockResolvedValue({
+      data: [{ idCurso: 1, nome: 'ADS' }, { idCurso: 2, nome: 'Design' }, { idCurso: 3, nome: 'Redes' }],
+    });
+    listarDisciplinas.mockResolvedValue({ data: disciplinas });
+  });
+
+  const caixa = (nome) => screen.getByRole('checkbox', { name: new RegExp(nome) });
+  const totalDeHoras = () => screen.getByTestId('horas-totais');
+
+  const abrirNovo = async () => {
+    renderizar(<AdminProfessorForm />, { rota: '/admin/professores/novo' });
+    await screen.findByRole('checkbox', { name: 'ADS' });
+  };
+
+  const abrirEdicao = async () => {
+    buscarProfessorPorId.mockResolvedValue({ data: { idProfessor: 2, nomeCompleto: 'Ana Lúcia', status: 'ativo' } });
+    renderizar(<AdminProfessorForm />, { rota: '/admin/professores/2/editar', caminho: '/admin/professores/:id/editar' });
+    await screen.findByDisplayValue('Ana Lúcia');
+    await screen.findByRole('checkbox', { name: 'ADS' });
+  };
+
+  test('ao marcar um curso aparecem as disciplinas dele, e o total soma as horas', async () => {
+    await abrirNovo();
+    expect(screen.getByText('Marque um ou mais cursos para escolher as disciplinas.')).toBeInTheDocument();
+    expect(screen.queryByRole('checkbox', { name: /Banco de Dados/ })).not.toBeInTheDocument();
+
+    fireEvent.click(caixa('ADS'));
+    fireEvent.click(caixa('Banco de Dados'));
+    fireEvent.click(caixa('Algoritmos'));
+
+    expect(totalDeHoras()).toHaveTextContent('140h');
+    expect(totalDeHoras()).toHaveTextContent('2 disciplinas selecionadas');
+
+    fireEvent.click(caixa('Algoritmos'));
+    expect(totalDeHoras()).toHaveTextContent('80h');
+    expect(totalDeHoras()).toHaveTextContent('1 disciplina selecionada');
+  });
+
+  test('pode lecionar em mais de um curso', async () => {
+    await abrirNovo();
+
+    fireEvent.click(caixa('ADS'));
+    fireEvent.click(caixa('Design'));
+    fireEvent.click(caixa('Banco de Dados'));
+    fireEvent.click(caixa('Tipografia'));
+
+    expect(screen.getByText('Disciplinas de ADS')).toBeInTheDocument();
+    expect(screen.getByText('Disciplinas de Design')).toBeInTheDocument();
+    expect(totalDeHoras()).toHaveTextContent('120h');
+  });
+
+  test('desmarcar o curso tira as disciplinas dele', async () => {
+    await abrirNovo();
+    fireEvent.click(caixa('ADS'));
+    fireEvent.click(caixa('Design'));
+    fireEvent.click(caixa('Banco de Dados'));
+    fireEvent.click(caixa('Tipografia'));
+
+    fireEvent.click(caixa('ADS'));
+
+    expect(screen.queryByText('Disciplinas de ADS')).not.toBeInTheDocument();
+    expect(totalDeHoras()).toHaveTextContent('40h');
+  });
+
+  test('curso sem disciplinas avisa', async () => {
+    await abrirNovo();
+    fireEvent.click(caixa('Redes'));
+
+    expect(screen.getByText('Este curso ainda não tem disciplinas cadastradas.')).toBeInTheDocument();
+  });
+
+  test('sem nenhum curso cadastrado avisa', async () => {
+    listarCursos.mockResolvedValue({ data: [] });
+    renderizar(<AdminProfessorForm />, { rota: '/admin/professores/novo' });
+
+    expect(await screen.findByText('Nenhum curso cadastrado ainda.')).toBeInTheDocument();
+  });
+
+  test('novo professor: salva os dados e depois os cursos e disciplinas', async () => {
+    criarProfessor.mockResolvedValue({ data: { idProfessor: 9 } });
+    await abrirNovo();
+    fireEvent.click(caixa('ADS'));
+    fireEvent.click(caixa('Banco de Dados'));
+    salvar();
+
+    await waitFor(() => expect(endereco()).toHaveTextContent('/admin/professores'));
+    expect(salvarVinculosProfessor).toHaveBeenCalledWith(9, { cursos: [1], disciplinas: [10] });
+  });
+
+  test('edição: carrega o que o professor já leciona', async () => {
+    buscarVinculosProfessor.mockResolvedValue({ data: { cursos: [1], disciplinas: [10, 11] } });
+    atualizarProfessor.mockResolvedValue({ data: { idProfessor: 2 } });
+    await abrirEdicao();
+
+    expect(buscarVinculosProfessor).toHaveBeenCalledWith('2');
+    expect(caixa('ADS')).toBeChecked();
+    expect(caixa('Banco de Dados')).toBeChecked();
+    expect(caixa('Cobol')).not.toBeChecked();
+    expect(totalDeHoras()).toHaveTextContent('140h');
+
+    salvar();
+    await waitFor(() => expect(salvarVinculosProfessor).toHaveBeenCalledWith('2', { cursos: [1], disciplinas: [10, 11] }));
+  });
+
+  test('edição: vínculos sem listas viram listas vazias', async () => {
+    buscarVinculosProfessor.mockResolvedValue({ data: {} });
+    await abrirEdicao();
+
+    expect(caixa('ADS')).not.toBeChecked();
+  });
+
+  test('disciplina inativa aparece marcada como inativa e não entra no total', async () => {
+    await abrirNovo();
+    fireEvent.click(caixa('ADS'));
+    fireEvent.click(caixa('Banco de Dados'));
+    fireEvent.click(caixa('Cobol'));
+
+    expect(screen.getByText('Inativa')).toBeInTheDocument();
+    expect(totalDeHoras()).toHaveTextContent('80h');
+    expect(totalDeHoras()).toHaveTextContent('1 inativa não entra no total');
+  });
+
+  test('várias inativas: o aviso do total fica no plural', async () => {
+    listarDisciplinas.mockResolvedValue({
+      data: [...disciplinas, { idDisciplina: 13, nome: 'Pascal', cargaHoraria: 20, status: 'inativa', curso: { idCurso: 1, nome: 'ADS' } }],
+    });
+    await abrirNovo();
+    fireEvent.click(caixa('ADS'));
+    fireEvent.click(caixa('Cobol'));
+    fireEvent.click(caixa('Pascal'));
+
+    expect(totalDeHoras()).toHaveTextContent('0h');
+    expect(totalDeHoras()).toHaveTextContent('2 inativas não entram no total');
+  });
+
+  test('ao salvar com disciplina inativa, pede confirmação; Cancelar volta para o formulário', async () => {
+    criarProfessor.mockResolvedValue({ data: { idProfessor: 9 } });
+    await abrirNovo();
+    digita('Nome completo', 'Carla Souza');
+    fireEvent.click(caixa('ADS'));
+    fireEvent.click(caixa('Cobol'));
+    salvar();
+
+    const janela = screen.getByRole('alertdialog', { name: 'Disciplina inativa selecionada' });
+    expect(janela).toHaveTextContent(
+      'A disciplina Cobol (ADS) está inativa e não será calculada nas horas totais de aula deste professor.'
+    );
+    expect(criarProfessor).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
+
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(screen.getByDisplayValue('Carla Souza')).toBeInTheDocument();
+    expect(caixa('Cobol')).toBeChecked();
+    expect(criarProfessor).not.toHaveBeenCalled();
+  });
+
+  test('ao confirmar, salva mesmo com a disciplina inativa', async () => {
+    criarProfessor.mockResolvedValue({ data: { idProfessor: 9 } });
+    await abrirNovo();
+    fireEvent.click(caixa('ADS'));
+    fireEvent.click(caixa('Banco de Dados'));
+    fireEvent.click(caixa('Cobol'));
+    salvar();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmar e salvar' }));
+
+    await waitFor(() => expect(endereco()).toHaveTextContent('/admin/professores'));
+    expect(salvarVinculosProfessor).toHaveBeenCalledWith(9, { cursos: [1], disciplinas: [10, 12] });
+  });
+
+  test('inativa de curso sem nome no cadastro aparece só com o nome da disciplina', async () => {
+    listarDisciplinas.mockResolvedValue({
+      data: [{ idDisciplina: 30, nome: 'Avulsa', cargaHoraria: 10, status: 'inativa', curso: { idCurso: 1 } }],
+    });
+    await abrirNovo();
+    fireEvent.click(caixa('ADS'));
+    fireEvent.click(caixa('Avulsa'));
+    salvar();
+
+    expect(screen.getByRole('alertdialog')).toHaveTextContent('A disciplina Avulsa está inativa');
+  });
+
+  test('se os cursos e disciplinas não carregarem, salva o professor sem mexer neles', async () => {
+    listarDisciplinas.mockRejectedValue(new Error('offline'));
+    criarProfessor.mockResolvedValue({ data: { idProfessor: 9 } });
+    renderizar(<AdminProfessorForm />, { rota: '/admin/professores/novo' });
+
+    expect(await screen.findByText(/Não foi possível carregar os cursos e disciplinas/)).toBeInTheDocument();
+    salvar();
+
+    await waitFor(() => expect(endereco()).toHaveTextContent('/admin/professores'));
+    expect(salvarVinculosProfessor).not.toHaveBeenCalled();
+  });
+
+  test('mostra "carregando" enquanto busca os cursos', () => {
+    listarCursos.mockReturnValue(new Promise(() => {}));
+    renderizar(<AdminProfessorForm />, { rota: '/admin/professores/novo' });
+
+    expect(screen.getByText('Carregando cursos e disciplinas...')).toBeInTheDocument();
+  });
+
+  test('erro ao salvar os vínculos: avisa e, ao tentar de novo, não cadastra o professor duas vezes', async () => {
+    criarProfessor.mockResolvedValue({ data: { idProfessor: 9 } });
+    atualizarProfessor.mockResolvedValue({ data: { idProfessor: 9 } });
+    salvarVinculosProfessor
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockRejectedValueOnce({ response: { data: { mensagem: 'A disciplina "Redes" não pertence a nenhum dos cursos selecionados.' } } })
+      .mockResolvedValueOnce({});
+    await abrirNovo();
+    fireEvent.click(caixa('ADS'));
+    fireEvent.click(caixa('Banco de Dados'));
+
+    salvar();
+    expect(await screen.findByText(/Os dados do professor foram salvos, mas não foi possível salvar os cursos/)).toBeInTheDocument();
+
+    salvar();
+    expect(await screen.findByText('A disciplina "Redes" não pertence a nenhum dos cursos selecionados.')).toBeInTheDocument();
+    expect(criarProfessor).toHaveBeenCalledTimes(1);
+    expect(atualizarProfessor).toHaveBeenCalledWith(9, expect.anything());
+
+    salvar();
+    await waitFor(() => expect(endereco()).toHaveTextContent('/admin/professores'));
+  });
+});
+
+// ===================================================================
 describe('Formulário de curso', () => {
   test('mostra a prévia da mensalidade enquanto digita', () => {
     renderizar(<AdminCursoForm />, { rota: '/admin/cursos/novo' });
@@ -256,6 +525,17 @@ describe('Formulário de disciplina', () => {
 
     await waitFor(() => expect(endereco()).toHaveTextContent('/admin/disciplinas'));
     expect(criarDisciplina).toHaveBeenCalledWith(expect.objectContaining({ nome: 'Tipografia', curso: { idCurso: '2' } }));
+  });
+
+  test('nova disciplina começa ativa e pode ser marcada como inativa', async () => {
+    criarDisciplina.mockResolvedValue({});
+    renderizar(<AdminDisciplinaForm />, { rota: '/admin/disciplinas/novo' });
+
+    expect(screen.getByLabelText('Situação da disciplina')).toHaveValue('ativa');
+    digita('Situação da disciplina', 'inativa');
+    salvar();
+
+    await waitFor(() => expect(criarDisciplina).toHaveBeenCalledWith(expect.objectContaining({ status: 'inativa' })));
   });
 
   test('editar disciplina', async () => {

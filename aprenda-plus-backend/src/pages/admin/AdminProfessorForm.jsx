@@ -1,0 +1,309 @@
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams, Link } from 'react-router-dom';
+import {
+  buscarProfessorPorId,
+  criarProfessor,
+  atualizarProfessor,
+  buscarVinculosProfessor,
+  salvarVinculosProfessor,
+} from '../../services/professorService';
+import { listarCursos } from '../../services/cursoService';
+import { listarDisciplinas } from '../../services/disciplinaService';
+import CursosDisciplinasProfessor, { estaInativa } from '../../components/admin/CursosDisciplinasProfessor';
+import CampoCep from '../../components/CampoCep';
+
+function AdminProfessorForm() {
+  const navigate = useNavigate();
+  const { id } = useParams();
+  const modoEdicao = Boolean(id);
+
+  const [form, setForm] = useState({
+    nomeCompleto: '',
+    telefone: '',
+    email: '',
+    dataNascimento: '',
+    cpf: '',
+    rua: '',
+    numero: '',
+    complemento: '',
+    cep: '',
+    bairro: '',
+    cidade: '',
+    estado: '',
+    status: 'ativo',
+  });
+  const [erro, setErro] = useState(null);
+  const [enviando, setEnviando] = useState(false);
+
+  // Cursos e disciplinas
+  const [cursos, setCursos] = useState([]);
+  const [disciplinas, setDisciplinas] = useState([]);
+  const [cursosSelecionados, setCursosSelecionados] = useState([]);
+  const [disciplinasSelecionadas, setDisciplinasSelecionadas] = useState([]);
+  const [vinculosProntos, setVinculosProntos] = useState(false);
+  const [erroVinculos, setErroVinculos] = useState(null);
+  // Disciplinas inativas que precisam de confirmação antes de salvar
+  const [inativasParaConfirmar, setInativasParaConfirmar] = useState(null);
+  // Id do professor depois do primeiro salvamento (evita cadastrar duas vezes se der erro nos vínculos)
+  const [idSalvo, setIdSalvo] = useState(id || null);
+
+  useEffect(() => {
+    if (modoEdicao) {
+      buscarProfessorPorId(id).then((response) => {
+        setForm(response.data);
+      });
+    }
+
+    const carregamentos = [listarCursos(), listarDisciplinas()];
+    if (modoEdicao) carregamentos.push(buscarVinculosProfessor(id));
+
+    Promise.all(carregamentos)
+      .then(([respostaCursos, respostaDisciplinas, respostaVinculos]) => {
+        setCursos(respostaCursos.data);
+        setDisciplinas(respostaDisciplinas.data);
+        if (respostaVinculos) {
+          setCursosSelecionados(respostaVinculos.data.cursos || []);
+          setDisciplinasSelecionadas(respostaVinculos.data.disciplinas || []);
+        }
+        setVinculosProntos(true);
+      })
+      .catch(() => {
+        // Sem os dados, não mexemos nos vínculos ao salvar (para não apagar nada sem querer)
+        setErroVinculos('Não foi possível carregar os cursos e disciplinas. Os demais dados podem ser salvos normalmente.');
+      });
+  }, [id]);
+
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleAlterarVinculos = (novosCursos, novasDisciplinas) => {
+    setCursosSelecionados(novosCursos);
+    setDisciplinasSelecionadas(novasDisciplinas);
+  };
+
+  const mostrarErro = (error, padrao) => {
+    // Se o backend devolveu quais campos estão errados, mostra as mensagens
+    const errosCampos = error.response?.data?.erros;
+    if (errosCampos) {
+      setErro(Object.values(errosCampos).join(' '));
+    } else {
+      setErro(error.response?.data?.mensagem || padrao);
+    }
+    setEnviando(false);
+  };
+
+  const salvarTudo = () => {
+    setInativasParaConfirmar(null);
+    setErro(null);
+    setEnviando(true);
+
+    const acao = idSalvo ? atualizarProfessor(idSalvo, form) : criarProfessor(form);
+
+    acao
+      .then((response) => {
+        const idProfessor = idSalvo || response?.data?.idProfessor;
+        setIdSalvo(idProfessor);
+
+        if (!vinculosProntos || !idProfessor) {
+          navigate('/admin/professores');
+          return;
+        }
+
+        return salvarVinculosProfessor(idProfessor, {
+          cursos: cursosSelecionados,
+          disciplinas: disciplinasSelecionadas,
+        })
+          .then(() => navigate('/admin/professores'))
+          .catch((error) =>
+            mostrarErro(
+              error,
+              'Os dados do professor foram salvos, mas não foi possível salvar os cursos e disciplinas. Tente salvar de novo.'
+            )
+          );
+      })
+      .catch((error) => mostrarErro(error, 'Não foi possível salvar. Confira os campos (e-mail/CPF podem já existir).'));
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    // Se tiver disciplina inativa marcada, pede confirmação antes de salvar
+    const inativas = disciplinas.filter(
+      (d) => disciplinasSelecionadas.includes(d.idDisciplina) && estaInativa(d)
+    );
+    if (vinculosProntos && inativas.length > 0) {
+      setInativasParaConfirmar(inativas);
+      return;
+    }
+
+    salvarTudo();
+  };
+
+  return (
+    <div>
+      <div className="admin-header">
+        <div>
+          <h1 className="admin-titulo">{modoEdicao ? 'Editar professor' : 'Novo professor'}</h1>
+          <p className="admin-subtitulo">
+            {modoEdicao ? 'Atualize os dados do professor e salve.' : 'Preencha os dados para cadastrar um novo professor.'}
+          </p>
+        </div>
+      </div>
+
+      <div className="form-card admin-form-card">
+        {erro && <div className="form-erro">{erro}</div>}
+
+        <form onSubmit={handleSubmit}>
+          {/* ===== Dados pessoais ===== */}
+          <h2 className="form-section-title">Dados pessoais</h2>
+          <div className="form-grid">
+            <div className="form-field">
+              <label htmlFor="nomeCompleto">Nome completo</label>
+              <input id="nomeCompleto" name="nomeCompleto" placeholder="Ex: João Pereira" value={form.nomeCompleto || ''} onChange={handleChange} required />
+            </div>
+
+            <div className="form-field">
+              <label htmlFor="email">E-mail</label>
+              <input id="email" name="email" type="email" placeholder="professor@exemplo.com" value={form.email || ''} onChange={handleChange} required />
+            </div>
+
+            <div className="form-row">
+              <div className="form-field">
+                <label htmlFor="telefone">Telefone</label>
+                <input id="telefone" name="telefone" placeholder="(51) 99999-9999" value={form.telefone || ''} onChange={handleChange} required />
+              </div>
+              <div className="form-field">
+                <label htmlFor="dataNascimento">Data de nascimento</label>
+                <input id="dataNascimento" name="dataNascimento" type="date" value={form.dataNascimento || ''} onChange={handleChange} required />
+              </div>
+            </div>
+
+            <div className="form-field">
+              <label htmlFor="cpf">CPF</label>
+              <input id="cpf" name="cpf" placeholder="Apenas números" value={form.cpf || ''} onChange={handleChange} maxLength={11} required />
+            </div>
+          </div>
+
+          {/* ===== Endereço ===== */}
+          <h2 className="form-section-title">Endereço</h2>
+          <div className="form-grid">
+            <div className="form-field">
+              <label htmlFor="rua">Rua/Av</label>
+              <input id="rua" name="rua" placeholder="Ex: Av. Brasil" value={form.rua || ''} onChange={handleChange} required />
+            </div>
+
+            <div className="form-row">
+              <div className="form-field">
+                <label htmlFor="numero">Número</label>
+                <input id="numero" name="numero" placeholder="Ex: 123" value={form.numero || ''} onChange={handleChange} required />
+              </div>
+              <div className="form-field">
+                <label htmlFor="complemento">Complemento (opcional)</label>
+                <input id="complemento" name="complemento" placeholder="Apto, bloco..." value={form.complemento || ''} onChange={handleChange} />
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-field">
+                <label htmlFor="cep">CEP</label>
+                <CampoCep
+                  value={form.cep || ''}
+                  onChange={handleChange}
+                  onEnderecoEncontrado={(endereco) => setForm((atual) => ({ ...atual, ...endereco }))}
+                />
+              </div>
+              <div className="form-field">
+                <label htmlFor="bairro">Bairro</label>
+                <input id="bairro" name="bairro" placeholder="Ex: Centro" value={form.bairro || ''} onChange={handleChange} required />
+              </div>
+            </div>
+
+            <div className="form-row form-row-uf">
+              <div className="form-field">
+                <label htmlFor="cidade">Cidade</label>
+                <input id="cidade" name="cidade" placeholder="Ex: Canoas" value={form.cidade || ''} onChange={handleChange} required />
+              </div>
+              <div className="form-field">
+                <label htmlFor="estado">UF</label>
+                <input id="estado" name="estado" placeholder="RS" value={form.estado || ''} onChange={handleChange} maxLength={2} required />
+              </div>
+            </div>
+          </div>
+
+          {/* ===== Cursos e disciplinas ===== */}
+          <h2 className="form-section-title">Cursos e disciplinas</h2>
+          {erroVinculos && <div className="form-erro">{erroVinculos}</div>}
+          {!erroVinculos && !vinculosProntos && <p className="prof-vinculos-dica">Carregando cursos e disciplinas...</p>}
+          {vinculosProntos && (
+            <CursosDisciplinasProfessor
+              cursos={cursos}
+              disciplinas={disciplinas}
+              cursosSelecionados={cursosSelecionados}
+              disciplinasSelecionadas={disciplinasSelecionadas}
+              onAlterar={handleAlterarVinculos}
+            />
+          )}
+
+          {/* ===== Status ===== */}
+          <h2 className="form-section-title">Status</h2>
+          <div className="form-grid">
+            <div className="form-field">
+              <label htmlFor="status">Situação do professor</label>
+              <select id="status" name="status" value={form.status || 'ativo'} onChange={handleChange}>
+                <option value="ativo">Ativo</option>
+                <option value="inativo">Inativo</option>
+                <option value="bloqueado">Bloqueado</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="form-acoes">
+            <Link to="/admin/professores" className="admin-btn admin-btn-secundario">
+              Cancelar
+            </Link>
+            <button type="submit" className="form-btn" disabled={enviando}>
+              {enviando ? 'SALVANDO...' : 'SALVAR'}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {inativasParaConfirmar && (
+        <div className="admin-confirmacao-fundo">
+          <div
+            className="admin-confirmacao"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="confirmacao-titulo"
+            aria-describedby="confirmacao-texto"
+          >
+            <h2 id="confirmacao-titulo">Disciplina inativa selecionada</h2>
+            <div id="confirmacao-texto">
+              <ul>
+                {inativasParaConfirmar.map((disciplina) => (
+                  <li key={disciplina.idDisciplina}>
+                    A disciplina <strong>{disciplina.nome}</strong>
+                    {disciplina.curso?.nome ? ` (${disciplina.curso.nome})` : ''} está inativa e não será
+                    calculada nas horas totais de aula deste professor.
+                  </li>
+                ))}
+              </ul>
+              <p>Deseja salvar mesmo assim?</p>
+            </div>
+            <div className="admin-confirmacao-acoes">
+              <button type="button" className="admin-btn admin-btn-secundario" onClick={() => setInativasParaConfirmar(null)} autoFocus>
+                Cancelar
+              </button>
+              <button type="button" className="admin-btn admin-btn-primary" onClick={salvarTudo}>
+                Confirmar e salvar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default AdminProfessorForm;

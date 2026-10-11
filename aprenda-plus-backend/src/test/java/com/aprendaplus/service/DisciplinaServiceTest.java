@@ -75,4 +75,28 @@ class DisciplinaServiceTest {
 
         verify(disciplinaRepository, times(1)).deleteById(1);
     }
+
+    @Test
+    void disciplinaSemStatusFicaAtiva() {
+        disciplina.setStatus(null);
+        when(disciplinaRepository.save(disciplina)).thenReturn(disciplina);
+
+        assertEquals("ativa", disciplinaService.salvar(disciplina).getStatus());
+    }
+
+    @Test
+    void disciplinaComStatusEmBrancoFicaAtiva() {
+        disciplina.setStatus("  ");
+        when(disciplinaRepository.save(disciplina)).thenReturn(disciplina);
+
+        assertEquals("ativa", disciplinaService.salvar(disciplina).getStatus());
+    }
+
+    @Test
+    void disciplinaInativaContinuaInativa() {
+        disciplina.setStatus("inativa");
+        when(disciplinaRepository.save(disciplina)).thenReturn(disciplina);
+
+        assertEquals("inativa", disciplinaService.salvar(disciplina).getStatus());
+    }
 }

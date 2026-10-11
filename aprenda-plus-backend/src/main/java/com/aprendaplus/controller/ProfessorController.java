@@ -1,5 +1,6 @@
 package com.aprendaplus.controller;
 
+import com.aprendaplus.dto.VinculosProfessor;
 import com.aprendaplus.entity.Professor;
 import com.aprendaplus.service.ProfessorService;
 import jakarta.validation.Valid;
@@ -35,6 +36,18 @@ public class ProfessorController {
     public ResponseEntity<Professor> atualizar(@PathVariable Integer id, @Valid @RequestBody Professor professor) {
         professor.setIdProfessor(id);
         return ResponseEntity.ok(professorService.salvar(professor));
+    }
+
+    // Cursos e disciplinas que o professor leciona
+    @GetMapping("/{id}/vinculos")
+    public ResponseEntity<VinculosProfessor> buscarVinculos(@PathVariable Integer id) {
+        return ResponseEntity.ok(professorService.buscarVinculos(id));
+    }
+
+    @PutMapping("/{id}/vinculos")
+    public ResponseEntity<VinculosProfessor> salvarVinculos(@PathVariable Integer id,
+                                                            @RequestBody VinculosProfessor vinculos) {
+        return ResponseEntity.ok(professorService.salvarVinculos(id, vinculos));
     }
 
     @DeleteMapping("/{id}")

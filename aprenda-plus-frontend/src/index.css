@@ -1959,3 +1959,205 @@ img {
   font-size: 14px;
   color: #6b7280;
 }
+
+/* ===== Busca de endereço pelo CEP ===== */
+.campo-cep-situacao {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.campo-cep-encontrado {
+  color: #047857;
+}
+
+.campo-cep-nao-encontrado,
+.campo-cep-erro {
+  color: #b45309;
+}
+
+/* ===== Disciplina inativa ===== */
+.status-inativa {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.form-dica {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+/* ===== Cursos e disciplinas do professor ===== */
+.prof-vinculos {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.prof-cursos,
+.prof-disciplinas {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 0.9rem 1rem 1rem;
+  margin: 0;
+}
+
+.prof-cursos legend,
+.prof-disciplinas legend {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #374151;
+  padding: 0 0.35rem;
+}
+
+.prof-cursos-lista {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.prof-curso-opcao {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem 0.8rem;
+  border: 1px solid #d1d5db;
+  border-radius: 999px;
+  font-size: 0.88rem;
+  color: #374151;
+  cursor: pointer;
+  background: #fff;
+}
+
+.prof-curso-opcao.marcado {
+  border-color: #00b4d8;
+  background: #e6f8fc;
+  color: #001e42;
+  font-weight: 600;
+}
+
+.prof-curso-opcao input,
+.prof-disciplina-opcao input {
+  accent-color: #00b4d8;
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+}
+
+.prof-disciplinas-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.prof-disciplina-opcao {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 0.25rem;
+  border-bottom: 1px solid #f0f1f3;
+  font-size: 0.9rem;
+  color: #1f2937;
+  cursor: pointer;
+}
+
+.prof-disciplinas-lista li:last-child .prof-disciplina-opcao {
+  border-bottom: none;
+}
+
+.prof-disciplina-nome {
+  flex: 1;
+}
+
+.prof-disciplina-horas {
+  color: #6b7280;
+  font-variant-numeric: tabular-nums;
+}
+
+.prof-disciplina-opcao.inativa .prof-disciplina-nome,
+.prof-disciplina-opcao.inativa .prof-disciplina-horas {
+  color: #9ca3af;
+}
+
+.prof-vinculos-dica,
+.prof-vinculos-vazio {
+  font-size: 0.88rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+.prof-horas-total {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.75rem;
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
+  background: #001e42;
+  color: #fff;
+}
+
+.prof-horas-total span {
+  font-size: 0.85rem;
+  opacity: 0.85;
+}
+
+.prof-horas-total strong {
+  font-size: 1.35rem;
+  color: #00b4d8;
+}
+
+.prof-horas-total small {
+  flex-basis: 100%;
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+
+/* ===== Janela de confirmação do painel ===== */
+.admin-confirmacao-fundo {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 30, 66, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 1000;
+}
+
+.admin-confirmacao {
+  background: #fff;
+  border-radius: 14px;
+  max-width: 480px;
+  width: 100%;
+  padding: 1.5rem;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+}
+
+.admin-confirmacao h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.15rem;
+  color: #001e42;
+}
+
+.admin-confirmacao ul {
+  margin: 0 0 0.75rem;
+  padding-left: 1.1rem;
+  color: #374151;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.admin-confirmacao p {
+  margin: 0;
+  color: #374151;
+  font-size: 0.92rem;
+}
+
+.admin-confirmacao-acoes {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  margin-top: 1.25rem;
+}

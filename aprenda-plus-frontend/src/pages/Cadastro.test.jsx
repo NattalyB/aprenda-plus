@@ -2,8 +2,14 @@ import { screen, fireEvent, waitFor } from '@testing-library/react';
 import Cadastro from './Cadastro';
 import { renderizar } from '../testUtils';
 import { criarAluno } from '../services/alunoService';
+import { buscarEnderecoPorCep } from '../services/cepService';
 
 jest.mock('../services/alunoService');
+// A consulta ao ViaCEP é simulada: nenhum teste acessa a internet
+jest.mock('../services/cepService', () => ({
+  ...jest.requireActual('../services/cepService'),
+  buscarEnderecoPorCep: jest.fn(),
+}));
 
 const dados = {
   'Nome completo': 'Maria Silva',
@@ -28,7 +34,10 @@ const preencherEEnviar = () => {
   fireEvent.click(screen.getByRole('button', { name: 'CRIAR CONTA' }));
 };
 
-beforeEach(() => jest.clearAllMocks());
+beforeEach(() => {
+  jest.clearAllMocks();
+  buscarEnderecoPorCep.mockResolvedValue(null);
+});
 
 test('cadastro completo envia todos os dados e vai pro login', async () => {
   criarAluno.mockResolvedValue({ data: { idAluno: 1 } });
@@ -75,4 +84,17 @@ test.each([
 
   expect(await screen.findByText(mensagem)).toBeInTheDocument();
   expect(screen.getByTestId('endereco')).toHaveTextContent('/cadastro');
+});
+
+test('ao digitar o CEP, o endereço é preenchido e continua editável', async () => {
+  buscarEnderecoPorCep.mockResolvedValue({ rua: 'Rua Araçá', bairro: 'Igara', cidade: 'Canoas', estado: 'RS' });
+  renderizar(<Cadastro />);
+
+  fireEvent.change(screen.getByLabelText('CEP'), { target: { value: '92035540' } });
+
+  await waitFor(() => expect(screen.getByLabelText('Rua/Av')).toHaveValue('Rua Araçá'));
+  expect(screen.getByLabelText('UF')).toHaveValue('RS');
+
+  fireEvent.change(screen.getByLabelText('Bairro'), { target: { value: 'Igara II' } });
+  expect(screen.getByLabelText('Bairro')).toHaveValue('Igara II');
 });

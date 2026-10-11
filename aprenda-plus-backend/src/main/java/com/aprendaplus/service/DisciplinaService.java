@@ -23,6 +23,10 @@ public class DisciplinaService {
     }
 
     public Disciplina salvar(Disciplina disciplina) {
+        // Sem status informado, a disciplina fica ativa
+        if (disciplina.getStatus() == null || disciplina.getStatus().isBlank()) {
+            disciplina.setStatus("ativa");
+        }
         return disciplinaRepository.save(disciplina);
     }
 

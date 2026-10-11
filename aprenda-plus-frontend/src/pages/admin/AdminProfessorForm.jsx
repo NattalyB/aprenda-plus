@@ -1,6 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
-import { buscarProfessorPorId, criarProfessor, atualizarProfessor } from '../../services/professorService';
+import {
+  buscarProfessorPorId,
+  criarProfessor,
+  atualizarProfessor,
+  buscarVinculosProfessor,
+  salvarVinculosProfessor,
+} from '../../services/professorService';
+import { listarCursos } from '../../services/cursoService';
+import { listarDisciplinas } from '../../services/disciplinaService';
+import CursosDisciplinasProfessor, { estaInativa } from '../../components/admin/CursosDisciplinasProfessor';
+import CampoCep from '../../components/CampoCep';
 
 function AdminProfessorForm() {
   const navigate = useNavigate();
@@ -25,39 +35,109 @@ function AdminProfessorForm() {
   const [erro, setErro] = useState(null);
   const [enviando, setEnviando] = useState(false);
 
+  // Cursos e disciplinas
+  const [cursos, setCursos] = useState([]);
+  const [disciplinas, setDisciplinas] = useState([]);
+  const [cursosSelecionados, setCursosSelecionados] = useState([]);
+  const [disciplinasSelecionadas, setDisciplinasSelecionadas] = useState([]);
+  const [vinculosProntos, setVinculosProntos] = useState(false);
+  const [erroVinculos, setErroVinculos] = useState(null);
+  // Disciplinas inativas que precisam de confirmação antes de salvar
+  const [inativasParaConfirmar, setInativasParaConfirmar] = useState(null);
+  // Id do professor depois do primeiro salvamento (evita cadastrar duas vezes se der erro nos vínculos)
+  const [idSalvo, setIdSalvo] = useState(id || null);
+
   useEffect(() => {
     if (modoEdicao) {
       buscarProfessorPorId(id).then((response) => {
         setForm(response.data);
       });
     }
+
+    const carregamentos = [listarCursos(), listarDisciplinas()];
+    if (modoEdicao) carregamentos.push(buscarVinculosProfessor(id));
+
+    Promise.all(carregamentos)
+      .then(([respostaCursos, respostaDisciplinas, respostaVinculos]) => {
+        setCursos(respostaCursos.data);
+        setDisciplinas(respostaDisciplinas.data);
+        if (respostaVinculos) {
+          setCursosSelecionados(respostaVinculos.data.cursos || []);
+          setDisciplinasSelecionadas(respostaVinculos.data.disciplinas || []);
+        }
+        setVinculosProntos(true);
+      })
+      .catch(() => {
+        // Sem os dados, não mexemos nos vínculos ao salvar (para não apagar nada sem querer)
+        setErroVinculos('Não foi possível carregar os cursos e disciplinas. Os demais dados podem ser salvos normalmente.');
+      });
   }, [id]);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const handleAlterarVinculos = (novosCursos, novasDisciplinas) => {
+    setCursosSelecionados(novosCursos);
+    setDisciplinasSelecionadas(novasDisciplinas);
+  };
+
+  const mostrarErro = (error, padrao) => {
+    // Se o backend devolveu quais campos estão errados, mostra as mensagens
+    const errosCampos = error.response?.data?.erros;
+    if (errosCampos) {
+      setErro(Object.values(errosCampos).join(' '));
+    } else {
+      setErro(error.response?.data?.mensagem || padrao);
+    }
+    setEnviando(false);
+  };
+
+  const salvarTudo = () => {
+    setInativasParaConfirmar(null);
     setErro(null);
     setEnviando(true);
 
-    const acao = modoEdicao ? atualizarProfessor(id, form) : criarProfessor(form);
+    const acao = idSalvo ? atualizarProfessor(idSalvo, form) : criarProfessor(form);
 
     acao
-      .then(() => {
-        navigate('/admin/professores');
-      })
-      .catch((error) => {
-        // Se o backend devolveu quais campos estão errados, mostra as mensagens
-        const errosCampos = error.response?.data?.erros;
-        if (errosCampos) {
-          setErro(Object.values(errosCampos).join(' '));
-        } else {
-          setErro('Não foi possível salvar. Confira os campos (e-mail/CPF podem já existir).');
+      .then((response) => {
+        const idProfessor = idSalvo || response?.data?.idProfessor;
+        setIdSalvo(idProfessor);
+
+        if (!vinculosProntos || !idProfessor) {
+          navigate('/admin/professores');
+          return;
         }
-        setEnviando(false);
-      });
+
+        return salvarVinculosProfessor(idProfessor, {
+          cursos: cursosSelecionados,
+          disciplinas: disciplinasSelecionadas,
+        })
+          .then(() => navigate('/admin/professores'))
+          .catch((error) =>
+            mostrarErro(
+              error,
+              'Os dados do professor foram salvos, mas não foi possível salvar os cursos e disciplinas. Tente salvar de novo.'
+            )
+          );
+      })
+      .catch((error) => mostrarErro(error, 'Não foi possível salvar. Confira os campos (e-mail/CPF podem já existir).'));
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    // Se tiver disciplina inativa marcada, pede confirmação antes de salvar
+    const inativas = disciplinas.filter(
+      (d) => disciplinasSelecionadas.includes(d.idDisciplina) && estaInativa(d)
+    );
+    if (vinculosProntos && inativas.length > 0) {
+      setInativasParaConfirmar(inativas);
+      return;
+    }
+
+    salvarTudo();
   };
 
   return (
@@ -127,7 +207,11 @@ function AdminProfessorForm() {
             <div className="form-row">
               <div className="form-field">
                 <label htmlFor="cep">CEP</label>
-                <input id="cep" name="cep" placeholder="00000-000" value={form.cep || ''} onChange={handleChange} required />
+                <CampoCep
+                  value={form.cep || ''}
+                  onChange={handleChange}
+                  onEnderecoEncontrado={(endereco) => setForm((atual) => ({ ...atual, ...endereco }))}
+                />
               </div>
               <div className="form-field">
                 <label htmlFor="bairro">Bairro</label>
@@ -146,6 +230,20 @@ function AdminProfessorForm() {
               </div>
             </div>
           </div>
+
+          {/* ===== Cursos e disciplinas ===== */}
+          <h2 className="form-section-title">Cursos e disciplinas</h2>
+          {erroVinculos && <div className="form-erro">{erroVinculos}</div>}
+          {!erroVinculos && !vinculosProntos && <p className="prof-vinculos-dica">Carregando cursos e disciplinas...</p>}
+          {vinculosProntos && (
+            <CursosDisciplinasProfessor
+              cursos={cursos}
+              disciplinas={disciplinas}
+              cursosSelecionados={cursosSelecionados}
+              disciplinasSelecionadas={disciplinasSelecionadas}
+              onAlterar={handleAlterarVinculos}
+            />
+          )}
 
           {/* ===== Status ===== */}
           <h2 className="form-section-title">Status</h2>
@@ -170,6 +268,40 @@ function AdminProfessorForm() {
           </div>
         </form>
       </div>
+
+      {inativasParaConfirmar && (
+        <div className="admin-confirmacao-fundo">
+          <div
+            className="admin-confirmacao"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="confirmacao-titulo"
+            aria-describedby="confirmacao-texto"
+          >
+            <h2 id="confirmacao-titulo">Disciplina inativa selecionada</h2>
+            <div id="confirmacao-texto">
+              <ul>
+                {inativasParaConfirmar.map((disciplina) => (
+                  <li key={disciplina.idDisciplina}>
+                    A disciplina <strong>{disciplina.nome}</strong>
+                    {disciplina.curso?.nome ? ` (${disciplina.curso.nome})` : ''} está inativa e não será
+                    calculada nas horas totais de aula deste professor.
+                  </li>
+                ))}
+              </ul>
+              <p>Deseja salvar mesmo assim?</p>
+            </div>
+            <div className="admin-confirmacao-acoes">
+              <button type="button" className="admin-btn admin-btn-secundario" onClick={() => setInativasParaConfirmar(null)} autoFocus>
+                Cancelar
+              </button>
+              <button type="button" className="admin-btn admin-btn-primary" onClick={salvarTudo}>
+                Confirmar e salvar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

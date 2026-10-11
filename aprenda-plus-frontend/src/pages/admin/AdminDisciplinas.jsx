@@ -13,6 +13,7 @@ const CAMPOS_ORDENACAO = {
   nome: (d) => d.nome,
   curso: (d) => d.curso?.nome,
   cargaHoraria: (d) => d.cargaHoraria,
+  status: (d) => d.status || 'ativa',
 };
 
 function AdminDisciplinas() {
@@ -122,13 +123,14 @@ function AdminDisciplinas() {
                 <ColunaOrdenavel coluna="nome" ordem={ordem} onOrdenar={alternar}>Nome</ColunaOrdenavel>
                 <ColunaOrdenavel coluna="curso" ordem={ordem} onOrdenar={alternar}>Curso</ColunaOrdenavel>
                 <ColunaOrdenavel coluna="cargaHoraria" ordem={ordem} onOrdenar={alternar}>Carga horária</ColunaOrdenavel>
+                <ColunaOrdenavel coluna="status" ordem={ordem} onOrdenar={alternar}>Status</ColunaOrdenavel>
                 <th>Ações</th>
               </tr>
             </thead>
             <tbody>
               {disciplinasFiltradas.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="admin-vazio">
+                  <td colSpan={6} className="admin-vazio">
                     {busca || cursoFiltro ? 'Nenhuma disciplina encontrada com esses filtros.' : 'Nenhuma disciplina cadastrada ainda.'}
                   </td>
                 </tr>
@@ -139,6 +141,11 @@ function AdminDisciplinas() {
                     <td>{disciplina.nome}</td>
                     <td>{disciplina.curso?.nome || '-'}</td>
                     <td>{disciplina.cargaHoraria}h</td>
+                    <td>
+                      <span className={`status-badge status-${disciplina.status || 'ativa'}`}>
+                        {disciplina.status === 'inativa' ? 'Inativa' : 'Ativa'}
+                      </span>
+                    </td>
                     <td>
                       <div className="admin-acoes">
                         <Link
