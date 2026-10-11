@@ -97,7 +97,10 @@ function CursosDisciplinasProfessor({ cursos, disciplinas, cursosSelecionados, d
                     />
                     <span className="prof-disciplina-nome">
                       {disciplina.nome}
-                      <small className="prof-disciplina-cursos">{cursosMarcadosDa(disciplina)}</small>
+                      {/* display: block garante que os cursos fiquem na linha de baixo */}
+                      <small className="prof-disciplina-cursos" style={{ display: 'block' }}>
+                        {cursosMarcadosDa(disciplina)}
+                      </small>
                     </span>
                     <span className="prof-disciplina-horas">{disciplina.cargaHoraria || 0}h</span>
                     {estaInativa(disciplina) && <span className="status-badge status-inativa">Inativa</span>}

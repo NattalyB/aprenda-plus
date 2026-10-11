@@ -2162,3 +2162,9 @@ img {
   margin-top: 1.25rem;
 }
 
+   .prof-disciplina-cursos {
+     display: block;
+     margin-top: 0.15rem;
+     font-size: 0.75rem;
+     color: #6b7280;
+   }
