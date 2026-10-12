@@ -27,6 +27,9 @@ function AdminLogin() {
         setEnviando(false);
         if (error.response?.status === 401) {
           setErro('E-mail ou senha inválidos.');
+        } else if (error.response?.data?.erro) {
+          // Ex.: conta inativa ou bloqueada (o servidor explica o motivo)
+          setErro(error.response.data.erro);
         } else {
           setErro('Não foi possível fazer login. Tente novamente.');
         }

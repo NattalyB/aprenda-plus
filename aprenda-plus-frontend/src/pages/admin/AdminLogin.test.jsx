@@ -35,6 +35,18 @@ test('senha errada mostra mensagem', async () => {
   expect(salvarSessaoAdmin).not.toHaveBeenCalled();
 });
 
+test('funcionário inativo vê a mensagem do servidor', async () => {
+  loginFuncionario.mockRejectedValue({
+    response: { status: 403, data: { erro: 'Sua conta está inativa. Entre em contato com o suporte para reativá-la.' } },
+  });
+  renderizar(<AdminLogin />, { rota: '/admin/login' });
+
+  preencherEEnviar();
+
+  expect(await screen.findByText('Sua conta está inativa. Entre em contato com o suporte para reativá-la.')).toBeInTheDocument();
+  expect(salvarSessaoAdmin).not.toHaveBeenCalled();
+});
+
 test('outros erros mostram mensagem genérica', async () => {
   loginFuncionario.mockRejectedValue(new Error('offline'));
   renderizar(<AdminLogin />, { rota: '/admin/login' });

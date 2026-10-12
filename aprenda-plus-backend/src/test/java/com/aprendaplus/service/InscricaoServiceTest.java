@@ -7,6 +7,7 @@ import com.aprendaplus.entity.Curso;
 import com.aprendaplus.entity.Inscricao;
 import com.aprendaplus.entity.Turma;
 import com.aprendaplus.exception.RegraDeNegocioException;
+import com.aprendaplus.repository.AlunoRepository;
 import com.aprendaplus.repository.CarrinhoRepository;
 import com.aprendaplus.repository.InscricaoRepository;
 import com.aprendaplus.repository.ItemCarrinhoRepository;
@@ -35,6 +36,9 @@ class InscricaoServiceTest {
 
     @Mock
     private TurmaRepository turmaRepository;
+
+    @Mock
+    private AlunoRepository alunoRepository;
 
     @Mock
     private CarrinhoRepository carrinhoRepository;
@@ -374,5 +378,48 @@ class InscricaoServiceTest {
         Inscricao salva = inscricaoService.criarInscricaoDoAluno(pedido("Cartão de crédito · 12x"), 7);
 
         assertEquals("Cartão de crédito · 12x", salva.getFormaPagamento());
+    }
+
+    // ===== Conta do aluno =====
+
+    private void alunoComStatus(String status) {
+        Aluno aluno = new Aluno();
+        aluno.setIdAluno(7);
+        aluno.setStatus(status);
+        when(alunoRepository.findById(7)).thenReturn(Optional.of(aluno));
+    }
+
+    @Test
+    void alunoBloqueadoNaoConsegueComprar() {
+        alunoComStatus("bloqueado");
+
+        RegraDeNegocioException erro = assertThrows(RegraDeNegocioException.class,
+                () -> inscricaoService.criarInscricaoDoAluno(pedido("pix"), 7));
+
+        assertEquals("Sua conta está bloqueada. Entre em contato com o suporte.", erro.getMessage());
+        verify(inscricaoRepository, never()).save(any());
+        verify(turmaRepository, never()).findById(any());
+    }
+
+    @Test
+    void alunoInativoNaoConsegueComprar() {
+        alunoComStatus("inativo");
+
+        RegraDeNegocioException erro = assertThrows(RegraDeNegocioException.class,
+                () -> inscricaoService.criarInscricaoDoAluno(pedido("pix"), 7));
+
+        assertTrue(erro.getMessage().contains("inativa"));
+        verify(inscricaoRepository, never()).save(any());
+    }
+
+    @Test
+    void alunoAtivoCompraNormalmente() {
+        alunoComStatus("ativo");
+        turmaDoCurso("1000.00", 10);
+        saveDevolveAPropriaInscricao();
+
+        Inscricao salva = inscricaoService.criarInscricaoDoAluno(pedido("pix"), 7);
+
+        assertEquals(new BigDecimal("950.00"), salva.getValorTotal());
     }
 }

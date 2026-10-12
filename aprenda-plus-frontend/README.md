@@ -256,8 +256,8 @@ A meta do projeto era **cobertura mínima de 70%**. Os dois lados ficaram bem ac
 
 | | Testes | Cobertura | Ferramentas |
 |---|---|---|---|
-| **Back-end** | 272 | **99%** das instruções, 89% dos desvios (*branches*) | JUnit 5, Mockito, MockMvc, JaCoCo |
-| **Front-end** | 319 | **99,7%** das instruções, 97,6% dos desvios, 100% das funções | Jest, Testing Library |
+| **Back-end** | 284 | **99%** das instruções, 89% dos desvios (*branches*) | JUnit 5, Mockito, MockMvc, JaCoCo |
+| **Front-end** | 321 | **99,7%** das instruções, 97,6% dos desvios, 100% das funções | Jest, Testing Library |
 
 ### Back-end
 
@@ -311,6 +311,7 @@ O que é testado:
 | **Aluno** | O próprio carrinho e a criação de inscrições |
 | **Admin** | Todas as rotas |
 
+- **Contas inativas ou bloqueadas não entram:** aluno ou funcionário com status diferente de *ativo* recebe uma mensagem para procurar o suporte, mesmo com a senha certa. E, se um aluno for bloqueado enquanto ainda está logado, o servidor recusa a compra.
 - **Cada aluno só vê e altera o próprio carrinho:** a identidade vem do token assinado pelo servidor, não de dados enviados pelo navegador.
 - **Inscrição à prova de adulteração:** quando um aluno finaliza a compra, o navegador só informa a **turma** e a **forma de pagamento**. Todo o resto é definido pelo servidor:
   - o **aluno** é sempre o do token (não dá para se inscrever em nome de outra pessoa);

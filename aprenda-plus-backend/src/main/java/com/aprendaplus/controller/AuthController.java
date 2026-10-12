@@ -18,6 +18,7 @@ import com.aprendaplus.entity.LoginRequest;
 import com.aprendaplus.repository.AlunoRepository;
 import com.aprendaplus.repository.FuncionarioRepository;
 import com.aprendaplus.security.JwtUtil;
+import com.aprendaplus.security.StatusConta;
 
 @RestController
 @RequestMapping("/auth")
@@ -42,6 +43,12 @@ public class AuthController {
             return ResponseEntity.status(401).body(Map.of("erro", "E-mail ou senha inválidos"));
         }
 
+        // Senha certa, mas conta inativa ou bloqueada: não entra (403 = acesso negado)
+        String bloqueio = StatusConta.motivoDoBloqueio(aluno.getStatus());
+        if (bloqueio != null) {
+            return ResponseEntity.status(403).body(Map.of("erro", bloqueio));
+        }
+
         String token = jwtUtil.gerarToken(aluno.getEmail(), aluno.getIdAluno(), "ALUNO");
 
         Map<String, Object> response = new HashMap<>();
@@ -58,6 +65,12 @@ public class AuthController {
 
         if (funcionario == null || !encoder.matches(request.getSenha(), funcionario.getSenhaHash())) {
             return ResponseEntity.status(401).body(Map.of("erro", "E-mail ou senha inválidos"));
+        }
+
+        // Funcionário desligado ou bloqueado também não entra no painel
+        String bloqueio = StatusConta.motivoDoBloqueio(funcionario.getStatus());
+        if (bloqueio != null) {
+            return ResponseEntity.status(403).body(Map.of("erro", bloqueio));
         }
 
         String token = jwtUtil.gerarToken(funcionario.getEmail(), funcionario.getIdFuncionario(), "ADMIN");

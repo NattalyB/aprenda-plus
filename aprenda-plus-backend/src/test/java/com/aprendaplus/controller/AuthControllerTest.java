@@ -134,4 +134,60 @@ class AuthControllerTest {
                         .content(login("maria@teste.com", "senha123")))
                 .andExpect(status().isUnauthorized());
     }
+
+    // ===== Conta inativa ou bloqueada =====
+
+    @Test
+    void alunoInativoNaoConsegueEntrar() throws Exception {
+        Aluno aluno = alunoCadastrado();
+        aluno.setStatus("inativo");
+        when(alunoRepository.findByEmail("maria@teste.com")).thenReturn(aluno);
+
+        mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(login("maria@teste.com", "senha123")))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.erro").value("Sua conta está inativa. Entre em contato com o suporte para reativá-la."))
+                .andExpect(jsonPath("$.token").doesNotExist());
+    }
+
+    @Test
+    void alunoBloqueadoNaoConsegueEntrar() throws Exception {
+        Aluno aluno = alunoCadastrado();
+        aluno.setStatus("bloqueado");
+        when(alunoRepository.findByEmail("maria@teste.com")).thenReturn(aluno);
+
+        mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(login("maria@teste.com", "senha123")))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.erro").value("Sua conta está bloqueada. Entre em contato com o suporte."));
+    }
+
+    @Test
+    void alunoBloqueadoComSenhaErradaRecebeSoErroDeSenha() throws Exception {
+        // Sem a senha certa, não revelamos nada sobre a situação da conta
+        Aluno aluno = alunoCadastrado();
+        aluno.setStatus("bloqueado");
+        when(alunoRepository.findByEmail("maria@teste.com")).thenReturn(aluno);
+
+        mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(login("maria@teste.com", "senhaErrada")))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.erro").value("E-mail ou senha inválidos"));
+    }
+
+    @Test
+    void funcionarioInativoNaoEntraNoPainel() throws Exception {
+        Funcionario funcionario = funcionarioCadastrado();
+        funcionario.setStatus("inativo");
+        when(funcionarioRepository.findByEmail("admin@teste.com")).thenReturn(funcionario);
+
+        mockMvc.perform(post("/auth/login-funcionario")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(login("admin@teste.com", "admin123")))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.erro").value("Sua conta está inativa. Entre em contato com o suporte para reativá-la."));
+    }
 }

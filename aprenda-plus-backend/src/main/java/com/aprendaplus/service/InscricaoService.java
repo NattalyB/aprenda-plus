@@ -5,11 +5,13 @@ import com.aprendaplus.entity.Curso;
 import com.aprendaplus.entity.Inscricao;
 import com.aprendaplus.entity.Turma;
 import com.aprendaplus.exception.RegraDeNegocioException;
+import com.aprendaplus.repository.AlunoRepository;
 import com.aprendaplus.entity.ItemCarrinho;
 import com.aprendaplus.repository.CarrinhoRepository;
 import com.aprendaplus.repository.InscricaoRepository;
 import com.aprendaplus.repository.ItemCarrinhoRepository;
 import com.aprendaplus.repository.TurmaRepository;
+import com.aprendaplus.security.StatusConta;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,6 +37,9 @@ public class InscricaoService {
 
     @Autowired
     private TurmaRepository turmaRepository;
+
+    @Autowired
+    private AlunoRepository alunoRepository;
 
     @Autowired
     private CarrinhoRepository carrinhoRepository;
@@ -63,6 +68,14 @@ public class InscricaoService {
     // alterar o valor pelo navegador e pagar menos.
     @Transactional
     public Inscricao criarInscricaoDoAluno(Inscricao dados, Integer idAluno) {
+        // Aluno inativo ou bloqueado não pode comprar, mesmo que ainda esteja logado
+        alunoRepository.findById(idAluno).ifPresent(aluno -> {
+            String bloqueio = StatusConta.motivoDoBloqueio(aluno.getStatus());
+            if (bloqueio != null) {
+                throw new RegraDeNegocioException(bloqueio);
+            }
+        });
+
         if (dados.getTurma() == null || dados.getTurma().getIdTurma() == null) {
             throw new RegraDeNegocioException("Informe a turma da inscrição.");
         }

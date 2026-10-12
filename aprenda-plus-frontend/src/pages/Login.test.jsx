@@ -35,6 +35,19 @@ test('senha errada mostra mensagem e continua na tela de login', async () => {
   expect(salvarSessao).not.toHaveBeenCalled();
 });
 
+test('conta bloqueada mostra a mensagem do servidor e não entra', async () => {
+  login.mockRejectedValue({
+    response: { status: 403, data: { erro: 'Sua conta está bloqueada. Entre em contato com o suporte.' } },
+  });
+  renderizar(<Login />, { rota: '/login' });
+
+  preencherEEnviar();
+
+  expect(await screen.findByText('Sua conta está bloqueada. Entre em contato com o suporte.')).toBeInTheDocument();
+  expect(screen.getByTestId('endereco')).toHaveTextContent('/login');
+  expect(salvarSessao).not.toHaveBeenCalled();
+});
+
 test('servidor fora do ar mostra mensagem genérica', async () => {
   login.mockRejectedValue(new Error('Network Error'));
   renderizar(<Login />, { rota: '/login' });
