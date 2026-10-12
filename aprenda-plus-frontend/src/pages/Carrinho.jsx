@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { listarItensDoCarrinho, removerItemDoCarrinho } from '../services/carrinhoService';
-import { buscarTurmasPorCurso } from '../services/cursoService';
+import { listarTurmasDisponiveis } from '../services/turmaService';
 import { criarInscricao } from '../services/inscricaoService';
 import { estaLogado } from '../services/authService';
 import { mostrarAviso } from '../services/avisoService';
@@ -106,18 +106,19 @@ function Carrinho() {
     const idAluno = localStorage.getItem('idAluno');
     const descricao = descreverPagamento();
 
-    // Pra cada item do carrinho, busca a primeira turma disponível do curso e cria a inscrição
+    // Pra cada item do carrinho, coloca o aluno na primeira turma aberta COM VAGA do curso.
+    // Depois ele pode escolher outra turma em "Minhas inscrições".
     const promessas = itens.map((item) => {
       const valorItem =
         formaPagamento === 'pix'
           ? arredondar(Number(item.curso.valor) * (1 - DESCONTO_PIX))
           : Number(item.curso.valor);
 
-      return buscarTurmasPorCurso(item.curso.idCurso).then((turmas) => {
-        if (turmas.length === 0) {
-          throw new Error(`O curso "${item.curso.nome}" ainda não tem turma disponível.`);
+      return listarTurmasDisponiveis(item.curso.idCurso).then((turmas) => {
+        const turma = turmas.find((t) => t.vagasRestantes > 0);
+        if (!turma) {
+          throw new Error(`O curso "${item.curso.nome}" não tem turma com vagas no momento.`);
         }
-        const turma = turmas[0];
         return criarInscricao(idAluno, turma.idTurma, valorItem, descricao);
       });
     });
@@ -191,8 +192,13 @@ function Carrinho() {
             Sua inscrição foi registrada com status <strong>pendente de pagamento</strong>.{' '}
             {PROXIMOS_PASSOS[pedidoConcluido.forma]}
           </p>
+          <p>
+            Reservamos uma vaga para você na primeira turma disponível. Se preferir outro turno ou horário, é só
+            trocar em <strong>Minhas inscrições</strong>.
+          </p>
           <div className="carrinho-estado-botoes">
-            <Link to="/" className="admin-btn admin-btn-primary">Continuar navegando</Link>
+            <Link to="/minhas-inscricoes" className="admin-btn admin-btn-primary">Ver minhas inscrições</Link>
+            <Link to="/" className="admin-btn admin-btn-secundario">Continuar navegando</Link>
           </div>
         </div>
       </div>

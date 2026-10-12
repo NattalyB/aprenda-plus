@@ -14,6 +14,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.Arrays;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -61,5 +63,60 @@ class FuncionarioControllerTest {
     void deveExcluirFuncionario() throws Exception {
         mockMvc.perform(delete("/funcionarios/1"))
                 .andExpect(status().isNoContent());
+    }
+
+    // ===== Proteção da própria conta =====
+
+    @Test
+    void adminNaoExcluiAPropriaConta() throws Exception {
+        mockMvc.perform(delete("/funcionarios/1").requestAttr("usuarioId", 1))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.mensagem").value("Você não pode excluir a sua própria conta."));
+
+        verify(funcionarioService, never()).deletar(1);
+    }
+
+    @Test
+    void adminExcluiOutroFuncionario() throws Exception {
+        mockMvc.perform(delete("/funcionarios/2").requestAttr("usuarioId", 1))
+                .andExpect(status().isNoContent());
+
+        verify(funcionarioService).deletar(2);
+    }
+
+    @Test
+    void adminNaoInativaAPropriaConta() throws Exception {
+        mockMvc.perform(put("/funcionarios/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"nomeCompleto\": \"Eu\", \"status\": \"inativo\" }")
+                        .requestAttr("usuarioId", 1))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.mensagem").value("Você não pode inativar ou bloquear a sua própria conta."));
+
+        verify(funcionarioService, never()).salvar(any(Funcionario.class));
+    }
+
+    @Test
+    void adminEditaAPropriaContaMantendoAtiva() throws Exception {
+        when(funcionarioService.salvar(any(Funcionario.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        mockMvc.perform(put("/funcionarios/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"nomeCompleto\": \"Eu\", \"status\": \"ativo\" }")
+                        .requestAttr("usuarioId", 1))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nomeCompleto").value("Eu"));
+    }
+
+    @Test
+    void adminInativaOutroFuncionario() throws Exception {
+        when(funcionarioService.salvar(any(Funcionario.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        mockMvc.perform(put("/funcionarios/2")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"nomeCompleto\": \"Outro\", \"status\": \"inativo\" }")
+                        .requestAttr("usuarioId", 1))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("inativo"));
     }
 }

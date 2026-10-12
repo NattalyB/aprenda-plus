@@ -2,6 +2,9 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import AdminLayout from './AdminLayout';
 import { logarAdmin } from '../../testUtils';
+import { listarInscricoes } from '../../services/inscricaoService';
+
+jest.mock('../../services/inscricaoService');
 
 const montar = (rota = '/admin/cursos') =>
   render(
@@ -15,14 +18,19 @@ const montar = (rota = '/admin/cursos') =>
     </MemoryRouter>
   );
 
-beforeEach(() => localStorage.clear());
+beforeEach(() => {
+  localStorage.clear();
+  listarInscricoes.mockResolvedValue({ data: [] });
+});
 
 test('mostra o menu completo, o nome do funcionário e a página atual', () => {
   logarAdmin('Admin Teste');
   montar();
 
   expect(screen.getByText('Olá, Admin Teste')).toBeInTheDocument();
-  expect(screen.getAllByRole('link')).toHaveLength(8);
+  expect(screen.getAllByRole('link')).toHaveLength(9);
+  expect(screen.getByText('Funcionários do painel')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: /Notificações/ })).toBeInTheDocument();
   expect(screen.getByText('Conteúdo de cursos')).toBeInTheDocument();
   // O item da página atual fica destacado
   expect(screen.getByText('Cadastro de cursos')).toHaveClass('ativo');

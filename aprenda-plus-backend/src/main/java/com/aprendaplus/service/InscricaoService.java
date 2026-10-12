@@ -1,5 +1,6 @@
 package com.aprendaplus.service;
 
+import com.aprendaplus.dto.MinhaInscricao;
 import com.aprendaplus.entity.Aluno;
 import com.aprendaplus.entity.Curso;
 import com.aprendaplus.entity.Inscricao;
@@ -20,6 +21,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.Normalizer;
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -28,6 +30,10 @@ public class InscricaoService {
 
     // Mesmo desconto usado no front (precoCurso.js): 5% no Pix
     public static final BigDecimal DESCONTO_PIX = new BigDecimal("0.05");
+
+    // Situações em que o aluno ainda pode trocar de turma
+    private static final Set<String> STATUS_QUE_PERMITEM_TROCA =
+            Set.of("pendente_pagamento", "confirmada", "aguardando_vaga");
 
     // Encontra o número de parcelas em textos como "Cartão de crédito · 10x"
     private static final Pattern PARCELAS = Pattern.compile("(\\d{1,3})\\s*x");
@@ -46,6 +52,9 @@ public class InscricaoService {
 
     @Autowired
     private ItemCarrinhoRepository itemCarrinhoRepository;
+
+    @Autowired
+    private TurmaService turmaService;
 
     public List<Inscricao> listarTodos() {
         return inscricaoRepository.findAll();
@@ -88,6 +97,20 @@ public class InscricaoService {
             throw new RegraDeNegocioException("Não foi possível identificar o valor do curso desta turma.");
         }
 
+        conferirSeTurmaAceitaInscricao(turma);
+
+        // Não deixa o aluno se inscrever duas vezes no mesmo curso
+        boolean jaInscrito = inscricaoRepository.findByAluno_IdAlunoOrderByIdInscricaoDesc(idAluno).stream()
+                .filter(existente -> !"cancelada".equals(existente.getStatus()))
+                .anyMatch(existente -> existente.getTurma() != null
+                        && existente.getTurma().getCurso() != null
+                        && curso.getIdCurso() != null
+                        && curso.getIdCurso().equals(existente.getTurma().getCurso().getIdCurso()));
+        if (jaInscrito) {
+            throw new RegraDeNegocioException("Você já tem uma inscrição no curso \"" + curso.getNome()
+                    + "\". Para mudar de turma, use \"Minhas inscrições\".");
+        }
+
         // Quem compra vários cursos juntos pode parcelar até o MAIOR limite entre eles
         int maximoDoPedido = Math.max(maximoDeParcelas(curso), maximoDoCarrinho(idAluno));
         Pagamento pagamento = calcularPagamento(curso, dados.getFormaPagamento(), maximoDoPedido);
@@ -112,6 +135,81 @@ public class InscricaoService {
 
     public void deletar(Integer id) {
         inscricaoRepository.deleteById(id);
+    }
+
+    // ===== Área do aluno =====
+
+    @Transactional(readOnly = true)
+    public List<MinhaInscricao> listarDoAluno(Integer idAluno) {
+        return inscricaoRepository.findByAluno_IdAlunoOrderByIdInscricaoDesc(idAluno).stream()
+                .map(this::paraMinhaInscricao)
+                .toList();
+    }
+
+    // Troca a turma de uma inscrição por outra turma aberta, com vaga, do mesmo curso.
+    // idAluno = null quando quem troca é o admin (pode trocar a de qualquer aluno).
+    @Transactional
+    public MinhaInscricao trocarTurma(Integer idInscricao, Integer idNovaTurma, Integer idAluno) {
+        Inscricao inscricao = inscricaoRepository.findById(idInscricao)
+                .orElseThrow(() -> new RegraDeNegocioException("Inscrição não encontrada."));
+
+        if (idAluno != null && (inscricao.getAluno() == null || !idAluno.equals(inscricao.getAluno().getIdAluno()))) {
+            // Não conta ao aluno que a inscrição de outra pessoa existe
+            throw new RegraDeNegocioException("Inscrição não encontrada.");
+        }
+        if (!STATUS_QUE_PERMITEM_TROCA.contains(inscricao.getStatus())) {
+            throw new RegraDeNegocioException("Esta inscrição não permite mais troca de turma.");
+        }
+        if (idNovaTurma == null) {
+            throw new RegraDeNegocioException("Escolha a nova turma.");
+        }
+
+        Turma atual = inscricao.getTurma();
+        if (atual != null && idNovaTurma.equals(atual.getIdTurma())) {
+            throw new RegraDeNegocioException("Você já está nesta turma.");
+        }
+
+        Turma nova = turmaRepository.findById(idNovaTurma)
+                .orElseThrow(() -> new RegraDeNegocioException("Turma não encontrada."));
+
+        Integer cursoAtual = atual == null || atual.getCurso() == null ? null : atual.getCurso().getIdCurso();
+        Integer cursoNovo = nova.getCurso() == null ? null : nova.getCurso().getIdCurso();
+        if (cursoAtual == null || !cursoAtual.equals(cursoNovo)) {
+            throw new RegraDeNegocioException("A nova turma precisa ser do mesmo curso da inscrição.");
+        }
+
+        conferirSeTurmaAceitaInscricao(nova);
+
+        inscricao.setTurma(nova);
+        return paraMinhaInscricao(inscricaoRepository.save(inscricao));
+    }
+
+    // Turma precisa estar com inscrições abertas e ter vaga
+    private void conferirSeTurmaAceitaInscricao(Turma turma) {
+        if (!TurmaService.INSCRICOES_ABERTAS.equals(turma.getStatus())) {
+            throw new RegraDeNegocioException("As inscrições da turma \"" + turma.getNome() + "\" estão encerradas.");
+        }
+        if (turmaService.vagasRestantes(turma) <= 0) {
+            throw new RegraDeNegocioException("A turma \"" + turma.getNome() + "\" não tem mais vagas.");
+        }
+    }
+
+    private MinhaInscricao paraMinhaInscricao(Inscricao inscricao) {
+        Turma turma = inscricao.getTurma();
+        Curso curso = turma == null ? null : turma.getCurso();
+        return new MinhaInscricao(
+                inscricao.getIdInscricao(),
+                curso == null ? null : curso.getIdCurso(),
+                curso == null ? null : curso.getNome(),
+                turma == null ? null : turma.getIdTurma(),
+                turma == null ? null : turma.getNome(),
+                turma == null ? null : turma.getModalidade(),
+                turma == null ? null : turma.getDiasHorarios(),
+                inscricao.getStatus(),
+                inscricao.getFormaPagamento(),
+                inscricao.getValorTotal(),
+                inscricao.getDataInscricao(),
+                STATUS_QUE_PERMITEM_TROCA.contains(inscricao.getStatus()));
     }
 
     // ===== Cálculo do pagamento =====

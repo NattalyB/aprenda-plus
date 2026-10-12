@@ -10,6 +10,7 @@ import AdminDisciplinaForm from './AdminDisciplinaForm';
 import AdminPeriodoLetivoForm from './AdminPeriodoLetivoForm';
 import AdminTurmaForm from './AdminTurmaForm';
 import AdminMatriculaForm from './AdminMatriculaForm';
+import AdminFuncionarioForm from './AdminFuncionarioForm';
 
 import { buscarAlunoPorId, criarAluno, atualizarAluno, listarAlunos } from '../../services/alunoService';
 import {
@@ -24,6 +25,7 @@ import { buscarDisciplinaPorId, criarDisciplina, atualizarDisciplina, listarDisc
 import { buscarPeriodoLetivoPorId, criarPeriodoLetivo, atualizarPeriodoLetivo, listarPeriodosLetivos } from '../../services/periodoLetivoService';
 import { buscarTurmaPorId, criarTurma, atualizarTurma, listarTurmas } from '../../services/turmaService';
 import { buscarMatriculaPorId, criarMatricula, atualizarMatricula } from '../../services/matriculaService';
+import { buscarFuncionarioPorId, criarFuncionario, atualizarFuncionario } from '../../services/funcionarioService';
 import { buscarEnderecoPorCep } from '../../services/cepService';
 
 jest.mock('../../services/alunoService');
@@ -33,6 +35,7 @@ jest.mock('../../services/disciplinaService');
 jest.mock('../../services/periodoLetivoService');
 jest.mock('../../services/turmaService');
 jest.mock('../../services/matriculaService');
+jest.mock('../../services/funcionarioService');
 jest.mock('../../services/cepService', () => ({
   ...jest.requireActual('../../services/cepService'),
   buscarEnderecoPorCep: jest.fn(),
@@ -815,5 +818,86 @@ describe('Formulário de matrícula', () => {
     criarMatricula.mockRejectedValueOnce(new Error('offline'));
     salvar();
     expect(await screen.findByText(/já pode estar matriculado/)).toBeInTheDocument();
+  });
+});
+
+// ===================================================================
+describe('Formulário de funcionário', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    localStorage.setItem('idFuncionario', '1');
+  });
+
+  test('novo funcionário: envia os dados com a senha e volta pra lista', async () => {
+    criarFuncionario.mockResolvedValue({});
+    renderizar(<AdminFuncionarioForm />, { rota: '/admin/funcionarios/novo' });
+
+    expect(screen.getByRole('heading', { name: 'Novo funcionário' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Senha')).toBeRequired();
+    digita('Nome completo', 'Ana Souza');
+    digita('Telefone', '(51) 98888-7777');
+    digita('Data de nascimento', '1992-04-15');
+    digita('CPF', '111.222.333-44');
+    digita('E-mail de login', 'ana@aprendaplus.com');
+    digita('Senha', 'segredo1');
+    digita('Cargo', 'secretaria');
+    digita('Situação', 'ativo');
+    salvar();
+
+    await waitFor(() => expect(endereco()).toHaveTextContent('/admin/funcionarios'));
+    expect(criarFuncionario).toHaveBeenCalledWith(
+      expect.objectContaining({ nomeCompleto: 'Ana Souza', cpf: '11122233344', senhaHash: 'segredo1', cargo: 'secretaria' })
+    );
+  });
+
+  test('editar outro funcionário: senha em branco não é enviada e o status pode mudar', async () => {
+    buscarFuncionarioPorId.mockResolvedValue({ data: { idFuncionario: 2, nomeCompleto: 'Bruno Lima', status: 'ativo' } });
+    atualizarFuncionario.mockResolvedValue({});
+    renderizar(<AdminFuncionarioForm />, { rota: '/admin/funcionarios/2/editar', caminho: '/admin/funcionarios/:id/editar' });
+
+    expect(await screen.findByDisplayValue('Bruno Lima')).toBeInTheDocument();
+    expect(screen.getByLabelText('Nova senha (opcional)')).not.toBeRequired();
+    expect(screen.getByLabelText('Situação')).toBeEnabled();
+    digita('Situação', 'inativo');
+    salvar();
+
+    await waitFor(() => expect(atualizarFuncionario).toHaveBeenCalled());
+    const enviado = atualizarFuncionario.mock.calls[0][1];
+    expect(atualizarFuncionario.mock.calls[0][0]).toBe('2');
+    expect(enviado.status).toBe('inativo');
+    expect(enviado).not.toHaveProperty('senhaHash');
+  });
+
+  test('editar com senha nova envia a senha', async () => {
+    buscarFuncionarioPorId.mockResolvedValue({ data: { idFuncionario: 2, nomeCompleto: 'Bruno Lima' } });
+    atualizarFuncionario.mockResolvedValue({});
+    renderizar(<AdminFuncionarioForm />, { rota: '/admin/funcionarios/2/editar', caminho: '/admin/funcionarios/:id/editar' });
+    await screen.findByDisplayValue('Bruno Lima');
+
+    digita('Nova senha (opcional)', 'novaSenha9');
+    salvar();
+
+    await waitFor(() => expect(atualizarFuncionario).toHaveBeenCalledWith('2', expect.objectContaining({ senhaHash: 'novaSenha9' })));
+  });
+
+  test('na própria conta, a situação fica travada', async () => {
+    buscarFuncionarioPorId.mockResolvedValue({ data: { idFuncionario: 1, nomeCompleto: 'Admin Teste', status: 'ativo' } });
+    renderizar(<AdminFuncionarioForm />, { rota: '/admin/funcionarios/1/editar', caminho: '/admin/funcionarios/:id/editar' });
+
+    expect(await screen.findByDisplayValue('Admin Teste')).toBeInTheDocument();
+    expect(screen.getByLabelText('Situação')).toBeDisabled();
+    expect(screen.getByText('Você não pode inativar a sua própria conta.')).toBeInTheDocument();
+  });
+
+  test('erros: mensagem do servidor ou texto padrão', async () => {
+    renderizar(<AdminFuncionarioForm />, { rota: '/admin/funcionarios/novo' });
+
+    criarFuncionario.mockRejectedValueOnce({ response: { data: { mensagem: 'A senha deve ter pelo menos 6 caracteres.' } } });
+    salvar();
+    expect(await screen.findByText('A senha deve ter pelo menos 6 caracteres.')).toBeInTheDocument();
+
+    criarFuncionario.mockRejectedValueOnce(new Error('offline'));
+    salvar();
+    expect(await screen.findByText(/Não foi possível salvar/)).toBeInTheDocument();
   });
 });

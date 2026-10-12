@@ -10,6 +10,7 @@ import * as inscricaoService from './inscricaoService';
 import * as authService from './authService';
 import * as authAdminService from './authAdminService';
 import * as carrinhoService from './carrinhoService';
+import * as funcionarioService from './funcionarioService';
 import { mostrarAviso } from './avisoService';
 
 // Troca o axios de verdade por funções de mentira: nenhuma requisição sai do computador
@@ -36,6 +37,7 @@ const cadastros = [
   ['disciplinas', disciplinaService.listarDisciplinas, disciplinaService.buscarDisciplinaPorId, disciplinaService.criarDisciplina, disciplinaService.atualizarDisciplina, disciplinaService.deletarDisciplina],
   ['periodos-letivos', periodoLetivoService.listarPeriodosLetivos, periodoLetivoService.buscarPeriodoLetivoPorId, periodoLetivoService.criarPeriodoLetivo, periodoLetivoService.atualizarPeriodoLetivo, periodoLetivoService.deletarPeriodoLetivo],
   ['turmas', turmaService.listarTurmas, turmaService.buscarTurmaPorId, turmaService.criarTurma, turmaService.atualizarTurma, turmaService.deletarTurma],
+  ['funcionarios', funcionarioService.listarFuncionarios, funcionarioService.buscarFuncionarioPorId, funcionarioService.criarFuncionario, funcionarioService.atualizarFuncionario, funcionarioService.deletarFuncionario],
   ['matriculas', matriculaService.listarMatriculas, matriculaService.buscarMatriculaPorId, matriculaService.criarMatricula, matriculaService.atualizarMatricula, matriculaService.deletarMatricula],
 ];
 
@@ -229,5 +231,30 @@ describe('cursos e disciplinas do professor', () => {
   test('salvar usa PUT com os ids dos cursos e disciplinas', () => {
     professorService.salvarVinculosProfessor(4, { cursos: [1], disciplinas: [10] });
     expect(api.put).toHaveBeenCalledWith('/professores/4/vinculos', { cursos: [1], disciplinas: [10] });
+  });
+});
+
+describe('área do aluno e turmas disponíveis', () => {
+  test('turmas disponíveis de um curso', async () => {
+    api.get.mockResolvedValue({ data: [{ idTurma: 3, vagasRestantes: 4 }] });
+
+    const turmas = await turmaService.listarTurmasDisponiveis(2);
+
+    expect(api.get).toHaveBeenCalledWith('/turmas/curso/2/disponiveis');
+    expect(turmas).toEqual([{ idTurma: 3, vagasRestantes: 4 }]);
+  });
+
+  test('minhas inscrições', async () => {
+    api.get.mockResolvedValue({ data: [{ idInscricao: 10 }] });
+
+    expect(await inscricaoService.listarMinhasInscricoes()).toEqual([{ idInscricao: 10 }]);
+    expect(api.get).toHaveBeenCalledWith('/inscricoes/minhas');
+  });
+
+  test('trocar turma manda só o id da nova turma', async () => {
+    api.put.mockResolvedValue({ data: { idInscricao: 10, idTurma: 4 } });
+
+    expect(await inscricaoService.trocarTurmaDaInscricao(10, 4)).toEqual({ idInscricao: 10, idTurma: 4 });
+    expect(api.put).toHaveBeenCalledWith('/inscricoes/10/turma', { idTurma: 4 });
   });
 });

@@ -1,5 +1,6 @@
 package com.aprendaplus.service;
 
+import com.aprendaplus.dto.MinhaInscricao;
 import com.aprendaplus.entity.Aluno;
 import com.aprendaplus.entity.Carrinho;
 import com.aprendaplus.entity.ItemCarrinho;
@@ -46,6 +47,9 @@ class InscricaoServiceTest {
     @Mock
     private ItemCarrinhoRepository itemCarrinhoRepository;
 
+    @Mock
+    private TurmaService turmaService;
+
     @InjectMocks
     private InscricaoService inscricaoService;
 
@@ -57,6 +61,8 @@ class InscricaoServiceTest {
         inscricao.setIdInscricao(1);
         inscricao.setStatus("pendente_pagamento");
         inscricao.setValorTotal(new BigDecimal("199.90"));
+        // Por padrão, toda turma tem vaga (os testes de vagas mudam isso)
+        lenient().when(turmaService.vagasRestantes(any())).thenReturn(10L);
     }
 
     // ===== Operações básicas (usadas pelo painel do admin) =====
@@ -421,5 +427,243 @@ class InscricaoServiceTest {
         Inscricao salva = inscricaoService.criarInscricaoDoAluno(pedido("pix"), 7);
 
         assertEquals(new BigDecimal("950.00"), salva.getValorTotal());
+    }
+
+    // ===== Vagas e inscrição repetida =====
+
+    @Test
+    void turmaLotadaNaoAceitaInscricao() {
+        turmaDoCurso("1000.00", 10);
+        when(turmaService.vagasRestantes(any())).thenReturn(0L);
+
+        RegraDeNegocioException erro = assertThrows(RegraDeNegocioException.class,
+                () -> inscricaoService.criarInscricaoDoAluno(pedido("pix"), 7));
+
+        assertTrue(erro.getMessage().contains("não tem mais vagas"));
+        verify(inscricaoRepository, never()).save(any());
+    }
+
+    @Test
+    void turmaComInscricoesEncerradasNaoAceitaInscricao() {
+        Curso curso = new Curso();
+        curso.setValor(new BigDecimal("1000.00"));
+        Turma turma = new Turma();
+        turma.setIdTurma(3);
+        turma.setNome("Turma Antiga");
+        turma.setCurso(curso);
+        turma.setStatus("em_andamento");
+        when(turmaRepository.findById(3)).thenReturn(Optional.of(turma));
+
+        RegraDeNegocioException erro = assertThrows(RegraDeNegocioException.class,
+                () -> inscricaoService.criarInscricaoDoAluno(pedido("pix"), 7));
+
+        assertEquals("As inscrições da turma \"Turma Antiga\" estão encerradas.", erro.getMessage());
+    }
+
+    // Inscrição que o aluno já tem, numa turma do curso informado
+    private Inscricao inscricaoExistente(int idCurso, String status) {
+        Curso curso = new Curso();
+        curso.setIdCurso(idCurso);
+        Turma turma = new Turma();
+        turma.setIdTurma(8);
+        turma.setCurso(curso);
+        Inscricao existente = new Inscricao();
+        existente.setTurma(turma);
+        existente.setStatus(status);
+        return existente;
+    }
+
+    private void turmaDoCursoComId(int idCurso) {
+        Curso curso = new Curso();
+        curso.setIdCurso(idCurso);
+        curso.setNome("Redes de Computadores");
+        curso.setValor(new BigDecimal("1000.00"));
+        curso.setNumeroParcelas(10);
+        Turma turma = new Turma();
+        turma.setIdTurma(3);
+        turma.setCurso(curso);
+        when(turmaRepository.findById(3)).thenReturn(Optional.of(turma));
+    }
+
+    @Test
+    void alunoNaoSeInscreveDuasVezesNoMesmoCurso() {
+        turmaDoCursoComId(2);
+        when(inscricaoRepository.findByAluno_IdAlunoOrderByIdInscricaoDesc(7))
+                .thenReturn(List.of(inscricaoExistente(2, "pendente_pagamento")));
+
+        RegraDeNegocioException erro = assertThrows(RegraDeNegocioException.class,
+                () -> inscricaoService.criarInscricaoDoAluno(pedido("pix"), 7));
+
+        assertTrue(erro.getMessage().contains("Você já tem uma inscrição no curso \"Redes de Computadores\""));
+        verify(inscricaoRepository, never()).save(any());
+    }
+
+    @Test
+    void inscricaoCanceladaOuDeOutroCursoNaoImpedeNovaInscricao() {
+        turmaDoCursoComId(2);
+        Inscricao semTurma = new Inscricao();
+        semTurma.setStatus("pendente_pagamento");
+        Inscricao turmaSemCurso = inscricaoExistente(2, "pendente_pagamento");
+        turmaSemCurso.getTurma().setCurso(null);
+        when(inscricaoRepository.findByAluno_IdAlunoOrderByIdInscricaoDesc(7)).thenReturn(List.of(
+                inscricaoExistente(2, "cancelada"), inscricaoExistente(5, "confirmada"), semTurma, turmaSemCurso));
+        saveDevolveAPropriaInscricao();
+
+        Inscricao salva = inscricaoService.criarInscricaoDoAluno(pedido("pix"), 7);
+
+        assertEquals("pendente_pagamento", salva.getStatus());
+    }
+
+    // ===== Minhas inscrições =====
+
+    private Inscricao inscricaoDoAluno(int idInscricao, int idAluno, int idTurma, int idCurso, String status) {
+        Aluno aluno = new Aluno();
+        aluno.setIdAluno(idAluno);
+        Curso curso = new Curso();
+        curso.setIdCurso(idCurso);
+        curso.setNome("Curso " + idCurso);
+        Turma turma = new Turma();
+        turma.setIdTurma(idTurma);
+        turma.setNome("Turma " + idTurma);
+        turma.setModalidade("Presencial");
+        turma.setDiasHorarios("Seg 19h");
+        turma.setCurso(curso);
+        Inscricao i = new Inscricao();
+        i.setIdInscricao(idInscricao);
+        i.setAluno(aluno);
+        i.setTurma(turma);
+        i.setStatus(status);
+        i.setFormaPagamento("Pix");
+        i.setValorTotal(new BigDecimal("950.00"));
+        return i;
+    }
+
+    @Test
+    void listaAsInscricoesDoAlunoComOQueEleTemDireito() {
+        Inscricao semTurma = new Inscricao();
+        semTurma.setIdInscricao(11);
+        semTurma.setStatus("cancelada");
+        when(inscricaoRepository.findByAluno_IdAlunoOrderByIdInscricaoDesc(7)).thenReturn(List.of(
+                inscricaoDoAluno(10, 7, 3, 2, "confirmada"), semTurma));
+
+        List<MinhaInscricao> minhas = inscricaoService.listarDoAluno(7);
+
+        assertEquals(2, minhas.size());
+        assertEquals("Curso 2", minhas.get(0).curso());
+        assertEquals("Turma 3", minhas.get(0).turma());
+        assertEquals("Seg 19h", minhas.get(0).diasHorarios());
+        assertTrue(minhas.get(0).podeTrocarTurma());
+        assertNull(minhas.get(1).turma());
+        assertFalse(minhas.get(1).podeTrocarTurma());
+    }
+
+    // ===== Troca de turma =====
+
+    private Turma turmaNova(int idTurma, int idCurso) {
+        Curso curso = new Curso();
+        curso.setIdCurso(idCurso);
+        curso.setNome("Curso " + idCurso);
+        Turma turma = new Turma();
+        turma.setIdTurma(idTurma);
+        turma.setNome("Turma " + idTurma);
+        turma.setCurso(curso);
+        return turma;
+    }
+
+    @Test
+    void alunoTrocaParaOutraTurmaComVagaDoMesmoCurso() {
+        when(inscricaoRepository.findById(10)).thenReturn(Optional.of(inscricaoDoAluno(10, 7, 3, 2, "pendente_pagamento")));
+        when(turmaRepository.findById(4)).thenReturn(Optional.of(turmaNova(4, 2)));
+        saveDevolveAPropriaInscricao();
+
+        MinhaInscricao resultado = inscricaoService.trocarTurma(10, 4, 7);
+
+        assertEquals(4, resultado.idTurma());
+        assertEquals("Turma 4", resultado.turma());
+    }
+
+    @Test
+    void adminTrocaATurmaDeQualquerAluno() {
+        when(inscricaoRepository.findById(10)).thenReturn(Optional.of(inscricaoDoAluno(10, 7, 3, 2, "confirmada")));
+        when(turmaRepository.findById(4)).thenReturn(Optional.of(turmaNova(4, 2)));
+        saveDevolveAPropriaInscricao();
+
+        assertEquals(4, inscricaoService.trocarTurma(10, 4, null).idTurma());
+    }
+
+    private void trocaRecusada(String mensagemEsperada, Integer idNovaTurma, Integer idAluno) {
+        RegraDeNegocioException erro = assertThrows(RegraDeNegocioException.class,
+                () -> inscricaoService.trocarTurma(10, idNovaTurma, idAluno));
+        assertEquals(mensagemEsperada, erro.getMessage());
+        verify(inscricaoRepository, never()).save(any());
+    }
+
+    @Test
+    void inscricaoInexistenteNaoTroca() {
+        when(inscricaoRepository.findById(10)).thenReturn(Optional.empty());
+        trocaRecusada("Inscrição não encontrada.", 4, 7);
+    }
+
+    @Test
+    void alunoNaoTrocaInscricaoDeOutroAluno() {
+        when(inscricaoRepository.findById(10)).thenReturn(Optional.of(inscricaoDoAluno(10, 99, 3, 2, "confirmada")));
+        trocaRecusada("Inscrição não encontrada.", 4, 7);
+    }
+
+    @Test
+    void inscricaoSemAlunoNaoEhTrocadaPorAluno() {
+        Inscricao semAluno = inscricaoDoAluno(10, 7, 3, 2, "confirmada");
+        semAluno.setAluno(null);
+        when(inscricaoRepository.findById(10)).thenReturn(Optional.of(semAluno));
+        trocaRecusada("Inscrição não encontrada.", 4, 7);
+    }
+
+    @Test
+    void inscricaoCanceladaOuConcluidaNaoTroca() {
+        when(inscricaoRepository.findById(10)).thenReturn(Optional.of(inscricaoDoAluno(10, 7, 3, 2, "concluida")));
+        trocaRecusada("Esta inscrição não permite mais troca de turma.", 4, 7);
+    }
+
+    @Test
+    void precisaInformarANovaTurma() {
+        when(inscricaoRepository.findById(10)).thenReturn(Optional.of(inscricaoDoAluno(10, 7, 3, 2, "confirmada")));
+        trocaRecusada("Escolha a nova turma.", null, 7);
+    }
+
+    @Test
+    void naoTrocaParaAMesmaTurma() {
+        when(inscricaoRepository.findById(10)).thenReturn(Optional.of(inscricaoDoAluno(10, 7, 3, 2, "confirmada")));
+        trocaRecusada("Você já está nesta turma.", 3, 7);
+    }
+
+    @Test
+    void novaTurmaInexistenteNaoTroca() {
+        when(inscricaoRepository.findById(10)).thenReturn(Optional.of(inscricaoDoAluno(10, 7, 3, 2, "confirmada")));
+        when(turmaRepository.findById(4)).thenReturn(Optional.empty());
+        trocaRecusada("Turma não encontrada.", 4, 7);
+    }
+
+    @Test
+    void naoTrocaParaTurmaDeOutroCurso() {
+        when(inscricaoRepository.findById(10)).thenReturn(Optional.of(inscricaoDoAluno(10, 7, 3, 2, "confirmada")));
+        when(turmaRepository.findById(4)).thenReturn(Optional.of(turmaNova(4, 9)));
+        trocaRecusada("A nova turma precisa ser do mesmo curso da inscrição.", 4, 7);
+    }
+
+    @Test
+    void inscricaoSemTurmaAtualNaoTroca() {
+        Inscricao semTurma = inscricaoDoAluno(10, 7, 3, 2, "confirmada");
+        semTurma.setTurma(null);
+        when(inscricaoRepository.findById(10)).thenReturn(Optional.of(semTurma));
+        when(turmaRepository.findById(4)).thenReturn(Optional.of(turmaNova(4, 2)));
+        trocaRecusada("A nova turma precisa ser do mesmo curso da inscrição.", 4, 7);
+    }
+
+    @Test
+    void naoTrocaParaTurmaLotada() {
+        when(inscricaoRepository.findById(10)).thenReturn(Optional.of(inscricaoDoAluno(10, 7, 3, 2, "confirmada")));
+        when(turmaRepository.findById(4)).thenReturn(Optional.of(turmaNova(4, 2)));
+        when(turmaService.vagasRestantes(any())).thenReturn(0L);
+        trocaRecusada("A turma \"Turma 4\" não tem mais vagas.", 4, 7);
     }
 }

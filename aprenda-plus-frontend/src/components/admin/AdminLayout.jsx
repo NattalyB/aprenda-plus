@@ -1,6 +1,7 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import logo from '../../assets/logo-aprenda-plus-branco.png';
 import { getNomeFuncionario, logoutAdmin } from '../../services/authAdminService';
+import NotificacoesInscricoes from './NotificacoesInscricoes';
 
 const menuItems = [
   { path: '/admin/alunos', label: 'Cadastro de alunos' },
@@ -11,6 +12,7 @@ const menuItems = [
   { path: '/admin/turmas', label: 'Cadastro de turmas' },
   { path: '/admin/inscricoes', label: 'Inscrições' },
   { path: '/admin/matriculas', label: 'Matrículas' },
+  { path: '/admin/funcionarios', label: 'Funcionários do painel' },
 ];
 
 function AdminLayout() {
@@ -28,6 +30,8 @@ function AdminLayout() {
           <img src={logo} alt="Aprenda Plus" />
           <span className="admin-badge">PAINEL ADMIN</span>
         </div>
+
+        <NotificacoesInscricoes />
 
         <nav className="admin-nav">
           {menuItems.map((item) => (

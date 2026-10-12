@@ -45,7 +45,9 @@ Projeto final do curso **Desenvolvimento Full Stack** do programa **+PraTi / Cod
 - **Formas de pagamento:**
   - **Pix** à vista com **5% de desconto**;
   - **Cartão de crédito** e **boleto**, parcelados sem juros. O limite de parcelas é o do curso com o **maior** limite entre os que estão no carrinho (ex.: um curso de 12x junto com outro de 36x pode ser pago em até 36x).
-- **Conclusão da inscrição:** cria uma inscrição para cada curso na primeira turma disponível, com status *pendente de pagamento*, e esvazia o carrinho. O valor de cada inscrição é **calculado pelo servidor** a partir do preço do curso, e não pelo navegador.
+- **Conclusão da inscrição:** cria uma inscrição para cada curso na primeira turma **com vaga**, com status *pendente de pagamento*, e esvazia o carrinho. O valor de cada inscrição é **calculado pelo servidor** a partir do preço do curso, e não pelo navegador.
+- **Área do aluno (Minhas inscrições):** o aluno acompanha seus cursos (status, turma, horário, forma de pagamento e valor) e pode **trocar de turma** escolhendo entre as turmas abertas do mesmo curso, vendo o turno, os horários e as **vagas restantes** de cada uma.
+- **Controle de vagas:** cada turma aceita inscrições até a sua capacidade (inscrições canceladas liberam a vaga). Turma lotada ou com inscrições encerradas não aparece como opção e é recusada pelo servidor. O aluno também não consegue se inscrever duas vezes no mesmo curso.
 - **Avisos visuais (toasts)** de sucesso, erro e alerta.
 - **Layout responsivo** para celular, tablet e computador.
 
@@ -65,6 +67,8 @@ Projeto final do curso **Desenvolvimento Full Stack** do programa **+PraTi / Cod
 - **Disciplinas ativas e inativas:** disciplina inativa não entra no total de horas do professor. Ao salvar um professor com disciplina inativa, o sistema avisa e pede confirmação.
 - **Endereço pelo CEP** também nos cadastros de alunos e professores do painel.
 - **Inscrições:** listagem com a forma de pagamento escolhida pelo aluno e troca de status direto na tabela.
+- **Notificações de novas inscrições:** um sininho no menu do painel mostra quantas inscrições chegaram desde a última visita de cada funcionário (confere a cada minuto) e lista as mais recentes.
+- **Funcionários do painel:** cadastro de outras pessoas da equipe com acesso ao painel, com senha criptografada e status. Um funcionário não consegue excluir nem inativar a própria conta, para ninguém se trancar fora do sistema.
 - **Filtros em todas as listas:** busca por nome (e por CPF em alunos, professores e matrículas), além de filtros por categoria, curso ou status.
 - **Ordenação em todas as listas:** basta clicar no nome da coluna para ordenar (ID, nome de A-Z ou Z-A, valor, data, status...). Clicando de novo, a ordem inverte.
 - **Mensagens de erro detalhadas:** quando o back-end recusa um dado, o formulário mostra exatamente qual campo está errado.
@@ -256,8 +260,8 @@ A meta do projeto era **cobertura mínima de 70%**. Os dois lados ficaram bem ac
 
 | | Testes | Cobertura | Ferramentas |
 |---|---|---|---|
-| **Back-end** | 284 | **99%** das instruções, 89% dos desvios (*branches*) | JUnit 5, Mockito, MockMvc, JaCoCo |
-| **Front-end** | 321 | **99,7%** das instruções, 97,6% dos desvios, 100% das funções | Jest, Testing Library |
+| **Back-end** | 323 | **99%** das instruções, 89% dos desvios (*branches*) | JUnit 5, Mockito, MockMvc, JaCoCo |
+| **Front-end** | 369 | **99,7%** das instruções, 97,6% dos desvios, 100% das funções | Jest, Testing Library |
 
 ### Back-end
 
@@ -308,7 +312,7 @@ O que é testado:
 | Quem | Pode acessar |
 |---|---|
 | **Visitante** | Ver cursos e turmas, cadastrar-se e fazer login |
-| **Aluno** | O próprio carrinho e a criação de inscrições |
+| **Aluno** | O próprio carrinho, a criação de inscrições, a lista das próprias inscrições e a troca de turma das próprias inscrições |
 | **Admin** | Todas as rotas |
 
 - **Contas inativas ou bloqueadas não entram:** aluno ou funcionário com status diferente de *ativo* recebe uma mensagem para procurar o suporte, mesmo com a senha certa. E, se um aluno for bloqueado enquanto ainda está logado, o servidor recusa a compra.
@@ -378,11 +382,10 @@ O comando gera a versão de produção e publica a pasta `dist` na branch `gh-pa
 
 ## 🔭 Melhorias futuras
 
-- Permitir que o aluno escolha a turma desejada (hoje a inscrição é feita na primeira turma disponível do curso).
 - Criar todas as inscrições do carrinho em uma única operação no servidor, para que um erro em um curso não deixe a compra pela metade.
 - Integrar um gateway de pagamento real e gerar automaticamente as parcelas na tabela de pagamentos ao confirmar a matrícula.
-- Área do aluno para acompanhar as próprias inscrições, matrículas e pagamentos.
-- Tela de cadastro de funcionários no painel admin.
+- Ampliar a área do aluno com matrículas, boletos/parcelas e edição dos próprios dados.
+- Notificações em tempo real (WebSocket) e por e-mail, em vez de conferir a cada minuto.
 - Recuperação de senha por e-mail.
 - Cadastrar a imagem do curso pelo painel admin, em vez de deixá-la no código.
 

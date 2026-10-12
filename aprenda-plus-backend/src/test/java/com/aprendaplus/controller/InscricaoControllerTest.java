@@ -1,5 +1,8 @@
 package com.aprendaplus.controller;
 
+import static org.mockito.ArgumentMatchers.isNull;
+import java.util.List;
+import com.aprendaplus.dto.MinhaInscricao;
 import com.aprendaplus.entity.Inscricao;
 import com.aprendaplus.exception.RegraDeNegocioException;
 import com.aprendaplus.service.InscricaoService;
@@ -169,5 +172,88 @@ class InscricaoControllerTest {
                 .andExpect(status().isNoContent());
 
         verify(inscricaoService).deletar(1);
+    }
+
+    // ===== Área do aluno =====
+
+    private MinhaInscricao minhaInscricao(Integer idTurma, String turma) {
+        return new MinhaInscricao(10, 2, "Redes de Computadores", idTurma, turma, "Presencial", "Seg a Qua 19h-22h",
+                "pendente_pagamento", "Pix à vista (5% de desconto)", new BigDecimal("9500.00"), null, true);
+    }
+
+    @Test
+    void alunoVeAsPropriasInscricoes() throws Exception {
+        when(inscricaoService.listarDoAluno(7)).thenReturn(List.of(minhaInscricao(3, "Turma A - Noite")));
+
+        mockMvc.perform(get("/inscricoes/minhas")
+                        .requestAttr("usuarioId", 7)
+                        .requestAttr("usuarioPapel", "ALUNO"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].curso").value("Redes de Computadores"))
+                .andExpect(jsonPath("$[0].turma").value("Turma A - Noite"))
+                .andExpect(jsonPath("$[0].podeTrocarTurma").value(true));
+    }
+
+    @Test
+    void minhasInscricoesExigeLoginDeAluno() throws Exception {
+        mockMvc.perform(get("/inscricoes/minhas"))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(get("/inscricoes/minhas")
+                        .requestAttr("usuarioId", 1)
+                        .requestAttr("usuarioPapel", "ADMIN"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void alunoTrocaATurmaDaPropriaInscricao() throws Exception {
+        when(inscricaoService.trocarTurma(10, 4, 7)).thenReturn(minhaInscricao(4, "Turma B - Manhã"));
+
+        mockMvc.perform(put("/inscricoes/10/turma")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"idTurma\": 4 }")
+                        .requestAttr("usuarioId", 7)
+                        .requestAttr("usuarioPapel", "ALUNO"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.turma").value("Turma B - Manhã"));
+    }
+
+    @Test
+    void adminTrocaTurmaDeQualquerInscricao() throws Exception {
+        when(inscricaoService.trocarTurma(eq(10), eq(4), isNull())).thenReturn(minhaInscricao(4, "Turma B - Manhã"));
+
+        mockMvc.perform(put("/inscricoes/10/turma")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"idTurma\": 4 }")
+                        .requestAttr("usuarioId", 1)
+                        .requestAttr("usuarioPapel", "ADMIN"))
+                .andExpect(status().isOk());
+
+        verify(inscricaoService).trocarTurma(eq(10), eq(4), isNull());
+    }
+
+    @Test
+    void alunoSemIdNoTokenNaoTrocaTurma() throws Exception {
+        mockMvc.perform(put("/inscricoes/10/turma")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"idTurma\": 4 }")
+                        .requestAttr("usuarioPapel", "ALUNO"))
+                .andExpect(status().isUnauthorized());
+
+        verify(inscricaoService, never()).trocarTurma(any(), any(), any());
+    }
+
+    @Test
+    void turmaLotadaNaTrocaDevolveMensagem() throws Exception {
+        when(inscricaoService.trocarTurma(10, 4, 7))
+                .thenThrow(new RegraDeNegocioException("A turma \"Turma B\" não tem mais vagas."));
+
+        mockMvc.perform(put("/inscricoes/10/turma")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"idTurma\": 4 }")
+                        .requestAttr("usuarioId", 7)
+                        .requestAttr("usuarioPapel", "ALUNO"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.mensagem").value("A turma \"Turma B\" não tem mais vagas."));
     }
 }

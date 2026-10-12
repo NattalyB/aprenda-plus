@@ -43,6 +43,7 @@ describe('Header: aluno logado', () => {
     renderizar(<Header />);
 
     expect(screen.getByText('Olá, Maria')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Minhas inscrições' })).toHaveAttribute('href', '/minhas-inscricoes');
     expect(await screen.findByText(/\(2\)/)).toBeInTheDocument();
   });
 

@@ -11,6 +11,7 @@ import AdminPeriodosLetivos from './AdminPeriodosLetivos';
 import AdminTurmas from './AdminTurmas';
 import AdminInscricoes from './AdminInscricoes';
 import AdminMatriculas from './AdminMatriculas';
+import AdminFuncionarios from './AdminFuncionarios';
 
 import { listarAlunos, deletarAluno } from '../../services/alunoService';
 import { listarProfessores, deletarProfessor } from '../../services/professorService';
@@ -20,6 +21,7 @@ import { listarPeriodosLetivos, deletarPeriodoLetivo } from '../../services/peri
 import { listarTurmas, deletarTurma } from '../../services/turmaService';
 import { listarInscricoes, atualizarInscricao, deletarInscricao } from '../../services/inscricaoService';
 import { listarMatriculas, deletarMatricula } from '../../services/matriculaService';
+import { listarFuncionarios, deletarFuncionario } from '../../services/funcionarioService';
 
 jest.mock('../../services/alunoService');
 jest.mock('../../services/professorService');
@@ -29,6 +31,7 @@ jest.mock('../../services/periodoLetivoService');
 jest.mock('../../services/turmaService');
 jest.mock('../../services/inscricaoService');
 jest.mock('../../services/matriculaService');
+jest.mock('../../services/funcionarioService');
 
 const busca = (placeholder, valor) =>
   fireEvent.change(screen.getByPlaceholderText(placeholder), { target: { value: valor } });
@@ -90,6 +93,11 @@ const listas = [
     nome: 'Matrículas', Pagina: AdminMatriculas, listar: listarMatriculas, deletar: deletarMatricula,
     registro: { idMatricula: 5, aluno: { nomeCompleto: 'Maria Silva', cpf: '12345678900' }, turma: { nome: 'Turma A' }, dataMatricula: '2026-09-30T14:20:00', status: 'ativa' },
     carregando: 'Carregando matrículas...', vazio: 'Nenhuma matrícula registrada ainda.', erro: 'Não foi possível carregar as matrículas.',
+  },
+  {
+    nome: 'Funcionários', Pagina: AdminFuncionarios, listar: listarFuncionarios, deletar: deletarFuncionario,
+    registro: { idFuncionario: 5, nomeCompleto: 'Ana Souza', email: 'ana@aprendaplus.com', cpf: '11122233344', cargo: 'secretaria', status: 'ativo' },
+    carregando: 'Carregando funcionários...', vazio: 'Nenhum funcionário cadastrado ainda.', erro: 'Não foi possível carregar os funcionários.',
   },
 ];
 
@@ -182,6 +190,7 @@ const colunasOrdenaveis = {
   Turmas: ['ID', 'Nome', 'Curso', 'Período letivo', 'Vagas', 'Status'],
   Inscrições: ['ID', 'Aluno', 'Turma', 'Valor', 'Pagamento', 'Status'],
   Matrículas: ['ID', 'Aluno', 'Turma', 'Data', 'Status'],
+  Funcionários: ['ID', 'Nome', 'E-mail', 'Cargo', 'Status'],
 };
 
 const cabecalho = (nome) => screen.getByRole('columnheader', { name: nome });
@@ -587,5 +596,42 @@ describe('Matrículas: busca e status', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Todas' }));
     busca('Buscar por aluno, CPF ou turma...', 'xyz');
     expect(screen.getByText('Nenhuma matrícula encontrada com esses filtros.')).toBeInTheDocument();
+  });
+});
+
+describe('Funcionários: conta própria e busca', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    localStorage.setItem('idFuncionario', '1');
+    listarFuncionarios.mockResolvedValue({
+      data: [
+        { idFuncionario: 1, nomeCompleto: 'Admin Teste', email: 'admin@aprendaplus.com', cpf: '11111111111', cargo: 'administrativo', status: 'ativo' },
+        { idFuncionario: 2, nomeCompleto: 'Bruno Lima', email: 'bruno@aprendaplus.com', cpf: '22233344455', status: 'inativo' },
+      ],
+    });
+  });
+
+  test('a própria conta aparece marcada e sem botão de excluir', async () => {
+    renderizar(<AdminFuncionarios />);
+    await screen.findByText('Bruno Lima');
+
+    expect(screen.getByText('(você)')).toBeInTheDocument();
+    expect(screen.getAllByText('Excluir')).toHaveLength(1);
+    // Cargo vazio aparece como traço
+    expect(linhas()[1].cells[3]).toHaveTextContent('-');
+  });
+
+  test('busca por nome ou CPF', async () => {
+    renderizar(<AdminFuncionarios />);
+    await screen.findByText('Bruno Lima');
+
+    busca('Buscar por nome ou CPF...', 'bruno');
+    expect(linhas()).toHaveLength(1);
+
+    busca('Buscar por nome ou CPF...', '222.333');
+    expect(linhas()).toHaveLength(1);
+
+    busca('Buscar por nome ou CPF...', 'ninguem');
+    expect(screen.getByText('Nenhum funcionário encontrado para essa busca.')).toBeInTheDocument();
   });
 });

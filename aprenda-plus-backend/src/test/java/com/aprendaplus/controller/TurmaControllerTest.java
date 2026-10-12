@@ -1,5 +1,7 @@
 package com.aprendaplus.controller;
 
+import java.util.List;
+import com.aprendaplus.dto.TurmaDisponivel;
 import com.aprendaplus.entity.Turma;
 import com.aprendaplus.service.TurmaService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -61,5 +63,16 @@ class TurmaControllerTest {
     void deveExcluirTurma() throws Exception {
         mockMvc.perform(delete("/turmas/1"))
                 .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void deveListarTurmasDisponiveisDoCurso() throws Exception {
+        when(turmaService.listarDisponiveisDoCurso(5)).thenReturn(List.of(
+                new TurmaDisponivel(1, "Turma A - Noite", "Presencial", "Seg a Qua 19h-22h", "2026/2", 30, 12)));
+
+        mockMvc.perform(get("/turmas/curso/5/disponiveis"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].nome").value("Turma A - Noite"))
+                .andExpect(jsonPath("$[0].vagasRestantes").value(12));
     }
 }

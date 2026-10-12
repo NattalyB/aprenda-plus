@@ -176,6 +176,7 @@ function Header() {
         {logado ? (
           <>
             <span className="header-saudacao">Olá, {primeiroNome}</span>
+            <Link to="/minhas-inscricoes" className="header-minhas">Minhas inscrições</Link>
             <button className="btn-login" onClick={handleLogout}>Sair</button>
           </>
         ) : (

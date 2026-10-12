@@ -2,12 +2,12 @@ import { screen, fireEvent, waitFor, within } from '@testing-library/react';
 import Carrinho from './Carrinho';
 import { renderizar, logarAluno } from '../testUtils';
 import { listarItensDoCarrinho, removerItemDoCarrinho } from '../services/carrinhoService';
-import { buscarTurmasPorCurso } from '../services/cursoService';
+import { listarTurmasDisponiveis } from '../services/turmaService';
 import { criarInscricao } from '../services/inscricaoService';
 import { mostrarAviso } from '../services/avisoService';
 
 jest.mock('../services/carrinhoService');
-jest.mock('../services/cursoService');
+jest.mock('../services/turmaService');
 jest.mock('../services/inscricaoService');
 jest.mock('../services/avisoService');
 
@@ -26,7 +26,7 @@ beforeEach(() => {
   localStorage.clear();
   listarItensDoCarrinho.mockResolvedValue(itens);
   removerItemDoCarrinho.mockResolvedValue({});
-  buscarTurmasPorCurso.mockImplementation((idCurso) => Promise.resolve([{ idTurma: idCurso * 100 }]));
+  listarTurmasDisponiveis.mockImplementation((idCurso) => Promise.resolve([{ idTurma: idCurso * 100, vagasRestantes: 5 }]));
   criarInscricao.mockResolvedValue({});
 });
 
@@ -213,14 +213,14 @@ describe('concluir inscrição', () => {
 
   test('curso sem turma disponível mostra o erro e não esvazia o carrinho', async () => {
     logarAluno();
-    buscarTurmasPorCurso.mockImplementation((idCurso) => Promise.resolve(idCurso === 2 ? [] : [{ idTurma: 1 }]));
+    listarTurmasDisponiveis.mockImplementation((idCurso) => Promise.resolve(idCurso === 2 ? [] : [{ idTurma: 1, vagasRestantes: 3 }]));
     renderizar(<Carrinho />);
     await screen.findByText('Meu carrinho');
 
     fireEvent.click(screen.getByText('Pix'));
     fireEvent.click(screen.getByText('CONCLUIR INSCRIÇÃO'));
 
-    expect(await screen.findByText('O curso "Curso Sem Imagem" ainda não tem turma disponível.')).toBeInTheDocument();
+    expect(await screen.findByText('O curso "Curso Sem Imagem" não tem turma com vagas no momento.')).toBeInTheDocument();
     expect(removerItemDoCarrinho).not.toHaveBeenCalled();
     expect(screen.getByText('CONCLUIR INSCRIÇÃO')).toBeEnabled();
   });
@@ -238,6 +238,38 @@ describe('concluir inscrição', () => {
     fireEvent.click(screen.getByText('CONCLUIR INSCRIÇÃO'));
 
     expect(await screen.findByText('O curso "Engenharia de Software" pode ser pago em no máximo 24x.')).toBeInTheDocument();
+    expect(removerItemDoCarrinho).not.toHaveBeenCalled();
+  });
+
+  test('pula as turmas lotadas e usa a primeira com vaga', async () => {
+    logarAluno();
+    listarTurmasDisponiveis.mockImplementation((idCurso) =>
+      Promise.resolve([
+        { idTurma: idCurso * 100, vagasRestantes: 0 },
+        { idTurma: idCurso * 100 + 1, vagasRestantes: 2 },
+      ])
+    );
+    renderizar(<Carrinho />);
+    await screen.findByText('Meu carrinho');
+
+    fireEvent.click(screen.getByText('Pix'));
+    fireEvent.click(screen.getByText('CONCLUIR INSCRIÇÃO'));
+
+    expect(await screen.findByText('Inscrição concluída!')).toBeInTheDocument();
+    expect(criarInscricao).toHaveBeenCalledWith('7', 101, expect.any(Number), expect.any(String));
+    expect(screen.getByRole('link', { name: 'Ver minhas inscrições' })).toHaveAttribute('href', '/minhas-inscricoes');
+  });
+
+  test('curso só com turmas lotadas avisa e não esvazia o carrinho', async () => {
+    logarAluno();
+    listarTurmasDisponiveis.mockResolvedValue([{ idTurma: 9, vagasRestantes: 0 }]);
+    renderizar(<Carrinho />);
+    await screen.findByText('Meu carrinho');
+
+    fireEvent.click(screen.getByText('Pix'));
+    fireEvent.click(screen.getByText('CONCLUIR INSCRIÇÃO'));
+
+    expect(await screen.findByText(/não tem turma com vagas no momento/)).toBeInTheDocument();
     expect(removerItemDoCarrinho).not.toHaveBeenCalled();
   });
 

@@ -143,4 +143,34 @@ class AuthInterceptorTest {
         assertTrue(requisicao("GET", "/inscricoes", tokenAdmin));
         assertTrue(requisicao("GET", "/matriculas", tokenAdmin));
     }
+
+    // ===== Área do aluno =====
+
+    @Test
+    void alunoVeAsPropriasInscricoesETrocaDeTurma() throws Exception {
+        assertTrue(requisicao("GET", "/inscricoes/minhas", tokenAluno));
+        assertTrue(requisicao("PUT", "/inscricoes/15/turma", tokenAluno));
+    }
+
+    @Test
+    void alunoNaoEditaInscricaoPorOutraRota() throws Exception {
+        assertFalse(requisicao("PUT", "/inscricoes/15", tokenAluno));
+        assertFalse(requisicao("PUT", "/inscricoes/abc/turma", tokenAluno));
+        assertFalse(requisicao("DELETE", "/inscricoes/15", tokenAluno));
+        assertEquals(403, response.getStatus());
+    }
+
+    @Test
+    void visitanteVeTurmasDisponiveisMasNaoAsInscricoes() throws Exception {
+        assertTrue(requisicao("GET", "/turmas/curso/2/disponiveis", null));
+        assertFalse(requisicao("GET", "/inscricoes/minhas", null));
+        assertEquals(401, response.getStatus());
+    }
+
+    @Test
+    void alunoNaoMexeEmFuncionarios() throws Exception {
+        assertFalse(requisicao("GET", "/funcionarios", tokenAluno));
+        assertFalse(requisicao("POST", "/funcionarios", tokenAluno));
+        assertEquals(403, response.getStatus());
+    }
 }

@@ -1,5 +1,6 @@
 package com.aprendaplus.controller;
 
+import com.aprendaplus.dto.MinhaInscricao;
 import com.aprendaplus.entity.Inscricao;
 import com.aprendaplus.service.InscricaoService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +20,34 @@ public class InscricaoController {
     @GetMapping
     public List<Inscricao> listar() {
         return inscricaoService.listarTodos();
+    }
+
+    // Área do aluno: as inscrições do aluno logado
+    @GetMapping("/minhas")
+    public ResponseEntity<?> minhas(@RequestAttribute(name = "usuarioId", required = false) Integer usuarioId,
+                                    @RequestAttribute(name = "usuarioPapel", required = false) String papel) {
+        if (usuarioId == null || !"ALUNO".equals(papel)) {
+            return ResponseEntity.status(401).body(Map.of("erro", "Faça login como aluno para ver suas inscrições."));
+        }
+        List<MinhaInscricao> lista = inscricaoService.listarDoAluno(usuarioId);
+        return ResponseEntity.ok(lista);
+    }
+
+    // Troca de turma: o aluno só troca as próprias inscrições; o admin troca qualquer uma.
+    // Corpo: { "idTurma": 5 }
+    @PutMapping("/{id}/turma")
+    public ResponseEntity<?> trocarTurma(@PathVariable Integer id,
+                                         @RequestBody Map<String, Integer> corpo,
+                                         @RequestAttribute(name = "usuarioId", required = false) Integer usuarioId,
+                                         @RequestAttribute(name = "usuarioPapel", required = false) String papel) {
+        Integer idAluno = null;
+        if ("ALUNO".equals(papel)) {
+            if (usuarioId == null) {
+                return ResponseEntity.status(401).body(Map.of("erro", "Faça login para continuar."));
+            }
+            idAluno = usuarioId;
+        }
+        return ResponseEntity.ok(inscricaoService.trocarTurma(id, corpo.get("idTurma"), idAluno));
     }
 
     @GetMapping("/{id}")

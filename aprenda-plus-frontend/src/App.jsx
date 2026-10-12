@@ -5,6 +5,7 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Cadastro from './pages/Cadastro';
 import Carrinho from './pages/Carrinho';
+import MinhasInscricoes from './pages/MinhasInscricoes';
 import AdminLogin from './pages/admin/AdminLogin';
 import AdminLayout from './components/admin/AdminLayout';
 import AdminCursos from './pages/admin/AdminCursos';
@@ -24,6 +25,8 @@ import AdminTurmaForm from './pages/admin/AdminTurmaForm';
 import AdminInscricoes from './pages/admin/AdminInscricoes';
 import AdminMatriculas from './pages/admin/AdminMatriculas';
 import AdminMatriculaForm from './pages/admin/AdminMatriculaForm';
+import AdminFuncionarios from './pages/admin/AdminFuncionarios';
+import AdminFuncionarioForm from './pages/admin/AdminFuncionarioForm';
 import Aviso from './components/Aviso';
 
 function SitePage({ children }) {
@@ -45,6 +48,7 @@ function App() {
         <Route path="/login" element={<SitePage><Login /></SitePage>} />
         <Route path="/cadastro" element={<SitePage><Cadastro /></SitePage>} />
         <Route path="/carrinho" element={<SitePage><Carrinho /></SitePage>} />
+        <Route path="/minhas-inscricoes" element={<SitePage><MinhasInscricoes /></SitePage>} />
 
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route
@@ -84,6 +88,10 @@ function App() {
           <Route path="matriculas" element={<AdminMatriculas />} />
           <Route path="matriculas/novo" element={<AdminMatriculaForm />} />
           <Route path="matriculas/:id/editar" element={<AdminMatriculaForm />} />
+
+          <Route path="funcionarios" element={<AdminFuncionarios />} />
+          <Route path="funcionarios/novo" element={<AdminFuncionarioForm />} />
+          <Route path="funcionarios/:id/editar" element={<AdminFuncionarioForm />} />
 
         </Route>
       </Routes>

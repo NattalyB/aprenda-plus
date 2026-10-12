@@ -1,5 +1,8 @@
 package com.aprendaplus.service;
 
+import com.aprendaplus.dto.TurmaDisponivel;
+import com.aprendaplus.entity.PeriodoLetivo;
+import com.aprendaplus.repository.InscricaoRepository;
 import com.aprendaplus.entity.Turma;
 import com.aprendaplus.repository.TurmaRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,6 +24,9 @@ class TurmaServiceTest {
 
     @Mock
     private TurmaRepository turmaRepository;
+
+    @Mock
+    private InscricaoRepository inscricaoRepository;
 
     @InjectMocks
     private TurmaService turmaService;
@@ -75,5 +81,49 @@ class TurmaServiceTest {
         turmaService.deletar(1);
 
         verify(turmaRepository, times(1)).deleteById(1);
+    }
+
+    // ===== Turmas disponíveis e vagas =====
+
+    private Turma turmaDoCurso(int id, String nome, Integer capacidade, String status) {
+        Turma t = new Turma();
+        t.setIdTurma(id);
+        t.setNome(nome);
+        t.setCapacidadeMaxima(capacidade);
+        t.setStatus(status);
+        t.setModalidade("Presencial");
+        t.setDiasHorarios("Seg a Qua 19h-22h");
+        return t;
+    }
+
+    @Test
+    void listaSoAsTurmasAbertasComAsVagasQueRestam() {
+        Turma noite = turmaDoCurso(1, "Turma A - Noite", 30, "inscricoes_abertas");
+        PeriodoLetivo periodo = new PeriodoLetivo();
+        periodo.setNome("2026/2");
+        noite.setPeriodoLetivo(periodo);
+        Turma manha = turmaDoCurso(2, "Turma B - Manhã", 10, "inscricoes_abertas");
+        Turma encerrada = turmaDoCurso(3, "Turma C", 10, "em_andamento");
+        when(turmaRepository.findByCurso_IdCursoOrderByNomeAsc(5)).thenReturn(List.of(noite, manha, encerrada));
+        when(inscricaoRepository.countByTurma_IdTurmaAndStatusNot(1, "cancelada")).thenReturn(28L);
+        when(inscricaoRepository.countByTurma_IdTurmaAndStatusNot(2, "cancelada")).thenReturn(12L);
+
+        List<TurmaDisponivel> disponiveis = turmaService.listarDisponiveisDoCurso(5);
+
+        assertEquals(2, disponiveis.size());
+        assertEquals("Turma A - Noite", disponiveis.get(0).nome());
+        assertEquals(2, disponiveis.get(0).vagasRestantes());
+        assertEquals("2026/2", disponiveis.get(0).periodoLetivo());
+        assertEquals("Seg a Qua 19h-22h", disponiveis.get(0).diasHorarios());
+        // Mais inscrições do que vagas (ex.: capacidade reduzida depois): mostra 0, nunca negativo
+        assertEquals(0, disponiveis.get(1).vagasRestantes());
+        assertNull(disponiveis.get(1).periodoLetivo());
+    }
+
+    @Test
+    void turmaSemCapacidadeCadastradaNaoTemLimite() {
+        Turma semLimite = turmaDoCurso(4, "Turma Livre", null, "inscricoes_abertas");
+
+        assertEquals(Long.MAX_VALUE, turmaService.vagasRestantes(semLimite));
     }
 }

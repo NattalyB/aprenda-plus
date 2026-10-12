@@ -2168,3 +2168,293 @@ img {
      font-size: 0.75rem;
      color: #6b7280;
    }
+
+   /* ===== Área do aluno: Minhas inscrições ===== */
+.header-minhas {
+  color: #0b2239;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+  padding-bottom: 2px;
+}
+
+.header-minhas:hover,
+.header-minhas:focus-visible {
+  border-bottom-color: #00b4d8;
+}
+
+.minhas-subtitulo {
+  margin: 0.3rem 0 1.5rem;
+  color: #6b7280;
+}
+
+.minhas-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.minhas-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 1.25rem 1.4rem;
+  box-shadow: 0 2px 10px rgba(0, 30, 66, 0.06);
+}
+
+.minhas-card-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.minhas-card-topo h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  color: #001e42;
+}
+
+.minhas-detalhes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.75rem 1.5rem;
+  margin: 1rem 0 0;
+}
+
+.minhas-detalhes dt {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #6b7280;
+}
+
+.minhas-detalhes dd {
+  margin: 0.2rem 0 0;
+  color: #1f2937;
+}
+
+.minhas-detalhes dd small {
+  display: block;
+  color: #6b7280;
+  font-size: 0.82rem;
+}
+
+.minhas-btn-trocar {
+  margin-top: 1rem;
+}
+
+.minhas-dica {
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+.minhas-troca {
+  margin: 1rem 0 0;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 0.9rem 1rem 1rem;
+}
+
+.minhas-troca legend {
+  font-weight: 600;
+  color: #374151;
+  padding: 0 0.35rem;
+}
+
+.minhas-turmas {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.minhas-turma-opcao {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.minhas-turma-opcao.escolhida {
+  border-color: #00b4d8;
+  background: #e6f8fc;
+}
+
+.minhas-turma-opcao.lotada {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.minhas-turma-opcao input {
+  accent-color: #00b4d8;
+  margin: 0;
+}
+
+.minhas-turma-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.minhas-turma-info span {
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.minhas-vagas {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #047857;
+  white-space: nowrap;
+}
+
+.minhas-vagas.sem-vaga {
+  color: #b91c1c;
+}
+
+.minhas-troca-acoes {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  margin-top: 0.9rem;
+}
+
+@media (max-width: 600px) {
+  .header-minhas {
+    font-size: 14px;
+  }
+
+  .minhas-card-topo {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}
+
+/* Marca "(você)" na lista de funcionários */
+.admin-voce {
+  color: #6b7280;
+  font-size: 0.85em;
+}
+
+/* ===== Sininho de notificações do painel ===== */
+.notificacoes {
+  position: relative;
+  margin: 0 0 1rem;
+}
+
+.notificacoes-botao {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  font: inherit;
+  font-size: 0.92rem;
+  cursor: pointer;
+}
+
+.notificacoes-botao:hover,
+.notificacoes-botao[aria-expanded='true'] {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.notificacoes-botao:focus-visible {
+  outline: 2px solid #00b4d8;
+  outline-offset: 2px;
+}
+
+.notificacoes-texto {
+  flex: 1;
+  text-align: left;
+}
+
+.notificacoes-contador {
+  min-width: 1.4rem;
+  height: 1.4rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.notificacoes-painel {
+  position: absolute;
+  top: 0;
+  left: calc(100% + 1.25rem);
+  width: 320px;
+  background: #fff;
+  color: #1f2937;
+  border-radius: 12px;
+  box-shadow: 0 16px 40px rgba(0, 30, 66, 0.25);
+  padding: 1rem;
+  z-index: 50;
+}
+
+.notificacoes-painel h2 {
+  margin: 0 0 0.6rem;
+  font-size: 1rem;
+  color: #001e42;
+}
+
+.notificacoes-painel ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.notificacoes-painel li {
+  display: flex;
+  flex-direction: column;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid #f0f1f3;
+  font-size: 0.85rem;
+}
+
+.notificacoes-painel li span {
+  color: #6b7280;
+}
+
+.notificacoes-vazio,
+.notificacoes-mais {
+  margin: 0.25rem 0;
+  color: #6b7280;
+  font-size: 0.85rem;
+}
+
+.notificacoes-acoes {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.8rem;
+}
+
+@media (max-width: 900px) {
+  .notificacoes-painel {
+    top: calc(100% + 0.5rem);
+    left: 0;
+    width: min(320px, calc(100vw - 2rem));
+  }
+}
+
+/* O menu lateral fica acima do conteúdo, para a lista do sininho não ficar por baixo da tabela */
+.admin-sidebar {
+  z-index: 20;
+}
