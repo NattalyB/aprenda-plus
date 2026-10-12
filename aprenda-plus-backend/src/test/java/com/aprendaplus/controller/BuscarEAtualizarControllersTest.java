@@ -194,7 +194,12 @@ class BuscarEAtualizarControllersTest {
 
     @Test
     void deveAtualizarInscricao() throws Exception {
-        when(inscricaoService.salvar(any(Inscricao.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        // O PUT do painel passa pelas regras de matrícula e lista de espera
+        when(inscricaoService.atualizarPeloAdmin(any(), any(Inscricao.class))).thenAnswer(invocation -> {
+            Inscricao dados = invocation.getArgument(1);
+            dados.setIdInscricao(invocation.getArgument(0));
+            return dados;
+        });
 
         mockMvc.perform(put("/inscricoes/1")
                         .contentType(MediaType.APPLICATION_JSON)

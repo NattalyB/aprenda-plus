@@ -156,7 +156,12 @@ class InscricaoControllerTest {
 
     @Test
     void deveAtualizarInscricao() throws Exception {
-        when(inscricaoService.salvar(any(Inscricao.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        // A atualização do painel passa pelas regras de matrícula e lista de espera
+        when(inscricaoService.atualizarPeloAdmin(eq(5), any(Inscricao.class))).thenAnswer(invocation -> {
+            Inscricao dados = invocation.getArgument(1);
+            dados.setIdInscricao(invocation.getArgument(0));
+            return dados;
+        });
 
         mockMvc.perform(put("/inscricoes/5")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -164,6 +169,20 @@ class InscricaoControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.idInscricao").value(5))
                 .andExpect(jsonPath("$.status").value("confirmada"));
+
+        verify(inscricaoService, never()).salvar(any(Inscricao.class));
+    }
+
+    @Test
+    void atualizarSemVagaDevolveAMensagemDoErro() throws Exception {
+        when(inscricaoService.atualizarPeloAdmin(eq(5), any(Inscricao.class)))
+                .thenThrow(new RegraDeNegocioException("A turma \"T1\" não tem vaga. A inscrição continua aguardando vaga."));
+
+        mockMvc.perform(put("/inscricoes/5")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"status\": \"confirmada\" }"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.mensagem").value("A turma \"T1\" não tem vaga. A inscrição continua aguardando vaga."));
     }
 
     @Test

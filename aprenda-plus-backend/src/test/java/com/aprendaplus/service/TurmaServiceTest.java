@@ -105,8 +105,8 @@ class TurmaServiceTest {
         Turma manha = turmaDoCurso(2, "Turma B - Manhã", 10, "inscricoes_abertas");
         Turma encerrada = turmaDoCurso(3, "Turma C", 10, "em_andamento");
         when(turmaRepository.findByCurso_IdCursoOrderByNomeAsc(5)).thenReturn(List.of(noite, manha, encerrada));
-        when(inscricaoRepository.countByTurma_IdTurmaAndStatusNot(1, "cancelada")).thenReturn(28L);
-        when(inscricaoRepository.countByTurma_IdTurmaAndStatusNot(2, "cancelada")).thenReturn(12L);
+        when(inscricaoRepository.countByTurma_IdTurmaAndStatusNotIn(1, TurmaService.STATUS_SEM_VAGA)).thenReturn(28L);
+        when(inscricaoRepository.countByTurma_IdTurmaAndStatusNotIn(2, TurmaService.STATUS_SEM_VAGA)).thenReturn(12L);
 
         List<TurmaDisponivel> disponiveis = turmaService.listarDisponiveisDoCurso(5);
 

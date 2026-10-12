@@ -107,6 +107,8 @@ function Carrinho() {
     const descricao = descreverPagamento();
 
     // Pra cada item do carrinho, coloca o aluno na primeira turma aberta COM VAGA do curso.
+    // Se todas as turmas abertas estiverem cheias, ele entra na LISTA DE ESPERA da primeira
+    // (o servidor marca a inscrição como "aguardando vaga").
     // Depois ele pode escolher outra turma em "Minhas inscrições".
     const promessas = itens.map((item) => {
       const valorItem =
@@ -115,16 +117,21 @@ function Carrinho() {
           : Number(item.curso.valor);
 
       return listarTurmasDisponiveis(item.curso.idCurso).then((turmas) => {
-        const turma = turmas.find((t) => t.vagasRestantes > 0);
+        const turma = turmas.find((t) => t.vagasRestantes > 0) || turmas[0];
         if (!turma) {
-          throw new Error(`O curso "${item.curso.nome}" não tem turma com vagas no momento.`);
+          throw new Error(`O curso "${item.curso.nome}" não tem turmas com inscrições abertas no momento.`);
         }
-        return criarInscricao(idAluno, turma.idTurma, valorItem, descricao);
+        return criarInscricao(idAluno, turma.idTurma, valorItem, descricao).then((response) => ({
+          curso: item.curso.nome,
+          naFila: response?.data?.status === 'aguardando_vaga',
+        }));
       });
     });
 
+    let listaDeEspera = [];
     Promise.all(promessas)
-      .then(() => {
+      .then((resultados) => {
+        listaDeEspera = resultados.filter((r) => r.naFila).map((r) => r.curso);
         // Inscrições criadas: esvazia o carrinho
         return Promise.all(itens.map((item) => removerItemDoCarrinho(item.idItem)));
       })
@@ -135,6 +142,8 @@ function Carrinho() {
           total: totalFinal,
           parcelas,
           valorParcela,
+          listaDeEspera,
+          todosNaFila: listaDeEspera.length === itens.length,
         });
         setItens([]);
         setFinalizando(false);
@@ -177,8 +186,8 @@ function Carrinho() {
     return (
       <div className="carrinho-page">
         <div className="carrinho-estado">
-          <span className="carrinho-estado-icone">🎉</span>
-          <h2>Inscrição concluída!</h2>
+          <span className="carrinho-estado-icone">{pedidoConcluido.todosNaFila ? '⏳' : '🎉'}</span>
+          <h2>{pedidoConcluido.todosNaFila ? 'Você está na lista de espera!' : 'Inscrição concluída!'}</h2>
 
           <div className="carrinho-sucesso-pagamento">
             <strong>{pedidoConcluido.descricao}</strong>
@@ -188,14 +197,32 @@ function Carrinho() {
               : `Total: ${formatarValor(pedidoConcluido.total)}`}
           </div>
 
-          <p>
-            Sua inscrição foi registrada com status <strong>pendente de pagamento</strong>.{' '}
-            {PROXIMOS_PASSOS[pedidoConcluido.forma]}
-          </p>
-          <p>
-            Reservamos uma vaga para você na primeira turma disponível. Se preferir outro turno ou horário, é só
-            trocar em <strong>Minhas inscrições</strong>.
-          </p>
+          {!pedidoConcluido.todosNaFila && (
+            <>
+              <p>
+                Sua inscrição foi registrada com status <strong>pendente de pagamento</strong>.{' '}
+                {PROXIMOS_PASSOS[pedidoConcluido.forma]}
+              </p>
+              <p>
+                Reservamos uma vaga para você na primeira turma disponível. Se preferir outro turno ou horário, é só
+                trocar em <strong>Minhas inscrições</strong>.
+              </p>
+            </>
+          )}
+
+          {pedidoConcluido.listaDeEspera.length > 0 && (
+            <div className="carrinho-lista-espera" role="status">
+              <p>
+                <strong>Lista de espera:</strong> as turmas de{' '}
+                {pedidoConcluido.listaDeEspera.map((nome) => `"${nome}"`).join(', ')} estão cheias no momento.
+              </p>
+              <p>
+                Você entrou na fila com status <strong>aguardando vaga</strong> e ainda não precisa pagar. Quando abrir
+                uma vaga, sua inscrição passa para pendente de pagamento — ou troque para outra turma com vaga em{' '}
+                <strong>Minhas inscrições</strong>.
+              </p>
+            </div>
+          )}
           <div className="carrinho-estado-botoes">
             <Link to="/minhas-inscricoes" className="admin-btn admin-btn-primary">Ver minhas inscrições</Link>
             <Link to="/" className="admin-btn admin-btn-secundario">Continuar navegando</Link>

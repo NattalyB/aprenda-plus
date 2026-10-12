@@ -54,13 +54,17 @@ public class TurmaService {
                 .toList();
     }
 
-    // Capacidade da turma menos as inscrições que ocupam vaga (canceladas não contam).
+    // Inscrições com estes status NÃO ocupam vaga
+    public static final List<String> STATUS_SEM_VAGA = List.of("cancelada", "aguardando_vaga");
+
+    // Capacidade da turma menos as inscrições que ocupam vaga
+    // (canceladas e quem está na lista de espera não contam).
     // Turma sem capacidade cadastrada é tratada como sem limite.
     public long vagasRestantes(Turma turma) {
         if (turma.getCapacidadeMaxima() == null) {
             return Long.MAX_VALUE;
         }
-        long ocupadas = inscricaoRepository.countByTurma_IdTurmaAndStatusNot(turma.getIdTurma(), "cancelada");
+        long ocupadas = inscricaoRepository.countByTurma_IdTurmaAndStatusNotIn(turma.getIdTurma(), STATUS_SEM_VAGA);
         return Math.max(0, turma.getCapacidadeMaxima() - ocupadas);
     }
 }

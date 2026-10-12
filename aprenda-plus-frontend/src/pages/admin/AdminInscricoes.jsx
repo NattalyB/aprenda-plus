@@ -29,6 +29,7 @@ function AdminInscricoes() {
   const [inscricoes, setInscricoes] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState(null);
+  const [sucesso, setSucesso] = useState(null);
   const [busca, setBusca] = useState('');
   const [statusFiltro, setStatusFiltro] = useState('');
 
@@ -48,10 +49,25 @@ function AdminInscricoes() {
     carregar();
   }, []);
 
+  // Ao mudar o status, o servidor cuida da matrícula e da lista de espera:
+  // - confirmada (pagamento aprovado) -> cria a matrícula do aluno na turma;
+  // - cancelada -> cancela a matrícula e chama o primeiro da lista de espera.
   const handleStatusChange = (inscricao, novoStatus) => {
+    setErro(null);
+    setSucesso(null);
     atualizarInscricao(inscricao.idInscricao, { ...inscricao, status: novoStatus })
-      .then(() => carregar())
-      .catch(() => setErro('Não foi possível atualizar o status da inscrição.'));
+      .then(() => {
+        const nome = inscricao.aluno?.nomeCompleto;
+        if (novoStatus === 'confirmada') {
+          setSucesso(`Pagamento confirmado! A matrícula ${nome ? `de ${nome}` : 'do aluno'} foi criada em Matrículas.`);
+        } else if (novoStatus === 'cancelada') {
+          setSucesso('Inscrição cancelada. Se havia alguém na lista de espera desta turma, ele foi chamado.');
+        }
+        carregar();
+      })
+      .catch((error) =>
+        setErro(error.response?.data?.mensagem || 'Não foi possível atualizar o status da inscrição.')
+      );
   };
 
   const handleExcluir = (id) => {
@@ -95,6 +111,11 @@ function AdminInscricoes() {
       </div>
 
       {erro && <div className="form-erro">{erro}</div>}
+      {sucesso && (
+        <div className="form-sucesso" role="status">
+          {sucesso}
+        </div>
+      )}
 
       <div className="admin-filtros">
         <div className="admin-busca">

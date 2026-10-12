@@ -211,7 +211,7 @@ describe('concluir inscrição', () => {
     expect(await screen.findByText(/Total:/)).toBeInTheDocument();
   });
 
-  test('curso sem turma disponível mostra o erro e não esvazia o carrinho', async () => {
+  test('curso sem turma com inscrições abertas mostra o erro e não esvazia o carrinho', async () => {
     logarAluno();
     listarTurmasDisponiveis.mockImplementation((idCurso) => Promise.resolve(idCurso === 2 ? [] : [{ idTurma: 1, vagasRestantes: 3 }]));
     renderizar(<Carrinho />);
@@ -220,7 +220,9 @@ describe('concluir inscrição', () => {
     fireEvent.click(screen.getByText('Pix'));
     fireEvent.click(screen.getByText('CONCLUIR INSCRIÇÃO'));
 
-    expect(await screen.findByText('O curso "Curso Sem Imagem" não tem turma com vagas no momento.')).toBeInTheDocument();
+    expect(
+      await screen.findByText('O curso "Curso Sem Imagem" não tem turmas com inscrições abertas no momento.')
+    ).toBeInTheDocument();
     expect(removerItemDoCarrinho).not.toHaveBeenCalled();
     expect(screen.getByText('CONCLUIR INSCRIÇÃO')).toBeEnabled();
   });
@@ -260,17 +262,53 @@ describe('concluir inscrição', () => {
     expect(screen.getByRole('link', { name: 'Ver minhas inscrições' })).toHaveAttribute('href', '/minhas-inscricoes');
   });
 
-  test('curso só com turmas lotadas avisa e não esvazia o carrinho', async () => {
+  test('com todas as turmas lotadas, o aluno entra na lista de espera da primeira', async () => {
     logarAluno();
-    listarTurmasDisponiveis.mockResolvedValue([{ idTurma: 9, vagasRestantes: 0 }]);
+    listarTurmasDisponiveis.mockResolvedValue([
+      { idTurma: 9, vagasRestantes: 0 },
+      { idTurma: 10, vagasRestantes: 0 },
+    ]);
+    criarInscricao.mockResolvedValue({ data: { status: 'aguardando_vaga' } });
     renderizar(<Carrinho />);
     await screen.findByText('Meu carrinho');
 
     fireEvent.click(screen.getByText('Pix'));
     fireEvent.click(screen.getByText('CONCLUIR INSCRIÇÃO'));
 
-    expect(await screen.findByText(/não tem turma com vagas no momento/)).toBeInTheDocument();
-    expect(removerItemDoCarrinho).not.toHaveBeenCalled();
+    expect(await screen.findByText('Você está na lista de espera!')).toBeInTheDocument();
+    expect(criarInscricao).toHaveBeenCalledWith('7', 9, expect.any(Number), expect.any(String));
+    expect(screen.getByRole('status')).toHaveTextContent('"Engenharia de Software", "Curso Sem Imagem" estão cheias');
+    expect(screen.queryByText(/Reservamos uma vaga/)).not.toBeInTheDocument();
+    // A inscrição foi registrada (na fila), então o carrinho é esvaziado
+    expect(removerItemDoCarrinho).toHaveBeenCalledWith(10);
+  });
+
+  test('se só um curso estiver lotado, conclui a compra e avisa da lista de espera dele', async () => {
+    logarAluno();
+    criarInscricao.mockImplementation((idAluno, idTurma) =>
+      Promise.resolve({ data: { status: idTurma === 200 ? 'aguardando_vaga' : 'pendente_pagamento' } })
+    );
+    renderizar(<Carrinho />);
+    await screen.findByText('Meu carrinho');
+
+    fireEvent.click(screen.getByText('Pix'));
+    fireEvent.click(screen.getByText('CONCLUIR INSCRIÇÃO'));
+
+    expect(await screen.findByText('Inscrição concluída!')).toBeInTheDocument();
+    expect(screen.getByText(/Reservamos uma vaga/)).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('as turmas de "Curso Sem Imagem" estão cheias');
+  });
+
+  test('sem lista de espera, não mostra o aviso da fila', async () => {
+    logarAluno();
+    renderizar(<Carrinho />);
+    await screen.findByText('Meu carrinho');
+
+    fireEvent.click(screen.getByText('Pix'));
+    fireEvent.click(screen.getByText('CONCLUIR INSCRIÇÃO'));
+
+    expect(await screen.findByText('Inscrição concluída!')).toBeInTheDocument();
+    expect(screen.queryByText(/Lista de espera/)).not.toBeInTheDocument();
   });
 
   test('erro sem mensagem mostra o texto padrão', async () => {

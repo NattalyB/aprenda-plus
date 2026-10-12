@@ -230,6 +230,14 @@ function MinhasInscricoes() {
                 )}
               </dl>
 
+              {inscricao.status === 'aguardando_vaga' && (
+                <p className="minhas-aviso-fila">
+                  ⏳ Você está na lista de espera desta turma e ainda não precisa pagar. Quando abrir uma vaga, sua
+                  inscrição passa para <strong>pendente de pagamento</strong>. Se preferir, troque para outra turma com
+                  vaga.
+                </p>
+              )}
+
               {inscricao.podeTrocarTurma &&
                 (trocando === inscricao.idInscricao ? (
                   <TrocaDeTurma

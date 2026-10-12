@@ -78,10 +78,10 @@ public class InscricaoController {
         return ResponseEntity.ok(inscricaoService.salvar(inscricao));
     }
 
+    // Admin: atualiza a inscrição. Ao confirmar (pagamento aprovado) a matrícula é criada automaticamente.
     @PutMapping("/{id}")
     public ResponseEntity<Inscricao> atualizar(@PathVariable Integer id, @RequestBody Inscricao inscricao) {
-        inscricao.setIdInscricao(id);
-        return ResponseEntity.ok(inscricaoService.salvar(inscricao));
+        return ResponseEntity.ok(inscricaoService.atualizarPeloAdmin(id, inscricao));
     }
 
     @DeleteMapping("/{id}")

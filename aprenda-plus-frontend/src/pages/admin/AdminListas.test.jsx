@@ -529,6 +529,56 @@ describe('Inscrições: status, forma de pagamento e filtros', () => {
 
     await waitFor(() => expect(atualizarInscricao).toHaveBeenCalledWith(1, expect.objectContaining({ status: 'confirmada' })));
     await waitFor(() => expect(listarInscricoes).toHaveBeenCalledTimes(2));
+    // Confirmar o pagamento cria a matrícula no servidor: o painel avisa
+    expect(screen.getByRole('status')).toHaveTextContent('A matrícula de Maria Silva foi criada em Matrículas.');
+  });
+
+  test('cancelar avisa que a lista de espera foi chamada', async () => {
+    atualizarInscricao.mockResolvedValue({});
+    renderizar(<AdminInscricoes />);
+    await screen.findByText('Maria Silva');
+
+    fireEvent.change(document.querySelector('select[name="status-2"]'), { target: { value: 'cancelada' } });
+
+    expect(await screen.findByText(/Inscrição cancelada/)).toBeInTheDocument();
+  });
+
+  test('outros status salvam sem mensagem de sucesso', async () => {
+    atualizarInscricao.mockResolvedValue({});
+    listarInscricoes.mockResolvedValue({ data: [{ ...inscricoes[0], aluno: null }] });
+    renderizar(<AdminInscricoes />);
+    await screen.findByText('Pix à vista (5% de desconto)');
+
+    fireEvent.change(document.querySelector('select[name="status-1"]'), { target: { value: 'aguardando_vaga' } });
+
+    await waitFor(() => expect(atualizarInscricao).toHaveBeenCalled());
+    await waitFor(() => expect(listarInscricoes).toHaveBeenCalledTimes(2));
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  });
+
+  test('confirmar inscrição sem aluno usa um texto genérico', async () => {
+    atualizarInscricao.mockResolvedValue({});
+    listarInscricoes.mockResolvedValue({ data: [{ ...inscricoes[0], aluno: null }] });
+    renderizar(<AdminInscricoes />);
+    await screen.findByText('Pix à vista (5% de desconto)');
+
+    fireEvent.change(document.querySelector('select[name="status-1"]'), { target: { value: 'confirmada' } });
+
+    expect(await screen.findByText(/A matrícula do aluno foi criada/)).toBeInTheDocument();
+  });
+
+  test('sem vaga na turma, mostra o motivo que veio do servidor', async () => {
+    atualizarInscricao.mockRejectedValue({
+      response: { data: { mensagem: 'A turma "Turma A" não tem vaga. A inscrição continua aguardando vaga.' } },
+    });
+    renderizar(<AdminInscricoes />);
+    await screen.findByText('Maria Silva');
+
+    fireEvent.change(document.querySelector('select[name="status-1"]'), { target: { value: 'confirmada' } });
+
+    expect(
+      await screen.findByText('A turma "Turma A" não tem vaga. A inscrição continua aguardando vaga.')
+    ).toBeInTheDocument();
   });
 
   test('erro ao trocar o status mostra mensagem', async () => {

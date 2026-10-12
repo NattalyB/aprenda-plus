@@ -42,6 +42,24 @@ beforeEach(() => {
 });
 
 describe('estados da página', () => {
+  test('inscrição na lista de espera explica o que acontece', async () => {
+    logarAluno();
+    listarMinhasInscricoes.mockResolvedValue([inscricao({ status: 'aguardando_vaga' })]);
+    renderizar(<MinhasInscricoes />);
+
+    await screen.findByText('Redes de Computadores');
+    expect(within(card()).getByText('Aguardando vaga')).toBeInTheDocument();
+    expect(within(card()).getByText(/Você está na lista de espera desta turma/)).toBeInTheDocument();
+  });
+
+  test('inscrição com vaga garantida não mostra o aviso da fila', async () => {
+    logarAluno();
+    renderizar(<MinhasInscricoes />);
+
+    await screen.findByText('Redes de Computadores');
+    expect(screen.queryByText(/lista de espera/)).not.toBeInTheDocument();
+  });
+
   test('sem login, pede para entrar', () => {
     renderizar(<MinhasInscricoes />);
 
