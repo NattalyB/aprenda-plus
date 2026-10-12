@@ -49,8 +49,28 @@ test('o painel admin sem login redireciona pro login do admin', async () => {
 
 test('o painel admin com login abre a tela pedida dentro do layout', async () => {
   localStorage.setItem('tokenAdmin', 'x');
+  localStorage.setItem('acessoAdmin', JSON.stringify({ nivel: 'Master', master: true, modulos: [] }));
   abrir('#/admin/alunos');
 
   expect(await screen.findByText('Alunos cadastrados')).toBeInTheDocument();
   expect(screen.getByText('PAINEL ADMIN')).toBeInTheDocument();
+});
+
+test('o painel admin abre no início com os atalhos do nível', async () => {
+  localStorage.setItem('tokenAdmin', 'x');
+  localStorage.setItem('nomeFuncionario', 'Carla Dias');
+  localStorage.setItem('acessoAdmin', JSON.stringify({ nivel: 'Financeiro', master: false, modulos: ['matriculas'] }));
+  abrir('#/admin');
+
+  expect(await screen.findByText('Olá, Carla!')).toBeInTheDocument();
+  expect(screen.getAllByText('Matrículas').length).toBeGreaterThan(0);
+});
+
+test('módulo não liberado mostra acesso restrito', async () => {
+  localStorage.setItem('tokenAdmin', 'x');
+  localStorage.setItem('acessoAdmin', JSON.stringify({ nivel: 'Financeiro', master: false, modulos: ['matriculas'] }));
+  abrir('#/admin/alunos');
+
+  expect(await screen.findByText('Acesso restrito')).toBeInTheDocument();
+  expect(listarAlunos).not.toHaveBeenCalled();
 });

@@ -25,7 +25,7 @@ import { buscarDisciplinaPorId, criarDisciplina, atualizarDisciplina, listarDisc
 import { buscarPeriodoLetivoPorId, criarPeriodoLetivo, atualizarPeriodoLetivo, listarPeriodosLetivos } from '../../services/periodoLetivoService';
 import { buscarTurmaPorId, criarTurma, atualizarTurma, listarTurmas } from '../../services/turmaService';
 import { buscarMatriculaPorId, criarMatricula, atualizarMatricula } from '../../services/matriculaService';
-import { buscarFuncionarioPorId, criarFuncionario, atualizarFuncionario } from '../../services/funcionarioService';
+import { buscarFuncionarioPorId, criarFuncionario, atualizarFuncionario, listarNiveis } from '../../services/funcionarioService';
 import { buscarEnderecoPorCep } from '../../services/cepService';
 
 jest.mock('../../services/alunoService');
@@ -823,9 +823,24 @@ describe('Formulário de matrícula', () => {
 
 // ===================================================================
 describe('Formulário de funcionário', () => {
+  const niveis = [
+    { idNivel: 1, nome: 'Master', master: true, modulos: [] },
+    { idNivel: 2, nome: 'Administrativo', master: false, modulos: ['alunos'] },
+    { idNivel: 3, nome: 'Financeiro', master: false, modulos: ['matriculas'] },
+  ];
+
+  // Quem está logado: Master ou não
+  const logadoComo = (master) =>
+    localStorage.setItem('acessoAdmin', JSON.stringify({ nivel: master ? 'Master' : 'Administrativo', master, modulos: [] }));
+
+  const opcoesDoNivel = () =>
+    Array.from(screen.getByLabelText('Nível de acesso').querySelectorAll('option')).map((o) => o.textContent);
+
   beforeEach(() => {
     localStorage.clear();
     localStorage.setItem('idFuncionario', '1');
+    logadoComo(true);
+    listarNiveis.mockResolvedValue({ data: niveis });
   });
 
   test('novo funcionário: envia os dados com a senha e volta pra lista', async () => {
@@ -842,16 +857,28 @@ describe('Formulário de funcionário', () => {
     digita('Senha', 'segredo1');
     digita('Cargo', 'secretaria');
     digita('Situação', 'ativo');
+    await screen.findByRole('option', { name: 'Financeiro' });
+    expect(screen.getByLabelText('Nível de acesso')).toBeRequired();
+    digita('Nível de acesso', '3');
     salvar();
 
     await waitFor(() => expect(endereco()).toHaveTextContent('/admin/funcionarios'));
     expect(criarFuncionario).toHaveBeenCalledWith(
-      expect.objectContaining({ nomeCompleto: 'Ana Souza', cpf: '11122233344', senhaHash: 'segredo1', cargo: 'secretaria' })
+      expect.objectContaining({
+        nomeCompleto: 'Ana Souza',
+        cpf: '11122233344',
+        senhaHash: 'segredo1',
+        cargo: 'secretaria',
+        nivel: { idNivel: 3 },
+      })
     );
+    expect(criarFuncionario.mock.calls[0][0]).not.toHaveProperty('idNivel');
   });
 
   test('editar outro funcionário: senha em branco não é enviada e o status pode mudar', async () => {
-    buscarFuncionarioPorId.mockResolvedValue({ data: { idFuncionario: 2, nomeCompleto: 'Bruno Lima', status: 'ativo' } });
+    buscarFuncionarioPorId.mockResolvedValue({
+      data: { idFuncionario: 2, nomeCompleto: 'Bruno Lima', status: 'ativo', nivel: { idNivel: 2, nome: 'Administrativo' } },
+    });
     atualizarFuncionario.mockResolvedValue({});
     renderizar(<AdminFuncionarioForm />, { rota: '/admin/funcionarios/2/editar', caminho: '/admin/funcionarios/:id/editar' });
 
@@ -866,6 +893,7 @@ describe('Formulário de funcionário', () => {
     expect(atualizarFuncionario.mock.calls[0][0]).toBe('2');
     expect(enviado.status).toBe('inativo');
     expect(enviado).not.toHaveProperty('senhaHash');
+    expect(enviado.nivel).toEqual({ idNivel: 2 });
   });
 
   test('editar com senha nova envia a senha', async () => {
@@ -887,6 +915,47 @@ describe('Formulário de funcionário', () => {
     expect(await screen.findByDisplayValue('Admin Teste')).toBeInTheDocument();
     expect(screen.getByLabelText('Situação')).toBeDisabled();
     expect(screen.getByText('Você não pode inativar a sua própria conta.')).toBeInTheDocument();
+    expect(screen.getByLabelText('Nível de acesso')).toBeDisabled();
+    expect(screen.getByText('Você não pode mudar o seu próprio nível de acesso.')).toBeInTheDocument();
+  });
+
+  test('quem não é Master não vê a opção Master', async () => {
+    logadoComo(false);
+    renderizar(<AdminFuncionarioForm />, { rota: '/admin/funcionarios/novo' });
+
+    await screen.findByRole('option', { name: 'Financeiro' });
+    expect(opcoesDoNivel()).toEqual(['Escolha o nível...', 'Administrativo', 'Financeiro']);
+    expect(screen.getByText(/O nível define quais módulos/)).toBeInTheDocument();
+  });
+
+  test('Master vê todos os níveis, inclusive o Master', async () => {
+    renderizar(<AdminFuncionarioForm />, { rota: '/admin/funcionarios/novo' });
+
+    await screen.findByRole('option', { name: 'Master' });
+    expect(opcoesDoNivel()).toContain('Master');
+  });
+
+  test('quem não é Master não altera o nível de uma conta Master', async () => {
+    logadoComo(false);
+    buscarFuncionarioPorId.mockResolvedValue({
+      data: { idFuncionario: 5, nomeCompleto: 'Chefe', status: 'ativo', nivel: { idNivel: 1, nome: 'Master', master: true } },
+    });
+    renderizar(<AdminFuncionarioForm />, { rota: '/admin/funcionarios/5/editar', caminho: '/admin/funcionarios/:id/editar' });
+
+    await screen.findByDisplayValue('Chefe');
+    await screen.findByRole('option', { name: 'Master' });
+    expect(screen.getByLabelText('Nível de acesso')).toBeDisabled();
+    expect(screen.getByText('Só um usuário Master pode alterar uma conta Master.')).toBeInTheDocument();
+  });
+
+  test('conta sem nível e lista de níveis indisponível', async () => {
+    listarNiveis.mockRejectedValue(new Error('offline'));
+    buscarFuncionarioPorId.mockResolvedValue({ data: { idFuncionario: 2, nomeCompleto: 'Bruno Lima', nivel: null } });
+    atualizarFuncionario.mockResolvedValue({});
+    renderizar(<AdminFuncionarioForm />, { rota: '/admin/funcionarios/2/editar', caminho: '/admin/funcionarios/:id/editar' });
+
+    await screen.findByDisplayValue('Bruno Lima');
+    expect(opcoesDoNivel()).toEqual(['Escolha o nível...']);
   });
 
   test('erros: mensagem do servidor ou texto padrão', async () => {

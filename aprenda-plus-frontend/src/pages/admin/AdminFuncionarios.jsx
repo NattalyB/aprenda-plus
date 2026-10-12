@@ -3,6 +3,7 @@ import ColunaOrdenavel from '../../components/admin/ColunaOrdenavel';
 import { useOrdenacao } from '../../utils/ordenacao';
 import { Link } from 'react-router-dom';
 import { listarFuncionarios, deletarFuncionario } from '../../services/funcionarioService';
+import { getAcessoAdmin } from '../../services/authAdminService';
 
 // Remove acentos e deixa minúsculo, pra busca "joao" encontrar "João"
 const normalizar = (texto) =>
@@ -14,6 +15,7 @@ const CAMPOS_ORDENACAO = {
   nome: (f) => f.nomeCompleto,
   email: (f) => f.email,
   cargo: (f) => f.cargo,
+  nivel: (f) => f.nivel?.nome,
   status: (f) => f.status,
 };
 
@@ -21,6 +23,8 @@ const CAMPOS_ORDENACAO = {
 const idLogado = () => Number(localStorage.getItem('idFuncionario'));
 
 function AdminFuncionarios() {
+  // Quem não é Master não exclui contas Master (o servidor também confere)
+  const souMaster = Boolean(getAcessoAdmin()?.master);
   const [funcionarios, setFuncionarios] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState(null);
@@ -106,6 +110,7 @@ function AdminFuncionarios() {
                 <ColunaOrdenavel coluna="nome" ordem={ordem} onOrdenar={alternar}>Nome</ColunaOrdenavel>
                 <ColunaOrdenavel coluna="email" ordem={ordem} onOrdenar={alternar}>E-mail</ColunaOrdenavel>
                 <ColunaOrdenavel coluna="cargo" ordem={ordem} onOrdenar={alternar}>Cargo</ColunaOrdenavel>
+                <ColunaOrdenavel coluna="nivel" ordem={ordem} onOrdenar={alternar}>Nível</ColunaOrdenavel>
                 <ColunaOrdenavel coluna="status" ordem={ordem} onOrdenar={alternar}>Status</ColunaOrdenavel>
                 <th>Ações</th>
               </tr>
@@ -113,7 +118,7 @@ function AdminFuncionarios() {
             <tbody>
               {funcionariosFiltrados.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="admin-vazio">
+                  <td colSpan={7} className="admin-vazio">
                     {busca ? 'Nenhum funcionário encontrado para essa busca.' : 'Nenhum funcionário cadastrado ainda.'}
                   </td>
                 </tr>
@@ -128,6 +133,15 @@ function AdminFuncionarios() {
                     <td>{funcionario.email}</td>
                     <td style={{ textTransform: 'capitalize' }}>{funcionario.cargo || '-'}</td>
                     <td>
+                      {funcionario.nivel ? (
+                        <span className={funcionario.nivel.master ? 'nivel-badge nivel-master' : 'nivel-badge'}>
+                          {funcionario.nivel.nome}
+                        </span>
+                      ) : (
+                        '-'
+                      )}
+                    </td>
+                    <td>
                       <span className={`status-badge status-${funcionario.status}`}>{funcionario.status}</span>
                     </td>
                     <td>
@@ -138,7 +152,7 @@ function AdminFuncionarios() {
                         >
                           Editar
                         </Link>
-                        {funcionario.idFuncionario !== idLogado() && (
+                        {funcionario.idFuncionario !== idLogado() && (souMaster || !funcionario.nivel?.master) && (
                           <button
                             className="admin-btn admin-btn-sm admin-btn-excluir"
                             onClick={() => handleExcluir(funcionario.idFuncionario)}

@@ -50,7 +50,7 @@ class FuncionarioControllerTest {
         funcionario.setIdFuncionario(1);
         funcionario.setNomeCompleto("Novo Funcionario");
 
-        when(funcionarioService.salvar(any(Funcionario.class))).thenReturn(funcionario);
+        when(funcionarioService.salvar(any(Funcionario.class), any())).thenReturn(funcionario);
 
         mockMvc.perform(post("/funcionarios")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -63,6 +63,23 @@ class FuncionarioControllerTest {
     void deveExcluirFuncionario() throws Exception {
         mockMvc.perform(delete("/funcionarios/1"))
                 .andExpect(status().isNoContent());
+
+        verify(funcionarioService).deletar(1, null);
+    }
+
+    @Test
+    void criarPassaQuemEstaLogadoEIgnoraIdEnviado() throws Exception {
+        when(funcionarioService.salvar(any(Funcionario.class), any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        mockMvc.perform(post("/funcionarios")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"idFuncionario\": 9, \"nomeCompleto\": \"Nova\", \"nivel\": { \"idNivel\": 3 } }")
+                        .requestAttr("usuarioId", 1))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.idFuncionario").doesNotExist())
+                .andExpect(jsonPath("$.nivel.idNivel").value(3));
+
+        verify(funcionarioService).salvar(any(Funcionario.class), org.mockito.ArgumentMatchers.eq(1));
     }
 
     // ===== Proteção da própria conta =====
@@ -73,7 +90,7 @@ class FuncionarioControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.mensagem").value("Você não pode excluir a sua própria conta."));
 
-        verify(funcionarioService, never()).deletar(1);
+        verify(funcionarioService, never()).deletar(any(), any());
     }
 
     @Test
@@ -81,7 +98,7 @@ class FuncionarioControllerTest {
         mockMvc.perform(delete("/funcionarios/2").requestAttr("usuarioId", 1))
                 .andExpect(status().isNoContent());
 
-        verify(funcionarioService).deletar(2);
+        verify(funcionarioService).deletar(2, 1);
     }
 
     @Test
@@ -93,12 +110,12 @@ class FuncionarioControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.mensagem").value("Você não pode inativar ou bloquear a sua própria conta."));
 
-        verify(funcionarioService, never()).salvar(any(Funcionario.class));
+        verify(funcionarioService, never()).salvar(any(Funcionario.class), any());
     }
 
     @Test
     void adminEditaAPropriaContaMantendoAtiva() throws Exception {
-        when(funcionarioService.salvar(any(Funcionario.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(funcionarioService.salvar(any(Funcionario.class), any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         mockMvc.perform(put("/funcionarios/1")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -110,7 +127,7 @@ class FuncionarioControllerTest {
 
     @Test
     void adminInativaOutroFuncionario() throws Exception {
-        when(funcionarioService.salvar(any(Funcionario.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(funcionarioService.salvar(any(Funcionario.class), any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         mockMvc.perform(put("/funcionarios/2")
                         .contentType(MediaType.APPLICATION_JSON)

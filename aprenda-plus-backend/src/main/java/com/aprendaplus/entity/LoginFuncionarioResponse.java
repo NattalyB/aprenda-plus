@@ -5,6 +5,10 @@ public class LoginFuncionarioResponse {
     private Integer idFuncionario;
     private String nome;
     private String cargo;
+    // Nível de acesso e módulos liberados (o front monta o menu com isso)
+    private String nivel;
+    private boolean master;
+    private java.util.List<String> modulos = java.util.List.of();
 
     public LoginFuncionarioResponse(String token, Integer idFuncionario, String nome, String cargo) {
         this.token = token;
@@ -13,8 +17,21 @@ public class LoginFuncionarioResponse {
         this.cargo = cargo;
     }
 
+    public LoginFuncionarioResponse(String token, Integer idFuncionario, String nome, String cargo,
+                                    NivelAcesso nivelAcesso) {
+        this(token, idFuncionario, nome, cargo);
+        if (nivelAcesso != null) {
+            this.nivel = nivelAcesso.getNome();
+            this.master = nivelAcesso.isMaster();
+            this.modulos = nivelAcesso.getModulos();
+        }
+    }
+
     public String getToken() { return token; }
     public Integer getIdFuncionario() { return idFuncionario; }
     public String getNome() { return nome; }
     public String getCargo() { return cargo; }
+    public String getNivel() { return nivel; }
+    public boolean isMaster() { return master; }
+    public java.util.List<String> getModulos() { return modulos; }
 }

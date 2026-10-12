@@ -40,6 +40,10 @@ Projeto final do curso **Desenvolvimento Full Stack** do programa **+PraTi / Cod
 
 - **Vitrine "Cursos mais vendidos"**, com imagem, nome, mensalidade e valor total de cada curso.
 - **Busca de cursos** que ignora acentos e maiúsculas ("ciencia" encontra "Ciência de Dados"). Mostra **sugestões** enquanto o aluno digita e aceita navegação pelo teclado.
+- **Navegação clara:**
+  - Todas as telas têm o link **"← Voltar ao início"** logo abaixo da logo. Durante uma pesquisa, ele vira **"← Ver todos os cursos"**.
+  - Clicar na logo também volta ao início e limpa a pesquisa anterior.
+- **Topo padronizado:** para o aluno logado, a ordem é sempre **Minhas inscrições · Carrinho · nome do aluno + Sair**.
 - **Detalhes do curso** em um modal: descrição, carga horária, modalidade, pré-requisitos e conteúdo programático em tópicos.
 - **Preço em mensalidades:** cada curso mostra o valor mensal em destaque (ex.: *R$ 500,00/mês em 24x*) e o valor total logo abaixo.
 
@@ -60,7 +64,7 @@ Projeto final do curso **Desenvolvimento Full Stack** do programa **+PraTi / Cod
 **Área do aluno: "Minhas inscrições"**
 
 - Lista os cursos do aluno, com turma, horário, forma de pagamento, valor e status.
-- **Troca de turma:** o aluno pode trocar para outra turma do mesmo curso que ainda tenha vaga, vendo o horário, a modalidade e as vagas restantes de cada uma.
+- **Troca de turma:** o aluno pode trocar para outra turma do mesmo curso. Aparecem só as turmas disponíveis (com vaga), com horário, modalidade e período, sem mostrar a quantidade de vagas.
 - Para quem está na **lista de espera**, um aviso explica o que acontece quando uma vaga abrir.
 
 **Geral**
@@ -70,9 +74,16 @@ Projeto final do curso **Desenvolvimento Full Stack** do programa **+PraTi / Cod
 
 ### Parte II: Painel administrativo
 
-**Acesso e cadastros**
+**Acesso, níveis e início do painel**
 
 - **Login exclusivo para funcionários**, separado do login de alunos.
+- **Níveis de acesso:** cada funcionário tem um nível (ex.: Master, Administrativo, Secretaria, Financeiro) que define os **módulos** do painel que ele pode usar.
+  - O **Master** tem acesso a tudo e é o único que entra no módulo **Sistema**.
+  - No **Sistema**, o Master cria níveis novos com nome livre (ex.: Contabilidade) e marca, numa tabela, os módulos de cada nível.
+  - Sem um módulo liberado, ele some do menu e dos atalhos, e o servidor recusa criar, editar ou excluir nele.
+  - As mudanças valem na hora, sem precisar sair e entrar de novo.
+- **Início do painel:** ao entrar, o funcionário vê só quadrados de atalho para os módulos do nível dele.
+- **Menu lateral recolhível:** o botão « recolhe o menu e deixa só os ícones. Passando o mouse por cima, aparece o nome do item. O painel lembra a escolha.
 - **CRUD completo** de:
   - Alunos
   - Professores
@@ -82,7 +93,11 @@ Projeto final do curso **Desenvolvimento Full Stack** do programa **+PraTi / Cod
   - Turmas
   - Matrículas
   - **Funcionários do painel**
-- **Funcionários do painel:** mais pessoas da equipe podem ter acesso ao painel. A senha é obrigatória no cadastro (mínimo de 6 caracteres) e, na edição, a atual é mantida se o campo ficar em branco. Funcionário inativo ou bloqueado não consegue entrar, e ninguém consegue excluir ou inativar a **própria** conta.
+- **Funcionários do painel:** mais pessoas da equipe podem ter acesso ao painel, cada uma com o seu nível de acesso.
+  - A senha é obrigatória no cadastro (mínimo de 6 caracteres) e, na edição, a atual é mantida se o campo ficar em branco.
+  - Funcionário inativo ou bloqueado não consegue entrar, e perde o acesso na hora se for bloqueado com a sessão aberta.
+  - Ninguém consegue excluir, inativar ou mudar o nível da **própria** conta.
+  - Só um Master pode criar, alterar ou excluir contas Master.
 
 **Cursos, disciplinas e professores**
 
@@ -101,7 +116,7 @@ Projeto final do curso **Desenvolvimento Full Stack** do programa **+PraTi / Cod
 
   Só turmas com inscrições abertas recebem alunos.
 - **Inscrições:** listagem com a forma de pagamento escolhida pelo aluno e troca de status direto na tabela. Ao **confirmar o pagamento**, a matrícula é criada automaticamente.
-- **Notificações 🔔:** um sininho no topo do painel avisa quantas inscrições novas chegaram desde a última vez que o funcionário olhou. Ele confere a cada minuto, e cada funcionário tem a sua própria marcação de "vistas".
+- **Notificações 🔔:** para quem tem o módulo Inscrições, um sininho no topo do painel avisa quantas inscrições novas chegaram desde a última vez que o funcionário olhou. Ele confere a cada minuto, e cada funcionário tem a sua própria marcação de "vistas".
 
 **Listas e mensagens**
 
@@ -213,7 +228,7 @@ Requisição ─▶ AuthInterceptor ─▶ Controller ─▶ Service ─▶ Repo
 - **Repository:** interfaces do Spring Data JPA.
 - **Entity:** classes que representam as tabelas do banco. As relações N:N (curso × disciplina, professor × curso, professor × disciplina) usam tabelas de ligação.
 - **DTO:** respostas montadas sob medida para a tela, por exemplo as turmas disponíveis com as vagas restantes e as inscrições do aluno.
-- **Security:** geração e validação do JWT, controle de acesso às rotas e conferência do status da conta (ativa, inativa, bloqueada).
+- **Security:** geração e validação do JWT, controle de acesso às rotas, conferência do status da conta (ativa, inativa, bloqueada) e dos módulos liberados pelo nível de acesso (`Modulos` diz a qual módulo pertence cada rota).
 - **Exception:** tratamento centralizado dos erros (`GlobalExceptionHandler`). Ele devolve respostas diferentes para cada tipo de erro:
 
 | Tipo de erro | Resposta da API |
@@ -351,8 +366,8 @@ A meta do projeto era **cobertura mínima de 70%**. Os dois lados ficaram bem ac
 
 | | Testes | Cobertura | Ferramentas |
 |---|---|---|---|
-| **Back-end** | **349** | **99%** das instruções, 94% dos desvios (*branches*), 100% dos métodos e das classes | JUnit 5, Mockito, MockMvc, JaCoCo |
-| **Front-end** | **377** | **99,7%** das instruções, 96,6% dos desvios (*branches*), 100% das funções | Jest, Testing Library |
+| **Back-end** | **406** | **99%** das instruções, 94% dos desvios (*branches*), 100% dos métodos e das classes | JUnit 5, Mockito, MockMvc, JaCoCo |
+| **Front-end** | **429** | **99,7%** das instruções, 96,8% dos desvios (*branches*), 100% das funções | Jest, Testing Library |
 
 ### Back-end
 
@@ -371,12 +386,14 @@ O que é testado:
   - **troca de turma:** só para turmas do mesmo curso, abertas e com vaga, e só das próprias inscrições do aluno;
   - **matrícula automática:** criada ao confirmar o pagamento, sem duplicar, e acompanhando a inscrição ao cancelar, concluir ou trocar de turma;
   - **disciplinas em vários cursos** e total de horas dos professores;
-  - **funcionários do painel:** senha obrigatória e mínima, e senha mantida na edição.
+  - **funcionários do painel:** senha obrigatória e mínima, senha mantida na edição, nível obrigatório e as travas de contas Master;
+  - **níveis de acesso:** criar, renomear e excluir níveis, Master intocável e nível em uso protegido.
 - **Controllers:** todas as rotas (listar, buscar, criar, editar e excluir), a validação dos dados recebidos e as mensagens de erro.
 - **Segurança:**
   - geração e validação do JWT, inclusive tokens adulterados ou assinados com outra chave;
   - as permissões de cada perfil;
   - contas inativas ou bloqueadas;
+  - os **níveis de acesso**: cada funcionário só altera os módulos liberados, consulta livre exceto Funcionários e Sistema, e rotas sem módulo só para o Master;
   - a regra de que o aluno só mexe no **próprio** carrinho e nas **próprias** inscrições;
   - a tentativa de criar uma inscrição adulterada (em nome de outro aluno, já confirmada ou pagando R$ 0,01).
 - **Configuração e erros:** registro da proteção da API, liberação de CORS só para os endereços autorizados e as mensagens devolvidas quando o banco recusa uma exclusão ou um dado repetido.
@@ -406,7 +423,9 @@ O que é testado:
   - Home, login e cadastro;
   - carrinho: Pix com desconto, cartão, boleto, limite de parcelas, lista de espera e mensagem de erro vinda do servidor;
   - "Minhas inscrições": troca de turma e turmas lotadas;
-  - todas as listas e formulários do painel admin, incluindo ordenação por coluna, erro ao excluir um registro em uso, funcionários e aviso de matrícula criada.
+  - todas as listas e formulários do painel admin, incluindo ordenação por coluna, erro ao excluir um registro em uso, funcionários e aviso de matrícula criada;
+  - painel por nível de acesso: menu e atalhos de cada nível, tela de acesso restrito, menu recolhível com o nome ao passar o mouse e o módulo Sistema.
+- **Navegação do site:** ordem do topo, "Voltar ao início" e a logo limpando a pesquisa.
 
 ![Cobertura do front-end](docs/cobertura-frontend.jpeg)
 
@@ -423,7 +442,8 @@ O que é testado:
 |---|---|
 | **Visitante** | Ver cursos e turmas disponíveis, cadastrar-se e fazer login |
 | **Aluno** | O próprio carrinho, a criação de inscrições, "Minhas inscrições" e a troca de turma das próprias inscrições |
-| **Admin** | Todas as rotas |
+| **Funcionário** | Os módulos liberados pelo seu nível de acesso (consultas são livres, exceto Funcionários e Sistema) |
+| **Master** | Todas as rotas, inclusive o módulo Sistema |
 
 - **Cada aluno só vê e altera o que é dele** (carrinho e inscrições). A identidade vem do token assinado pelo servidor, não de dados enviados pelo navegador. Se um aluno tentar trocar a turma da inscrição de outra pessoa, a API responde como se ela não existisse.
 - **Inscrição à prova de adulteração:** quando um aluno finaliza a compra, o navegador só informa a **turma** e a **forma de pagamento**. Todo o resto é definido pelo servidor:
@@ -462,6 +482,8 @@ O que é testado:
 - **Admin com liberdade no painel.** O recálculo e as travas valem para as compras feitas pelos alunos. O admin continua podendo criar e editar inscrições, por exemplo para registrar uma negociação feita pela secretaria. Mesmo assim, ele não consegue tirar alguém da lista de espera sem vaga na turma.
 - **Disciplina compartilhada entre cursos (N:N).** Uma disciplina como "Lógica de Programação" é cadastrada uma vez só e ligada a vários cursos, em vez de ser duplicada. Por isso, a carga horária é a mesma em todos eles.
 - **`ddl-auto=validate`.** O banco tem valores padrão e gatilhos criados por scripts SQL. Para o Hibernate não alterar a estrutura sem ninguém saber, ele só confere se o banco está correto. Todas as alterações (novas colunas, tabelas de ligação, status) são feitas por script, guardados na pasta `database`.
+- **Permissões conferidas no servidor a cada requisição.** Esconder o menu não basta, porque dá para chamar a API sem passar pelo site. Por isso o `AuthInterceptor` consulta o nível do funcionário no banco a cada requisição do painel: se o Master mudar as permissões ou bloquear a conta, vale imediatamente.
+- **Consulta livre, alteração controlada.** Uma tela usa dados de outras (por exemplo, Matrículas precisa listar os alunos). Por isso consultar é livre para a equipe, e o que o nível controla é criar, editar e excluir. As exceções são Funcionários e Sistema, que são sensíveis e ficam bloqueados até para consulta.
 - **Interceptor em vez do Spring Security completo.** O controle de acesso foi feito com um `HandlerInterceptor`: uma solução enxuta, fácil de entender e que não conflita com a configuração de CORS.
 - **Notificações por consulta periódica.** O sininho do painel consulta a API a cada minuto. É mais simples de hospedar no plano gratuito do que uma conexão em tempo real (WebSocket) e atende bem ao volume do projeto.
 

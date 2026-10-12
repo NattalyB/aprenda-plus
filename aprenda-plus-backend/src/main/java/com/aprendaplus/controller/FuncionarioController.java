@@ -28,8 +28,10 @@ public class FuncionarioController {
     }
 
     @PostMapping
-    public ResponseEntity<Funcionario> criar(@RequestBody Funcionario funcionario) {
-        return ResponseEntity.ok(funcionarioService.salvar(funcionario));
+    public ResponseEntity<Funcionario> criar(@RequestBody Funcionario funcionario,
+                                             @RequestAttribute(name = "usuarioId", required = false) Integer usuarioId) {
+        funcionario.setIdFuncionario(null);
+        return ResponseEntity.ok(funcionarioService.salvar(funcionario, usuarioId));
     }
 
     @PutMapping("/{id}")
@@ -42,7 +44,7 @@ public class FuncionarioController {
                     .body(Map.of("mensagem", "Você não pode inativar ou bloquear a sua própria conta."));
         }
         funcionario.setIdFuncionario(id);
-        return ResponseEntity.ok(funcionarioService.salvar(funcionario));
+        return ResponseEntity.ok(funcionarioService.salvar(funcionario, usuarioId));
     }
 
     @DeleteMapping("/{id}")
@@ -51,7 +53,7 @@ public class FuncionarioController {
         if (id.equals(usuarioId)) {
             return ResponseEntity.badRequest().body(Map.of("mensagem", "Você não pode excluir a sua própria conta."));
         }
-        funcionarioService.deletar(id);
+        funcionarioService.deletar(id, usuarioId);
         return ResponseEntity.noContent().build();
     }
 }

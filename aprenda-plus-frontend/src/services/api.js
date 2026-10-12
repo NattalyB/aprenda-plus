@@ -30,7 +30,7 @@ api.interceptors.response.use(
 
     if (error.response?.status === 401 && !ehTentativaDeLogin) {
       if (estaNaAreaAdmin()) {
-        ['tokenAdmin', 'idFuncionario', 'nomeFuncionario', 'cargoFuncionario'].forEach((chave) =>
+        ['tokenAdmin', 'idFuncionario', 'nomeFuncionario', 'cargoFuncionario', 'acessoAdmin'].forEach((chave) =>
           localStorage.removeItem(chave)
         );
         window.location.hash = '#/admin/login';

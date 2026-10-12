@@ -102,13 +102,20 @@ function Header() {
 
   const handleLogout = () => {
     logout();
+    setTermoBusca('');
     navigate('/');
+  };
+
+  // A logo sempre leva para o início e limpa a pesquisa anterior
+  const voltarAoInicio = () => {
+    setTermoBusca('');
+    setMostrarSugestoes(false);
   };
 
   return (
     <header className="header">
       <div className="logo-container">
-        <Link to="/">
+        <Link to="/" onClick={voltarAoInicio} aria-label="Ir para a página inicial">
           <img src={logo} alt="Aprenda Plus" className="logo-img" />
         </Link>
       </div>
@@ -166,7 +173,14 @@ function Header() {
         )}
       </div>
 
+      {/* Ordem fixa: Minhas inscrições · Carrinho · (aluno + Sair) */}
       <div className="header-actions">
+        {logado && (
+          <Link to="/minhas-inscricoes" className="header-minhas">
+            <span aria-hidden="true">📚</span> <span className="header-minhas-texto">Minhas inscrições</span>
+          </Link>
+        )}
+
         <Link to="/carrinho">
           <button className="btn-cart">
             🛒 <span className="btn-cart-texto">Carrinho</span> ({qtdCarrinho})
@@ -174,11 +188,12 @@ function Header() {
         </Link>
 
         {logado ? (
-          <>
-            <span className="header-saudacao">Olá, {primeiroNome}</span>
-            <Link to="/minhas-inscricoes" className="header-minhas">Minhas inscrições</Link>
+          <div className="header-usuario">
+            <span className="header-saudacao" title={getNomeAluno() || ''}>
+              <span aria-hidden="true">👤</span> {primeiroNome}
+            </span>
             <button className="btn-login" onClick={handleLogout}>Sair</button>
-          </>
+          </div>
         ) : (
           <>
             <Link to="/login"><button className="btn-login">Login</button></Link>

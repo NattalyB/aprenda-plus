@@ -1,8 +1,10 @@
 package com.aprendaplus.service;
 
 import com.aprendaplus.entity.Funcionario;
+import com.aprendaplus.entity.NivelAcesso;
 import com.aprendaplus.exception.RegraDeNegocioException;
 import com.aprendaplus.repository.FuncionarioRepository;
+import com.aprendaplus.repository.NivelAcessoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -15,6 +17,9 @@ public class FuncionarioService {
     @Autowired
     private FuncionarioRepository funcionarioRepository;
 
+    @Autowired
+    private NivelAcessoRepository nivelAcessoRepository;
+
     private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
 
     public List<Funcionario> listarTodos() {
@@ -26,8 +31,15 @@ public class FuncionarioService {
                 .orElseThrow(() -> new RuntimeException("Funcionário não encontrado com id: " + id));
     }
 
+    // Sem saber quem está alterando (uso interno e testes antigos)
     public Funcionario salvar(Funcionario funcionario) {
+        return salvar(funcionario, null);
+    }
+
+    // idQuemAltera = funcionário logado que está salvando (vem do token)
+    public Funcionario salvar(Funcionario funcionario, Integer idQuemAltera) {
         conferirCamposObrigatorios(funcionario);
+        conferirNivel(funcionario, idQuemAltera);
 
         String senha = funcionario.getSenhaHash();
         boolean senhaVazia = senha == null || senha.isBlank();
@@ -49,7 +61,60 @@ public class FuncionarioService {
     }
 
     public void deletar(Integer id) {
+        deletar(id, null);
+    }
+
+    public void deletar(Integer id, Integer idQuemAltera) {
+        if (idQuemAltera != null && !ehMaster(idQuemAltera)) {
+            boolean alvoEhMaster = funcionarioRepository.findById(id)
+                    .map(f -> f.getNivel() != null && f.getNivel().isMaster())
+                    .orElse(false);
+            if (alvoEhMaster) {
+                throw new RegraDeNegocioException("Só um usuário Master pode excluir uma conta Master.");
+            }
+        }
         funcionarioRepository.deleteById(id);
+    }
+
+    // Nível de acesso: obrigatório, e só um Master mexe em contas Master.
+    // Ninguém muda o próprio nível (para não se trancar fora nem se promover).
+    private void conferirNivel(Funcionario funcionario, Integer idQuemAltera) {
+        Funcionario atual = funcionario.getIdFuncionario() == null ? null
+                : funcionarioRepository.findById(funcionario.getIdFuncionario()).orElse(null);
+
+        NivelAcesso nivelNovo = null;
+        if (funcionario.getNivel() != null && funcionario.getNivel().getIdNivel() != null) {
+            nivelNovo = nivelAcessoRepository.findById(funcionario.getNivel().getIdNivel())
+                    .orElseThrow(() -> new RegraDeNegocioException("Nível de acesso não encontrado."));
+        } else if (atual != null) {
+            nivelNovo = atual.getNivel(); // edição sem informar o nível: mantém o atual
+        }
+        if (nivelNovo == null) {
+            throw new RegraDeNegocioException("Escolha o nível de acesso do funcionário.");
+        }
+        funcionario.setNivel(nivelNovo);
+
+        if (idQuemAltera == null) {
+            return;
+        }
+
+        NivelAcesso nivelAntigo = atual == null ? null : atual.getNivel();
+        boolean mexeEmMaster = nivelNovo.isMaster() || (nivelAntigo != null && nivelAntigo.isMaster());
+        if (mexeEmMaster && !ehMaster(idQuemAltera)) {
+            throw new RegraDeNegocioException("Só um usuário Master pode criar ou alterar contas Master.");
+        }
+
+        boolean propriaConta = atual != null && idQuemAltera.equals(atual.getIdFuncionario());
+        Integer idAntigo = nivelAntigo == null ? null : nivelAntigo.getIdNivel();
+        if (propriaConta && !java.util.Objects.equals(idAntigo, nivelNovo.getIdNivel())) {
+            throw new RegraDeNegocioException("Você não pode mudar o seu próprio nível de acesso.");
+        }
+    }
+
+    private boolean ehMaster(Integer idFuncionario) {
+        return funcionarioRepository.findById(idFuncionario)
+                .map(f -> f.getNivel() != null && f.getNivel().isMaster())
+                .orElse(false);
     }
 
     // O banco exige esses dados; aqui damos uma mensagem clara antes de chegar lá

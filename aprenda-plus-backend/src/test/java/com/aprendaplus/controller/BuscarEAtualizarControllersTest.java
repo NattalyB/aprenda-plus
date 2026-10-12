@@ -170,7 +170,7 @@ class BuscarEAtualizarControllersTest {
 
     @Test
     void deveAtualizarFuncionario() throws Exception {
-        when(funcionarioService.salvar(any(Funcionario.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(funcionarioService.salvar(any(Funcionario.class), any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         mockMvc.perform(put("/funcionarios/1")
                         .contentType(MediaType.APPLICATION_JSON)

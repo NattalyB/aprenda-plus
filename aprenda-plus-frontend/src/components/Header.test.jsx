@@ -42,7 +42,7 @@ describe('Header: aluno logado', () => {
 
     renderizar(<Header />);
 
-    expect(screen.getByText('Olá, Maria')).toBeInTheDocument();
+    expect(screen.getByText(/Maria$/)).toHaveAttribute('title', 'Maria Silva');
     expect(screen.getByRole('link', { name: 'Minhas inscrições' })).toHaveAttribute('href', '/minhas-inscricoes');
     expect(await screen.findByText(/\(2\)/)).toBeInTheDocument();
   });
@@ -197,3 +197,46 @@ describe('Header: busca com sugestões', () => {
     expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
   });
 });
+
+describe('Header: ordem do topo e logo', () => {
+  test('aluno logado: Minhas inscrições, Carrinho e depois nome + Sair', async () => {
+    logarAluno('Lucas Almeida');
+    renderizar(<Header />);
+    await screen.findByText(/\(0\)/);
+
+    const acoes = document.querySelector('.header-actions');
+    const textos = Array.from(acoes.children).map((el) => el.textContent.replace(/\s+/g, ' ').trim());
+    expect(textos[0]).toContain('Minhas inscrições');
+    expect(textos[1]).toContain('Carrinho');
+    expect(textos[2]).toContain('Lucas');
+    expect(textos[2]).toContain('Sair');
+  });
+
+  test('visitante não vê "Minhas inscrições"', () => {
+    renderizar(<Header />);
+    expect(screen.queryByText('Minhas inscrições')).not.toBeInTheDocument();
+  });
+
+  test('clicar na logo limpa a pesquisa e volta para o início', async () => {
+    renderizar(<Header />, { rota: '/carrinho' });
+    await waitFor(() => expect(listarCursos).toHaveBeenCalled());
+
+    fireEvent.change(campoBusca(), { target: { value: 'design' } });
+    fireEvent.click(screen.getByRole('link', { name: 'Ir para a página inicial' }));
+
+    expect(campoBusca()).toHaveValue('');
+    expect(screen.getByTestId('endereco')).toHaveTextContent(/^\/$/);
+  });
+
+  test('sair também limpa a pesquisa', async () => {
+    logarAluno();
+    renderizar(<Header />);
+    await screen.findByText(/\(0\)/);
+    fireEvent.change(campoBusca(), { target: { value: 'redes' } });
+
+    fireEvent.click(screen.getByText('Sair'));
+
+    expect(campoBusca()).toHaveValue('');
+  });
+});
+

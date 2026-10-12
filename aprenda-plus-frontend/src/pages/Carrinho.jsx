@@ -312,7 +312,6 @@ function Carrinho() {
             );
           })}
 
-          <Link to="/" className="carrinho-continuar">← Continuar navegando</Link>
         </div>
 
         {/* ===== Resumo ===== */}

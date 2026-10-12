@@ -42,6 +42,20 @@ class ConfiguracoesTest {
     }
 
     @Test
+    void webConfigComNiveisDeAcessoTambemRegistraAProtecao() {
+        JwtUtil jwtUtil = new JwtUtil("chave-usada-somente-nos-testes-com-mais-de-32-caracteres");
+        WebConfig webConfig = new WebConfig(jwtUtil, id -> java.util.Set.of());
+
+        InterceptorRegistry registry = mock(InterceptorRegistry.class);
+        InterceptorRegistration registro = mock(InterceptorRegistration.class);
+        when(registry.addInterceptor(any())).thenReturn(registro);
+
+        webConfig.addInterceptors(registry);
+
+        verify(registry).addInterceptor(any(AuthInterceptor.class));
+    }
+
+    @Test
     void corsDeveLiberarOSitePublicadoEODesenvolvimentoLocal() {
         RegistroDeCorsParaTeste registry = new RegistroDeCorsParaTeste();
 

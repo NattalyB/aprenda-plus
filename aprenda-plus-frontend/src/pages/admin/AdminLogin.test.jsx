@@ -20,7 +20,7 @@ test('login certo salva a sessão e abre o cadastro de alunos', async () => {
 
   preencherEEnviar();
 
-  await waitFor(() => expect(screen.getByTestId('endereco')).toHaveTextContent('/admin/alunos'));
+  await waitFor(() => expect(screen.getByTestId('endereco')).toHaveTextContent(/^\/admin$/));
   expect(loginFuncionario).toHaveBeenCalledWith('admin@teste.com', 'admin123');
   expect(salvarSessaoAdmin).toHaveBeenCalledWith(resposta);
 });

@@ -173,4 +173,74 @@ class AuthInterceptorTest {
         assertFalse(requisicao("POST", "/funcionarios", tokenAluno));
         assertEquals(403, response.getStatus());
     }
+
+    // ===== Níveis de acesso dos funcionários =====
+
+    // Funcionário 2 = Administrativo (alunos, cursos e funcionários);
+    // 3 = Financeiro (inscrições e matrículas); 1 = Master; 4 = conta bloqueada.
+    private final PermissoesDoFuncionario permissoes = id -> switch (id) {
+        case 1 -> java.util.Set.copyOf(Modulos.TODOS);
+        case 2 -> java.util.Set.of("alunos", "cursos", "funcionarios");
+        case 3 -> java.util.Set.of("inscricoes", "matriculas");
+        default -> null;
+    };
+
+    private final AuthInterceptor comNiveis = new AuthInterceptor(jwtUtil, permissoes);
+
+    private boolean doFuncionario(int id, String metodo, String caminho) throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest(metodo, caminho);
+        request.addHeader("Authorization", "Bearer " + jwtUtil.gerarToken("f@teste.com", id, "ADMIN"));
+        response = new MockHttpServletResponse();
+        return comNiveis.preHandle(request, response, new Object());
+    }
+
+    @Test
+    void funcionarioAlteraSoOsModulosDoNivelDele() throws Exception {
+        assertTrue(doFuncionario(3, "PUT", "/inscricoes/5"));
+        assertTrue(doFuncionario(3, "POST", "/matriculas"));
+        assertTrue(doFuncionario(2, "DELETE", "/alunos/4"));
+
+        assertFalse(doFuncionario(3, "DELETE", "/turmas/1"));
+        assertEquals(403, response.getStatus());
+        assertTrue(response.getContentAsString().contains("Seu nível de acesso não permite usar este módulo."));
+        assertFalse(doFuncionario(2, "POST", "/turmas"));
+    }
+
+    @Test
+    void consultaEhLivreParaAEquipeMenosFuncionariosESistema() throws Exception {
+        assertTrue(doFuncionario(3, "GET", "/alunos"));
+        assertTrue(doFuncionario(3, "GET", "/professores/2"));
+
+        assertFalse(doFuncionario(3, "GET", "/funcionarios"));
+        assertFalse(doFuncionario(3, "GET", "/niveis-acesso"));
+        assertTrue(doFuncionario(2, "GET", "/funcionarios"));
+    }
+
+    @Test
+    void listaDeNiveisLiberadaParaQuemCadastraFuncionarios() throws Exception {
+        assertTrue(doFuncionario(2, "GET", "/niveis-acesso"));
+        assertFalse(doFuncionario(2, "POST", "/niveis-acesso"));
+        assertFalse(doFuncionario(2, "GET", "/niveis-acesso/3"));
+    }
+
+    @Test
+    void todoFuncionarioVeOProprioNivel() throws Exception {
+        assertTrue(doFuncionario(3, "GET", "/niveis-acesso/meu"));
+    }
+
+    @Test
+    void masterPodeTudoInclusiveRotasSemModulo() throws Exception {
+        assertTrue(doFuncionario(1, "POST", "/niveis-acesso"));
+        assertTrue(doFuncionario(1, "DELETE", "/funcionarios/3"));
+        assertTrue(doFuncionario(1, "GET", "/rota-sem-modulo"));
+        assertFalse(doFuncionario(3, "GET", "/rota-sem-modulo"));
+    }
+
+    @Test
+    void contaBloqueadaOuExcluidaPerdeOAcessoNaHora() throws Exception {
+        assertFalse(doFuncionario(4, "GET", "/alunos"));
+        assertEquals(401, response.getStatus());
+        assertTrue(response.getContentAsString().contains("não está mais ativa"));
+    }
 }
+

@@ -78,7 +78,8 @@ public class AuthController {
                 token,
                 funcionario.getIdFuncionario(),
                 funcionario.getNomeCompleto(),
-                funcionario.getCargo()
+                funcionario.getCargo(),
+                funcionario.getNivel()
         ));
     }
 }

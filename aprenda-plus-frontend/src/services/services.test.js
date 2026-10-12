@@ -162,6 +162,51 @@ describe('authAdminService (funcionário)', () => {
     authAdminService.logoutAdmin();
 
     expect(authAdminService.estaLogadoAdmin()).toBe(false);
+    expect(authAdminService.getAcessoAdmin()).toBeNull();
+  });
+
+  test('o login guarda o nível e os módulos do funcionário', () => {
+    authAdminService.salvarSessaoAdmin({
+      token: 't', idFuncionario: 3, nome: 'Carla', cargo: 'financeiro',
+      nivel: 'Financeiro', master: false, modulos: ['matriculas'],
+    });
+
+    expect(authAdminService.getAcessoAdmin()).toEqual({ nivel: 'Financeiro', master: false, modulos: ['matriculas'] });
+  });
+
+  test('acesso vazio, sem lista ou quebrado', () => {
+    authAdminService.salvarAcessoAdmin(null);
+    expect(authAdminService.getAcessoAdmin()).toEqual({ nivel: null, master: false, modulos: [] });
+
+    localStorage.setItem('acessoAdmin', JSON.stringify({ nivel: 'X' }));
+    expect(authAdminService.getAcessoAdmin()).toBeNull();
+
+    localStorage.setItem('acessoAdmin', '{quebrado');
+    expect(authAdminService.getAcessoAdmin()).toBeNull();
+
+    localStorage.removeItem('acessoAdmin');
+    expect(authAdminService.getAcessoAdmin()).toBeNull();
+  });
+
+  test('busca o próprio nível no servidor', async () => {
+    api.get.mockResolvedValue({ data: { nivel: 'Master', master: true, modulos: [] } });
+
+    expect(await authAdminService.buscarMeuAcesso()).toEqual({ nivel: 'Master', master: true, modulos: [] });
+    expect(api.get).toHaveBeenCalledWith('/niveis-acesso/meu');
+  });
+});
+
+describe('níveis de acesso (módulo Sistema)', () => {
+  test('rotas de listar, criar, editar e excluir', () => {
+    funcionarioService.listarNiveis();
+    funcionarioService.criarNivel({ nome: 'X' });
+    funcionarioService.atualizarNivel(4, { nome: 'Y' });
+    funcionarioService.deletarNivel(4);
+
+    expect(api.get).toHaveBeenCalledWith('/niveis-acesso');
+    expect(api.post).toHaveBeenCalledWith('/niveis-acesso', { nome: 'X' });
+    expect(api.put).toHaveBeenCalledWith('/niveis-acesso/4', { nome: 'Y' });
+    expect(api.delete).toHaveBeenCalledWith('/niveis-acesso/4');
   });
 });
 

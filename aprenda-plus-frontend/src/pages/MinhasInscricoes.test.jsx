@@ -134,18 +134,17 @@ describe('troca de turma', () => {
     await screen.findByText('Escolha sua nova turma');
   };
 
-  test('lista as outras turmas com horário e vagas; turma lotada não pode ser escolhida', async () => {
+  test('lista só as outras turmas com vaga, sem mostrar quantas vagas restam', async () => {
     await abrirTroca();
 
     expect(listarTurmasDisponiveis).toHaveBeenCalledWith(2);
-    // A turma atual não aparece na lista
-    expect(screen.getAllByRole('radio')).toHaveLength(3);
+    // A turma atual e a turma lotada (Turma C) não aparecem
+    expect(screen.getAllByRole('radio')).toHaveLength(2);
+    expect(screen.queryByText('Turma C - Sábado')).not.toBeInTheDocument();
     expect(screen.getByText('Ter e Qui 8h-12h · Presencial · 2026/2')).toBeInTheDocument();
-    expect(screen.getByText('1 vaga')).toBeInTheDocument();
-    expect(screen.getByText('12 vagas')).toBeInTheDocument();
-    expect(screen.getByText('Lotada')).toBeInTheDocument();
     expect(screen.getByText('Horário a definir')).toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: /Turma C - Sábado/ })).toBeDisabled();
+    expect(screen.queryByText(/vagas?$/)).not.toBeInTheDocument();
+    expect(screen.queryByText('Lotada')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Confirmar troca' })).toBeDisabled();
   });
 
@@ -192,6 +191,16 @@ describe('troca de turma', () => {
     expect(screen.getByRole('button', { name: 'Trocar de turma' })).toBeInTheDocument();
   });
 
+  test('só turmas lotadas: avisa que não há outra turma disponível', async () => {
+    listarTurmasDisponiveis.mockResolvedValue([turmasDoCurso[0], turmasDoCurso[2]]);
+    logarAluno();
+    renderizar(<MinhasInscricoes />);
+    await screen.findByText('Redes de Computadores');
+    fireEvent.click(screen.getByRole('button', { name: 'Trocar de turma' }));
+
+    expect(await screen.findByText('Não há outras turmas disponíveis para este curso no momento.')).toBeInTheDocument();
+  });
+
   test('curso sem outras turmas avisa', async () => {
     listarTurmasDisponiveis.mockResolvedValue([turmasDoCurso[0]]);
     logarAluno();
@@ -199,7 +208,7 @@ describe('troca de turma', () => {
     await screen.findByText('Redes de Computadores');
     fireEvent.click(screen.getByRole('button', { name: 'Trocar de turma' }));
 
-    expect(await screen.findByText('Não há outras turmas abertas para este curso no momento.')).toBeInTheDocument();
+    expect(await screen.findByText('Não há outras turmas disponíveis para este curso no momento.')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Fechar' }));
     expect(screen.getByRole('button', { name: 'Trocar de turma' })).toBeInTheDocument();
   });

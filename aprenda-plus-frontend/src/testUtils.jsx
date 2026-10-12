@@ -39,7 +39,9 @@ export function logarAluno(nome = 'Maria Silva') {
 }
 
 // Simula o login de um funcionário (admin)
-export function logarAdmin(nome = 'Admin Teste') {
+// (por padrão como Master; passe o acesso para testar outro nível)
+export function logarAdmin(nome = 'Admin Teste', acesso = { nivel: 'Master', master: true, modulos: [] }) {
   localStorage.setItem('tokenAdmin', 'token-admin');
   localStorage.setItem('nomeFuncionario', nome);
+  localStorage.setItem('acessoAdmin', JSON.stringify(acesso));
 }

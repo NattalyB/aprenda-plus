@@ -10,6 +10,9 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Table;
 
 @Entity
@@ -49,6 +52,11 @@ public class Funcionario {
 
     @Column(name = "status", nullable = false, length = 20)
     private String status = "ativo";
+
+    // Nível de acesso ao painel (define os módulos que a pessoa pode usar)
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "nivel_id")
+    private NivelAcesso nivel;
 
     @Column(name = "rua", length = 150)
     private String rua;
@@ -108,6 +116,9 @@ public class Funcionario {
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+
+    public NivelAcesso getNivel() { return nivel; }
+    public void setNivel(NivelAcesso nivel) { this.nivel = nivel; }
 
     public String getRua() { return rua; }
     public void setRua(String rua) { this.rua = rua; }

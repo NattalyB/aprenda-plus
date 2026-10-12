@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
-import { buscarFuncionarioPorId, criarFuncionario, atualizarFuncionario } from '../../services/funcionarioService';
+import { buscarFuncionarioPorId, criarFuncionario, atualizarFuncionario, listarNiveis } from '../../services/funcionarioService';
+import { getAcessoAdmin } from '../../services/authAdminService';
 
 // Id do funcionário logado: ele não pode inativar a própria conta
 const idLogado = () => localStorage.getItem('idFuncionario');
@@ -20,18 +21,34 @@ function AdminFuncionarioForm() {
     cargo: 'administrativo',
     senhaHash: '',
     status: 'ativo',
+    idNivel: '',
   });
+  const [niveis, setNiveis] = useState([]);
+  // Só um Master pode dar (ou tirar) o nível Master
+  const souMaster = Boolean(getAcessoAdmin()?.master);
   const [erro, setErro] = useState(null);
   const [enviando, setEnviando] = useState(false);
+
+  useEffect(() => {
+    listarNiveis()
+      .then((response) => setNiveis(response.data || []))
+      .catch(() => setNiveis([]));
+  }, []);
 
   useEffect(() => {
     if (modoEdicao) {
       buscarFuncionarioPorId(id).then((response) => {
         // A senha nunca volta do servidor: o campo começa vazio
-        setForm({ ...response.data, senhaHash: '' });
+        const { nivel, ...dados } = response.data;
+        setForm({ ...dados, senhaHash: '', idNivel: nivel?.idNivel ? String(nivel.idNivel) : '' });
       });
     }
   }, [id]);
+
+  const nivelEscolhido = niveis.find((n) => String(n.idNivel) === String(form.idNivel));
+  // Contas Master só podem ser alteradas por outro Master
+  const contaMasterBloqueada = !souMaster && Boolean(nivelEscolhido?.master) && modoEdicao;
+  const opcoesDeNivel = niveis.filter((n) => !n.master || souMaster || String(n.idNivel) === String(form.idNivel));
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -45,10 +62,11 @@ function AdminFuncionarioForm() {
     setEnviando(true);
 
     // Na edição, senha em branco = manter a atual (não manda o campo)
-    const dados = { ...form };
+    const { idNivel, ...dados } = form;
     if (modoEdicao && !dados.senhaHash) {
       delete dados.senhaHash;
     }
+    dados.nivel = idNivel ? { idNivel: Number(idNivel) } : null;
 
     const acao = modoEdicao ? atualizarFuncionario(id, dados) : criarFuncionario(dados);
 
@@ -103,6 +121,32 @@ function AdminFuncionarioForm() {
 
           <h2 className="form-section-title">Acesso ao painel</h2>
           <div className="form-grid">
+            <div className="form-field">
+              <label htmlFor="idNivel">Nível de acesso</label>
+              <select
+                id="idNivel"
+                name="idNivel"
+                value={form.idNivel}
+                onChange={handleChange}
+                disabled={propriaConta || contaMasterBloqueada}
+                required
+              >
+                <option value="">Escolha o nível...</option>
+                {opcoesDeNivel.map((nivel) => (
+                  <option key={nivel.idNivel} value={nivel.idNivel}>
+                    {nivel.nome}
+                  </option>
+                ))}
+              </select>
+              <small className="form-dica">
+                {propriaConta
+                  ? 'Você não pode mudar o seu próprio nível de acesso.'
+                  : contaMasterBloqueada
+                    ? 'Só um usuário Master pode alterar uma conta Master.'
+                    : 'O nível define quais módulos do painel a pessoa pode usar (configure em Sistema).'}
+              </small>
+            </div>
+
             <div className="form-field">
               <label htmlFor="email">E-mail de login</label>
               <input id="email" name="email" type="email" placeholder="nome@aprendaplus.com" value={form.email || ''} onChange={handleChange} required />

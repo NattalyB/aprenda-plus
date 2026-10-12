@@ -28,11 +28,16 @@ import AdminMatriculaForm from './pages/admin/AdminMatriculaForm';
 import AdminFuncionarios from './pages/admin/AdminFuncionarios';
 import AdminFuncionarioForm from './pages/admin/AdminFuncionarioForm';
 import Aviso from './components/Aviso';
+import RotaModulo from './components/admin/RotaModulo';
+import AdminInicio from './pages/admin/AdminInicio';
+import AdminSistema from './pages/admin/AdminSistema';
+import VoltarInicio from './components/VoltarInicio';
 
 function SitePage({ children }) {
   return (
     <SearchProvider>
       <Header />
+      <VoltarInicio />
       {children}
       <Footer />
       <Aviso />
@@ -59,39 +64,42 @@ function App() {
             </RotaProtegidaAdmin>
           }
         >
-          <Route path="cursos" element={<AdminCursos />} />
-          <Route path="cursos/novo" element={<AdminCursoForm />} />
-          <Route path="cursos/:id/editar" element={<AdminCursoForm />} />
+          <Route index element={<AdminInicio />} />
+          <Route path="sistema" element={<RotaModulo modulo="sistema"><AdminSistema /></RotaModulo>} />
 
-          <Route path="alunos" element={<AdminAlunos />} />
-          <Route path="alunos/novo" element={<AdminAlunoForm />} />
-          <Route path="alunos/:id/editar" element={<AdminAlunoForm />} />
+          <Route path="cursos" element={<RotaModulo modulo="cursos"><AdminCursos /></RotaModulo>} />
+          <Route path="cursos/novo" element={<RotaModulo modulo="cursos"><AdminCursoForm /></RotaModulo>} />
+          <Route path="cursos/:id/editar" element={<RotaModulo modulo="cursos"><AdminCursoForm /></RotaModulo>} />
 
-          <Route path="professores" element={<AdminProfessores />} />
-          <Route path="professores/novo" element={<AdminProfessorForm />} />
-          <Route path="professores/:id/editar" element={<AdminProfessorForm />} />
+          <Route path="alunos" element={<RotaModulo modulo="alunos"><AdminAlunos /></RotaModulo>} />
+          <Route path="alunos/novo" element={<RotaModulo modulo="alunos"><AdminAlunoForm /></RotaModulo>} />
+          <Route path="alunos/:id/editar" element={<RotaModulo modulo="alunos"><AdminAlunoForm /></RotaModulo>} />
 
-          <Route path="disciplinas" element={<AdminDisciplinas />} />
-          <Route path="disciplinas/novo" element={<AdminDisciplinaForm />} />
-          <Route path="disciplinas/:id/editar" element={<AdminDisciplinaForm />} />
+          <Route path="professores" element={<RotaModulo modulo="professores"><AdminProfessores /></RotaModulo>} />
+          <Route path="professores/novo" element={<RotaModulo modulo="professores"><AdminProfessorForm /></RotaModulo>} />
+          <Route path="professores/:id/editar" element={<RotaModulo modulo="professores"><AdminProfessorForm /></RotaModulo>} />
 
-          <Route path="periodos-letivos" element={<AdminPeriodosLetivos />} />
-          <Route path="periodos-letivos/novo" element={<AdminPeriodoLetivoForm />} />
-          <Route path="periodos-letivos/:id/editar" element={<AdminPeriodoLetivoForm />} />
+          <Route path="disciplinas" element={<RotaModulo modulo="disciplinas"><AdminDisciplinas /></RotaModulo>} />
+          <Route path="disciplinas/novo" element={<RotaModulo modulo="disciplinas"><AdminDisciplinaForm /></RotaModulo>} />
+          <Route path="disciplinas/:id/editar" element={<RotaModulo modulo="disciplinas"><AdminDisciplinaForm /></RotaModulo>} />
 
-          <Route path="turmas" element={<AdminTurmas />} />
-          <Route path="turmas/novo" element={<AdminTurmaForm />} />
-          <Route path="turmas/:id/editar" element={<AdminTurmaForm />} />
+          <Route path="periodos-letivos" element={<RotaModulo modulo="periodos"><AdminPeriodosLetivos /></RotaModulo>} />
+          <Route path="periodos-letivos/novo" element={<RotaModulo modulo="periodos"><AdminPeriodoLetivoForm /></RotaModulo>} />
+          <Route path="periodos-letivos/:id/editar" element={<RotaModulo modulo="periodos"><AdminPeriodoLetivoForm /></RotaModulo>} />
 
-          <Route path="inscricoes" element={<AdminInscricoes />} />
+          <Route path="turmas" element={<RotaModulo modulo="turmas"><AdminTurmas /></RotaModulo>} />
+          <Route path="turmas/novo" element={<RotaModulo modulo="turmas"><AdminTurmaForm /></RotaModulo>} />
+          <Route path="turmas/:id/editar" element={<RotaModulo modulo="turmas"><AdminTurmaForm /></RotaModulo>} />
 
-          <Route path="matriculas" element={<AdminMatriculas />} />
-          <Route path="matriculas/novo" element={<AdminMatriculaForm />} />
-          <Route path="matriculas/:id/editar" element={<AdminMatriculaForm />} />
+          <Route path="inscricoes" element={<RotaModulo modulo="inscricoes"><AdminInscricoes /></RotaModulo>} />
 
-          <Route path="funcionarios" element={<AdminFuncionarios />} />
-          <Route path="funcionarios/novo" element={<AdminFuncionarioForm />} />
-          <Route path="funcionarios/:id/editar" element={<AdminFuncionarioForm />} />
+          <Route path="matriculas" element={<RotaModulo modulo="matriculas"><AdminMatriculas /></RotaModulo>} />
+          <Route path="matriculas/novo" element={<RotaModulo modulo="matriculas"><AdminMatriculaForm /></RotaModulo>} />
+          <Route path="matriculas/:id/editar" element={<RotaModulo modulo="matriculas"><AdminMatriculaForm /></RotaModulo>} />
+
+          <Route path="funcionarios" element={<RotaModulo modulo="funcionarios"><AdminFuncionarios /></RotaModulo>} />
+          <Route path="funcionarios/novo" element={<RotaModulo modulo="funcionarios"><AdminFuncionarioForm /></RotaModulo>} />
+          <Route path="funcionarios/:id/editar" element={<RotaModulo modulo="funcionarios"><AdminFuncionarioForm /></RotaModulo>} />
 
         </Route>
       </Routes>

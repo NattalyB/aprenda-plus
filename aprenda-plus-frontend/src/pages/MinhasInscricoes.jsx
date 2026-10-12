@@ -21,14 +21,8 @@ const formatarData = (data) => {
   return `${dia}/${mes}/${ano}`;
 };
 
-// Texto das vagas: "1 vaga", "12 vagas" ou "Lotada"
-const textoVagas = (vagas) => {
-  if (vagas <= 0) return 'Lotada';
-  if (vagas === 1) return '1 vaga';
-  return `${vagas} vagas`;
-};
-
-// Painel para escolher outra turma do mesmo curso
+// Painel para escolher outra turma do mesmo curso.
+// Mostra só as turmas que ainda têm vaga (sem dizer quantas restam).
 function TrocaDeTurma({ inscricao, onTrocada, onCancelar }) {
   const [turmas, setTurmas] = useState(null);
   const [escolhida, setEscolhida] = useState(null);
@@ -37,7 +31,7 @@ function TrocaDeTurma({ inscricao, onTrocada, onCancelar }) {
 
   useEffect(() => {
     listarTurmasDisponiveis(inscricao.idCurso)
-      .then((lista) => setTurmas(lista.filter((t) => t.idTurma !== inscricao.idTurma)))
+      .then((lista) => setTurmas(lista.filter((t) => t.idTurma !== inscricao.idTurma && t.vagasRestantes > 0)))
       .catch(() => setErro('Não foi possível carregar as turmas. Tente novamente.'));
   }, [inscricao.idCurso, inscricao.idTurma]);
 
@@ -66,7 +60,7 @@ function TrocaDeTurma({ inscricao, onTrocada, onCancelar }) {
   if (turmas.length === 0) {
     return (
       <div className="minhas-troca">
-        <p className="minhas-dica">Não há outras turmas abertas para este curso no momento.</p>
+        <p className="minhas-dica">Não há outras turmas disponíveis para este curso no momento.</p>
         <button type="button" className="admin-btn admin-btn-secundario" onClick={onCancelar}>
           Fechar
         </button>
@@ -80,36 +74,27 @@ function TrocaDeTurma({ inscricao, onTrocada, onCancelar }) {
       {erro && <div className="form-erro">{erro}</div>}
 
       <div className="minhas-turmas">
-        {turmas.map((turma) => {
-          const lotada = turma.vagasRestantes <= 0;
-          return (
-            <label
-              key={turma.idTurma}
-              className={[
-                'minhas-turma-opcao',
-                escolhida === turma.idTurma ? 'escolhida' : '',
-                lotada ? 'lotada' : '',
-              ].join(' ').trim()}
-            >
-              <input
-                type="radio"
-                name={`turma-${inscricao.idInscricao}`}
-                value={turma.idTurma}
-                disabled={lotada}
-                checked={escolhida === turma.idTurma}
-                onChange={() => setEscolhida(turma.idTurma)}
-              />
-              <span className="minhas-turma-info">
-                <strong>{turma.nome}</strong>
-                <span>
-                  {[turma.diasHorarios, turma.modalidade, turma.periodoLetivo].filter(Boolean).join(' · ') ||
-                    'Horário a definir'}
-                </span>
+        {turmas.map((turma) => (
+          <label
+            key={turma.idTurma}
+            className={escolhida === turma.idTurma ? 'minhas-turma-opcao escolhida' : 'minhas-turma-opcao'}
+          >
+            <input
+              type="radio"
+              name={`turma-${inscricao.idInscricao}`}
+              value={turma.idTurma}
+              checked={escolhida === turma.idTurma}
+              onChange={() => setEscolhida(turma.idTurma)}
+            />
+            <span className="minhas-turma-info">
+              <strong>{turma.nome}</strong>
+              <span>
+                {[turma.diasHorarios, turma.modalidade, turma.periodoLetivo].filter(Boolean).join(' · ') ||
+                  'Horário a definir'}
               </span>
-              <span className={lotada ? 'minhas-vagas sem-vaga' : 'minhas-vagas'}>{textoVagas(turma.vagasRestantes)}</span>
-            </label>
-          );
-        })}
+            </span>
+          </label>
+        ))}
       </div>
 
       <div className="minhas-troca-acoes">

@@ -2,6 +2,7 @@ package com.aprendaplus.controller;
 
 import com.aprendaplus.entity.Aluno;
 import com.aprendaplus.entity.Funcionario;
+import com.aprendaplus.entity.NivelAcesso;
 import com.aprendaplus.repository.AlunoRepository;
 import com.aprendaplus.repository.FuncionarioRepository;
 import com.aprendaplus.security.JwtUtil;
@@ -112,6 +113,39 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.token").value("token-admin"))
                 .andExpect(jsonPath("$.idFuncionario").value(1))
                 .andExpect(jsonPath("$.cargo").value("administrativo"));
+    }
+
+    @Test
+    void loginDeFuncionarioDevolveONivelEOsModulosLiberados() throws Exception {
+        NivelAcesso financeiro = new NivelAcesso();
+        financeiro.setIdNivel(3);
+        financeiro.setNome("Financeiro");
+        financeiro.setModulosTexto("inscricoes,matriculas");
+        Funcionario funcionario = funcionarioCadastrado();
+        funcionario.setNivel(financeiro);
+        when(funcionarioRepository.findByEmail("admin@teste.com")).thenReturn(funcionario);
+        when(jwtUtil.gerarToken(eq("admin@teste.com"), eq(1), eq("ADMIN"))).thenReturn("token-admin");
+
+        mockMvc.perform(post("/auth/login-funcionario")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(login("admin@teste.com", "admin123")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nivel").value("Financeiro"))
+                .andExpect(jsonPath("$.master").value(false))
+                .andExpect(jsonPath("$.modulos[0]").value("inscricoes"))
+                .andExpect(jsonPath("$.modulos[1]").value("matriculas"));
+    }
+
+    @Test
+    void funcionarioSemNivelEntraSemModulos() throws Exception {
+        when(funcionarioRepository.findByEmail("admin@teste.com")).thenReturn(funcionarioCadastrado());
+        when(jwtUtil.gerarToken(eq("admin@teste.com"), eq(1), eq("ADMIN"))).thenReturn("token-admin");
+
+        mockMvc.perform(post("/auth/login-funcionario")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(login("admin@teste.com", "admin123")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.modulos").isEmpty());
     }
 
     @Test

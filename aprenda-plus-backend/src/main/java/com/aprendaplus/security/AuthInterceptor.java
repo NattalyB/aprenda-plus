@@ -7,13 +7,23 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 import java.io.IOException;
+import java.util.Set;
 
 public class AuthInterceptor implements HandlerInterceptor {
 
     private final JwtUtil jwtUtil;
 
+    // Diz quais módulos cada funcionário pode usar (nível de acesso).
+    // Quando é null, o admin pode tudo (usado só em testes antigos).
+    private final PermissoesDoFuncionario permissoes;
+
     public AuthInterceptor(JwtUtil jwtUtil) {
+        this(jwtUtil, null);
+    }
+
+    public AuthInterceptor(JwtUtil jwtUtil, PermissoesDoFuncionario permissoes) {
         this.jwtUtil = jwtUtil;
+        this.permissoes = permissoes;
     }
 
     @Override
@@ -53,9 +63,19 @@ public class AuthInterceptor implements HandlerInterceptor {
         request.setAttribute("usuarioId", id);
         request.setAttribute("usuarioPapel", papel);
 
-        // Admin pode acessar tudo
+        // Funcionário do painel: depende do nível de acesso dele
         if ("ADMIN".equals(papel)) {
-            return true;
+            if (permissoes == null) {
+                return true;
+            }
+            Set<String> liberados = permissoes.modulosLiberados(id);
+            if (liberados == null) {
+                return negar(response, 401, "Sua conta do painel não está mais ativa. Faça login novamente.");
+            }
+            if (funcionarioPodeAcessar(metodo, caminho, liberados)) {
+                return true;
+            }
+            return negar(response, 403, "Seu nível de acesso não permite usar este módulo.");
         }
 
         // Aluno só acessa as rotas da área dele
@@ -89,6 +109,34 @@ public class AuthInterceptor implements HandlerInterceptor {
         if ("GET".equals(metodo) && caminho.equals("/inscricoes/minhas")) return true;          // área do aluno
         if ("PUT".equals(metodo) && caminho.matches("/inscricoes/\\d+/turma")) return true;   // troca de turma
         return "POST".equals(metodo) && caminho.equals("/inscricoes");
+    }
+
+    // Regras do painel:
+    // - consultar (GET) é livre para a equipe, porque uma tela usa dados de outras
+    //   (ex.: Matrículas precisa listar os alunos);
+    // - criar, editar e excluir exige o módulo liberado no nível;
+    // - Funcionários e Sistema são sensíveis: até para consultar precisa do módulo.
+    private boolean funcionarioPodeAcessar(String metodo, String caminho, Set<String> liberados) {
+        if (caminho.equals("/niveis-acesso/meu")) {
+            return true; // cada um pode ver o próprio nível
+        }
+
+        String modulo = Modulos.doCaminho(caminho);
+        if (modulo == null) {
+            return liberados.contains(Modulos.SISTEMA); // rota sem módulo: só o Master
+        }
+
+        boolean consulta = "GET".equals(metodo);
+        if (Modulos.SISTEMA.equals(modulo)) {
+            // A lista de níveis também aparece no cadastro de funcionários
+            boolean listaDeNiveis = consulta && caminho.equals("/niveis-acesso");
+            return liberados.contains(Modulos.SISTEMA)
+                    || (listaDeNiveis && liberados.contains(Modulos.FUNCIONARIOS));
+        }
+        if (consulta && !Modulos.FUNCIONARIOS.equals(modulo)) {
+            return true;
+        }
+        return liberados.contains(modulo);
     }
 
     // Responde com erro em JSON e interrompe a requisição

@@ -96,7 +96,7 @@ const listas = [
   },
   {
     nome: 'Funcionários', Pagina: AdminFuncionarios, listar: listarFuncionarios, deletar: deletarFuncionario,
-    registro: { idFuncionario: 5, nomeCompleto: 'Ana Souza', email: 'ana@aprendaplus.com', cpf: '11122233344', cargo: 'secretaria', status: 'ativo' },
+    registro: { idFuncionario: 5, nomeCompleto: 'Ana Souza', email: 'ana@aprendaplus.com', cpf: '11122233344', cargo: 'secretaria', status: 'ativo', nivel: { idNivel: 3, nome: 'Financeiro', master: false } },
     carregando: 'Carregando funcionários...', vazio: 'Nenhum funcionário cadastrado ainda.', erro: 'Não foi possível carregar os funcionários.',
   },
 ];
@@ -190,7 +190,7 @@ const colunasOrdenaveis = {
   Turmas: ['ID', 'Nome', 'Curso', 'Período letivo', 'Vagas', 'Status'],
   Inscrições: ['ID', 'Aluno', 'Turma', 'Valor', 'Pagamento', 'Status'],
   Matrículas: ['ID', 'Aluno', 'Turma', 'Data', 'Status'],
-  Funcionários: ['ID', 'Nome', 'E-mail', 'Cargo', 'Status'],
+  Funcionários: ['ID', 'Nome', 'E-mail', 'Cargo', 'Nível', 'Status'],
 };
 
 const cabecalho = (nome) => screen.getByRole('columnheader', { name: nome });
@@ -683,5 +683,39 @@ describe('Funcionários: conta própria e busca', () => {
 
     busca('Buscar por nome ou CPF...', 'ninguem');
     expect(screen.getByText('Nenhum funcionário encontrado para essa busca.')).toBeInTheDocument();
+  });
+
+  test('mostra o nível de cada um; quem não é Master não exclui conta Master', async () => {
+    localStorage.setItem('acessoAdmin', JSON.stringify({ nivel: 'Administrativo', master: false, modulos: ['funcionarios'] }));
+    listarFuncionarios.mockResolvedValue({
+      data: [
+        { idFuncionario: 1, nomeCompleto: 'Admin Teste', status: 'ativo', nivel: { idNivel: 2, nome: 'Administrativo', master: false } },
+        { idFuncionario: 2, nomeCompleto: 'Chefe', status: 'ativo', nivel: { idNivel: 1, nome: 'Master', master: true } },
+        { idFuncionario: 3, nomeCompleto: 'Caio', status: 'ativo', nivel: { idNivel: 3, nome: 'Financeiro', master: false } },
+      ],
+    });
+    renderizar(<AdminFuncionarios />);
+    await screen.findByText('Chefe');
+
+    expect(screen.getByText('Master')).toHaveClass('nivel-master');
+    expect(screen.getByText('Financeiro')).toHaveClass('nivel-badge');
+    // Só o Caio pode ser excluído (o Admin é a própria conta e o Chefe é Master)
+    expect(screen.getAllByText('Excluir')).toHaveLength(1);
+    expect(linhas()[2].cells[6]).toHaveTextContent('Excluir');
+  });
+
+  test('o Master pode excluir outra conta Master; sem nível aparece traço', async () => {
+    localStorage.setItem('acessoAdmin', JSON.stringify({ nivel: 'Master', master: true, modulos: [] }));
+    listarFuncionarios.mockResolvedValue({
+      data: [
+        { idFuncionario: 1, nomeCompleto: 'Admin Teste', status: 'ativo' },
+        { idFuncionario: 2, nomeCompleto: 'Chefe', status: 'ativo', nivel: { idNivel: 1, nome: 'Master', master: true } },
+      ],
+    });
+    renderizar(<AdminFuncionarios />);
+    await screen.findByText('Chefe');
+
+    expect(linhas()[0].cells[4]).toHaveTextContent('-');
+    expect(screen.getAllByText('Excluir')).toHaveLength(1);
   });
 });

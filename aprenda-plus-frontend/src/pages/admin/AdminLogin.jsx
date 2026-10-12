@@ -21,7 +21,7 @@ function AdminLogin() {
     loginFuncionario(form.email, form.senha)
       .then((response) => {
         salvarSessaoAdmin(response.data);
-        navigate('/admin/alunos');
+        navigate('/admin');
       })
       .catch((error) => {
         setEnviando(false);
