@@ -2,8 +2,10 @@ import { screen, fireEvent, waitFor, act } from '@testing-library/react';
 import NotificacoesInscricoes, { INTERVALO_MS } from './NotificacoesInscricoes';
 import { renderizar } from '../../testUtils';
 import { listarInscricoes } from '../../services/inscricaoService';
+import { buscarAlertasFinanceiros } from '../../services/financeiroService';
 
 jest.mock('../../services/inscricaoService');
+jest.mock('../../services/financeiroService');
 
 const inscricao = (id, nome = `Aluno ${id}`) => ({
   idInscricao: id,
@@ -80,7 +82,7 @@ test('marcar como vistas zera o contador e guarda a última vista', async () => 
 
   expect(botao()).toHaveAccessibleName('Notificações: nenhuma inscrição nova');
   expect(localStorage.getItem('inscricoesVistas:1')).toBe('5');
-  expect(screen.queryByRole('region', { name: 'Novas inscrições' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('region', { name: 'Notificações do painel' })).not.toBeInTheDocument();
 });
 
 test('"Ver inscrições" marca como vistas e abre a lista de inscrições', async () => {
@@ -139,3 +141,62 @@ test('resposta sem dados não quebra', async () => {
 
   await waitFor(() => expect(localStorage.getItem('inscricoesVistas:1')).toBe('0'));
 });
+
+describe('avisos do financeiro', () => {
+  test('mostra parcelas em atraso e vencendo, e leva ao financeiro', async () => {
+    localStorage.setItem('inscricoesVistas:1', '5');
+    listarInscricoes.mockResolvedValue({ data: [inscricao(6)] });
+    buscarAlertasFinanceiros.mockResolvedValue({ vencendoEmBreve: 3, atrasadas: 2 });
+    renderizar(<NotificacoesInscricoes financeiro />, { rota: '/admin' });
+
+    await waitFor(() =>
+      expect(botao()).toHaveAccessibleName('Notificações: 1 inscrição nova e 5 avisos financeiros')
+    );
+    expect(screen.getByText('6')).toBeInTheDocument();
+
+    fireEvent.click(botao());
+    expect(screen.getByText(/2 parcelas em atraso/)).toBeInTheDocument();
+    expect(screen.getByText(/3 parcelas vencem nos próximos 7 dias/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ver financeiro' }));
+    expect(screen.getByTestId('endereco')).toHaveTextContent('/admin/financeiro');
+  });
+
+  test('só financeiro, no singular e sem a parte de inscrições', async () => {
+    buscarAlertasFinanceiros.mockResolvedValue({ vencendoEmBreve: 1, atrasadas: 0 });
+    renderizar(<NotificacoesInscricoes inscricoes={false} financeiro />);
+
+    await waitFor(() => expect(botao()).toHaveAccessibleName('Notificações: 1 aviso financeiro'));
+    expect(listarInscricoes).not.toHaveBeenCalled();
+
+    fireEvent.click(botao());
+    expect(screen.getByText(/1 parcela vence nos próximos 7 dias/)).toBeInTheDocument();
+    expect(screen.queryByText('Novas inscrições')).not.toBeInTheDocument();
+  });
+
+  test('uma parcela em atraso no singular', async () => {
+    buscarAlertasFinanceiros.mockResolvedValue({ vencendoEmBreve: 0, atrasadas: 1 });
+    renderizar(<NotificacoesInscricoes inscricoes={false} financeiro />);
+
+    await waitFor(() => expect(botao()).toHaveAccessibleName('Notificações: 1 aviso financeiro'));
+    fireEvent.click(botao());
+    expect(screen.getByText(/1 parcela em atraso/)).toBeInTheDocument();
+  });
+
+  test('nada no financeiro, resposta vazia ou falha de conexão', async () => {
+    buscarAlertasFinanceiros.mockResolvedValueOnce(null);
+    buscarAlertasFinanceiros.mockRejectedValueOnce(new Error('offline'));
+    const { unmount } = renderizar(<NotificacoesInscricoes inscricoes={false} financeiro />);
+
+    await waitFor(() => expect(buscarAlertasFinanceiros).toHaveBeenCalled());
+    expect(botao()).toHaveAccessibleName('Notificações: nenhum aviso');
+    fireEvent.click(botao());
+    expect(screen.getByText('Nenhuma parcela vencendo nem em atraso.')).toBeInTheDocument();
+    unmount();
+
+    renderizar(<NotificacoesInscricoes inscricoes={false} financeiro />);
+    await waitFor(() => expect(buscarAlertasFinanceiros).toHaveBeenCalledTimes(2));
+    expect(botao()).toHaveAccessibleName('Notificações: nenhum aviso');
+  });
+});
+

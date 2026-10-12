@@ -56,6 +56,9 @@ class InscricaoServiceTest {
     @Mock
     private MatriculaRepository matriculaRepository;
 
+    @Mock
+    private FinanceiroService financeiroService;
+
     @InjectMocks
     private InscricaoService inscricaoService;
 
@@ -822,6 +825,8 @@ class InscricaoServiceTest {
         assertEquals(3, criada.getTurma().getIdTurma());
         assertEquals("ativa", criada.getStatus());
         assertEquals("Cartão de crédito · 3x", criada.getPlanoPagamento());
+        // E as parcelas são geradas com o valor e a forma de pagamento da inscrição
+        verify(financeiroService).prepararParcelas(criada, new BigDecimal("950.00"), "Cartão de crédito · 3x");
     }
 
     @Test
@@ -887,6 +892,8 @@ class InscricaoServiceTest {
         assertEquals("cancelada", ativa.getStatus());
         assertEquals("pendente_pagamento", naFila.getStatus());
         verify(inscricaoRepository).save(naFila);
+        // As parcelas que ainda não foram pagas deixam de ser cobradas
+        verify(financeiroService).cancelarParcelasEmAberto(1);
     }
 
     @Test

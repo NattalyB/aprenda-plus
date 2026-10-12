@@ -99,7 +99,12 @@ function AdminLayout() {
           </button>
         </div>
 
-        {podeUsar(acesso, 'inscricoes') && <NotificacoesInscricoes />}
+        {(podeUsar(acesso, 'inscricoes') || podeUsar(acesso, 'financeiro')) && (
+          <NotificacoesInscricoes
+            inscricoes={podeUsar(acesso, 'inscricoes')}
+            financeiro={podeUsar(acesso, 'financeiro')}
+          />
+        )}
 
         <nav className="admin-nav" aria-label="Menu do painel">
           {itens.map((item) => (

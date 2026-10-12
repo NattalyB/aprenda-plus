@@ -18,6 +18,7 @@ Projeto final do curso **Desenvolvimento Full Stack** do programa **+PraTi / Cod
 
 - [Funcionalidades](#-funcionalidades)
 - [Fluxo da inscrição até a matrícula](#-fluxo-da-inscrição-até-a-matrícula)
+- [Financeiro](#-financeiro)
 - [Tecnologias](#-tecnologias)
 - [Arquitetura](#-arquitetura)
 - [Estrutura de pastas](#-estrutura-de-pastas)
@@ -66,6 +67,8 @@ Projeto final do curso **Desenvolvimento Full Stack** do programa **+PraTi / Cod
 - Lista os cursos do aluno, com turma, horário, forma de pagamento, valor e status.
 - **Troca de turma:** o aluno pode trocar para outra turma do mesmo curso. Aparecem só as turmas disponíveis (com vaga), com horário, modalidade e período, sem mostrar a quantidade de vagas.
 - Para quem está na **lista de espera**, um aviso explica o que acontece quando uma vaga abrir.
+- **Meus pagamentos:** em cada curso, o aluno vê quantas parcelas já pagou, a próxima a vencer e as que estão em atraso, com a lista completa das parcelas.
+- **Recibo:** cada parcela paga tem um recibo pronto para imprimir ou salvar em PDF.
 
 **Geral**
 
@@ -116,7 +119,14 @@ Projeto final do curso **Desenvolvimento Full Stack** do programa **+PraTi / Cod
 
   Só turmas com inscrições abertas recebem alunos.
 - **Inscrições:** listagem com a forma de pagamento escolhida pelo aluno e troca de status direto na tabela. Ao **confirmar o pagamento**, a matrícula é criada automaticamente.
-- **Notificações 🔔:** para quem tem o módulo Inscrições, um sininho no topo do painel avisa quantas inscrições novas chegaram desde a última vez que o funcionário olhou. Ele confere a cada minuto, e cada funcionário tem a sua própria marcação de "vistas".
+- **Notificações 🔔:** um sininho no topo do painel, que confere tudo a cada minuto:
+  - para quem tem o módulo Inscrições, mostra quantas inscrições novas chegaram desde a última vez que o funcionário olhou (cada funcionário tem a sua própria marcação de "vistas");
+  - para quem tem o módulo Financeiro, mostra as parcelas em atraso e as que vencem nos próximos 7 dias.
+
+**Financeiro** (detalhes na seção [Financeiro](#-financeiro))
+
+- Painel com indicadores e gráficos de receita.
+- Lista de todas as parcelas, com baixa de pagamento, estorno, exportação para planilha e impressão.
 
 **Listas e mensagens**
 
@@ -156,6 +166,42 @@ Projeto final do curso **Desenvolvimento Full Stack** do programa **+PraTi / Cod
 - **Sair da fila pelo painel:** o admin só consegue tirar alguém da lista de espera se a turma tiver vaga. Se não tiver, o painel avisa: *"A turma X não tem vaga. A inscrição continua aguardando vaga."*
 - **Cancelar ou concluir:** cancelar a inscrição também cancela a matrícula, e concluir a inscrição conclui a matrícula.
 - **Troca de turma:** quem está na lista de espera e troca para uma turma com vaga sai da fila na hora. Se o aluno já tem matrícula, ela acompanha a inscrição para a nova turma.
+
+---
+
+## 💰 Financeiro
+
+O módulo Financeiro usa a tabela `pagamento`, que já estava no modelo do banco desde o começo: cada parcela fica ligada à matrícula, com número, valor, vencimento, data em que foi paga, forma de pagamento e situação (a vencer, paga, atrasada ou cancelada).
+
+**Parcelas automáticas**
+
+- Quando o pagamento de uma inscrição é confirmado e a matrícula é criada, as parcelas são geradas sozinhas:
+  - **Pix:** uma parcela única, já paga;
+  - **cartão ou boleto em Nx:** N parcelas mensais, a primeira vencendo uma semana depois da confirmação. Os centavos que sobram da divisão entram na última parcela.
+- Parcela que passa do vencimento sem pagamento vira **atrasada** automaticamente.
+- Cancelar a inscrição cancela as parcelas em aberto (as pagas continuam no histórico). Se a inscrição for confirmada de novo, elas são reabertas.
+- Para matrículas que já existiam antes do módulo, o botão **"Gerar parcelas que faltam"** cria as parcelas a partir da inscrição confirmada.
+
+**Visão geral (indicadores e gráficos)**
+
+| Indicador | O que mostra |
+|---|---|
+| Previsto no mês | Soma das parcelas que vencem no mês atual |
+| Recebido no mês | O que foi pago no mês, e quanto isso representa do previsto |
+| Em atraso | Valor e quantidade de parcelas atrasadas |
+| Inadimplência | Do que já venceu, quanto não foi pago (%) |
+| A receber | Total das parcelas em aberto |
+
+- **Receita por mês:** previsto × recebido nos últimos seis meses e nos próximos seis, com os valores ao passar o mouse e a opção "Ver em tabela".
+- **Receita por curso** e **formas de pagamento**, com valor e porcentagem.
+
+**Parcelas**
+
+- Filtros por situação (a vencer, atrasadas, pagas, canceladas) e busca por aluno ou curso, com o total do que está filtrado.
+- **Registrar pagamento:** informa a data (não pode ser no futuro) e a forma. Uma baixa feita por engano pode ser **desfeita**.
+- **Exportar planilha** (CSV que o Excel abre direto) e **imprimir** a lista.
+
+**Para o aluno:** em "Minhas inscrições", cada curso mostra as parcelas e o recibo das que foram pagas.
 
 ---
 
@@ -224,10 +270,11 @@ Requisição ─▶ AuthInterceptor ─▶ Controller ─▶ Service ─▶ Repo
   - criptografar senhas;
   - calcular o valor da inscrição com o desconto do Pix e conferir o limite de parcelas;
   - controlar as vagas e a lista de espera;
-  - criar a matrícula ao confirmar o pagamento.
+  - criar a matrícula ao confirmar o pagamento;
+  - gerar, baixar, estornar e cancelar parcelas, e calcular os indicadores do financeiro.
 - **Repository:** interfaces do Spring Data JPA.
 - **Entity:** classes que representam as tabelas do banco. As relações N:N (curso × disciplina, professor × curso, professor × disciplina) usam tabelas de ligação.
-- **DTO:** respostas montadas sob medida para a tela, por exemplo as turmas disponíveis com as vagas restantes e as inscrições do aluno.
+- **DTO:** respostas montadas sob medida para a tela, por exemplo as turmas disponíveis com as vagas restantes, as inscrições do aluno, as parcelas e o resumo do financeiro.
 - **Security:** geração e validação do JWT, controle de acesso às rotas, conferência do status da conta (ativa, inativa, bloqueada) e dos módulos liberados pelo nível de acesso (`Modulos` diz a qual módulo pertence cada rota).
 - **Exception:** tratamento centralizado dos erros (`GlobalExceptionHandler`). Ele devolve respostas diferentes para cada tipo de erro:
 
@@ -366,8 +413,8 @@ A meta do projeto era **cobertura mínima de 70%**. Os dois lados ficaram bem ac
 
 | | Testes | Cobertura | Ferramentas |
 |---|---|---|---|
-| **Back-end** | **406** | **99%** das instruções, 94% dos desvios (*branches*), 100% dos métodos e das classes | JUnit 5, Mockito, MockMvc, JaCoCo |
-| **Front-end** | **429** | **99,7%** das instruções, 96,8% dos desvios (*branches*), 100% das funções | Jest, Testing Library |
+| **Back-end** | **438** | **99%** das instruções, 94% dos desvios (*branches*), 100% dos métodos e das classes | JUnit 5, Mockito, MockMvc, JaCoCo |
+| **Front-end** | **467** | **99,7%** das instruções, 96,9% dos desvios (*branches*), 99,9% das funções | Jest, Testing Library |
 
 ### Back-end
 
@@ -387,7 +434,8 @@ O que é testado:
   - **matrícula automática:** criada ao confirmar o pagamento, sem duplicar, e acompanhando a inscrição ao cancelar, concluir ou trocar de turma;
   - **disciplinas em vários cursos** e total de horas dos professores;
   - **funcionários do painel:** senha obrigatória e mínima, senha mantida na edição, nível obrigatório e as travas de contas Master;
-  - **níveis de acesso:** criar, renomear e excluir níveis, Master intocável e nível em uso protegido.
+  - **níveis de acesso:** criar, renomear e excluir níveis, Master intocável e nível em uso protegido;
+  - **financeiro:** geração das parcelas (Pix, cartão e boleto, com os centavos na última), parcelas atrasadas, baixa, estorno, cancelamento e reabertura, "gerar as que faltam" e todos os indicadores do resumo.
 - **Controllers:** todas as rotas (listar, buscar, criar, editar e excluir), a validação dos dados recebidos e as mensagens de erro.
 - **Segurança:**
   - geração e validação do JWT, inclusive tokens adulterados ou assinados com outra chave;
@@ -426,6 +474,7 @@ O que é testado:
   - todas as listas e formulários do painel admin, incluindo ordenação por coluna, erro ao excluir um registro em uso, funcionários e aviso de matrícula criada;
   - painel por nível de acesso: menu e atalhos de cada nível, tela de acesso restrito, menu recolhível com o nome ao passar o mouse e o módulo Sistema.
 - **Navegação do site:** ordem do topo, "Voltar ao início" e a logo limpando a pesquisa.
+- **Financeiro:** indicadores, gráficos (dica ao passar o mouse e tabela), filtros, baixa e estorno de parcelas, exportação da planilha, avisos no sininho e, na área do aluno, as parcelas e o recibo.
 
 ![Cobertura do front-end](docs/cobertura-frontend.jpeg)
 
@@ -441,7 +490,7 @@ O que é testado:
 | Quem | Pode acessar |
 |---|---|
 | **Visitante** | Ver cursos e turmas disponíveis, cadastrar-se e fazer login |
-| **Aluno** | O próprio carrinho, a criação de inscrições, "Minhas inscrições" e a troca de turma das próprias inscrições |
+| **Aluno** | O próprio carrinho, a criação de inscrições, "Minhas inscrições" (com as próprias parcelas) e a troca de turma das próprias inscrições |
 | **Funcionário** | Os módulos liberados pelo seu nível de acesso (consultas são livres, exceto Funcionários e Sistema) |
 | **Master** | Todas as rotas, inclusive o módulo Sistema |
 
@@ -474,6 +523,7 @@ O que é testado:
 **Inscrição e matrícula**
 
 - **Inscrição × matrícula.** Primeiro o aluno se **inscreve** e escolhe como vai pagar. Quando a secretaria confirma o pagamento, a **matrícula** é criada automaticamente (veja o [fluxo](#-fluxo-da-inscrição-até-a-matrícula)). A tabela de pagamentos, ligada à matrícula, já está modelada para controlar as parcelas.
+- **Parcelas nascem da matrícula.** A cobrança só começa quando a vaga está garantida e o pagamento foi confirmado. Por isso as parcelas são ligadas à matrícula, e não à inscrição, e quem está na lista de espera não tem nada a pagar.
 - **Lista de espera em vez de recusar a compra.** Turma cheia não perde o aluno: ele entra na fila, não paga enquanto espera e é chamado automaticamente quando abre uma vaga, por ordem de chegada.
 - **Primeira turma disponível + troca depois.** Para a compra ser rápida, o aluno é colocado na primeira turma aberta com vaga. Se preferir outro turno, ele troca em "Minhas inscrições".
 
@@ -531,10 +581,11 @@ O comando gera a versão de produção e publica a pasta `dist` na branch `gh-pa
 ## 🔭 Melhorias futuras
 
 - Criar todas as inscrições do carrinho em uma única operação no servidor, para que um erro em um curso não deixe a compra pela metade.
-- Integrar um gateway de pagamento real, confirmando a inscrição automaticamente quando o pagamento for aprovado, e gerar as parcelas na tabela de pagamentos.
+- Integrar um gateway de pagamento real (Mercado Pago, Stripe...), dando baixa nas parcelas automaticamente quando o pagamento for aprovado.
+- Multa e juros para parcelas em atraso.
 - Avisar o aluno por e-mail quando ele sair da lista de espera ou quando a matrícula for criada.
 - Permitir que o próprio aluno cancele uma inscrição em "Minhas inscrições".
-- Mostrar as matrículas e os pagamentos também na área do aluno.
+- Mostrar também as matrículas na área do aluno.
 - Notificações do painel em tempo real (WebSocket), sem precisar consultar a API a cada minuto.
 - Recuperação de senha por e-mail.
 - Cadastrar a imagem do curso pelo painel admin, em vez de deixá-la no código.

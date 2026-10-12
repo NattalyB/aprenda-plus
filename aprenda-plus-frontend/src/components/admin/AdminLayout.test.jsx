@@ -5,8 +5,10 @@ import RotaModulo from './RotaModulo';
 import { logarAdmin } from '../../testUtils';
 import { listarInscricoes } from '../../services/inscricaoService';
 import { buscarMeuAcesso } from '../../services/authAdminService';
+import { buscarAlertasFinanceiros } from '../../services/financeiroService';
 
 jest.mock('../../services/inscricaoService');
+jest.mock('../../services/financeiroService');
 jest.mock('../../services/authAdminService', () => ({
   ...jest.requireActual('../../services/authAdminService'),
   buscarMeuAcesso: jest.fn(),
@@ -32,6 +34,7 @@ const menu = () => screen.getByRole('navigation', { name: 'Menu do painel' });
 beforeEach(() => {
   localStorage.clear();
   listarInscricoes.mockResolvedValue({ data: [] });
+  buscarAlertasFinanceiros.mockResolvedValue({ vencendoEmBreve: 0, atrasadas: 0 });
   buscarMeuAcesso.mockReturnValue(new Promise(() => {})); // por padrão o servidor não responde
 });
 
@@ -41,8 +44,8 @@ test('Master vê o menu completo, o nome, o nível e a página atual', () => {
 
   expect(screen.getByText('Olá, Admin Teste')).toBeInTheDocument();
   expect(screen.getByText('Master')).toBeInTheDocument();
-  // Início + 10 módulos (incluindo Sistema)
-  expect(within(menu()).getAllByRole('link')).toHaveLength(11);
+  // Início + 11 módulos (incluindo Financeiro e Sistema)
+  expect(within(menu()).getAllByRole('link')).toHaveLength(12);
   expect(screen.getByText('Funcionários do painel')).toBeInTheDocument();
   expect(screen.getByText('Sistema')).toBeInTheDocument();
   expect(screen.getByRole('button', { name: /Notificações/ })).toBeInTheDocument();
@@ -58,6 +61,14 @@ test('outro nível só vê os módulos liberados', () => {
   const textos = within(menu()).getAllByRole('link').map((link) => link.textContent);
   expect(textos).toEqual(['🏠Início', '🧾Inscrições', '✅Matrículas']);
   expect(screen.getByText('Início do painel')).toBeInTheDocument();
+});
+
+test('só com o financeiro, o sininho aparece para os avisos de parcelas', () => {
+  logarAdmin('Fabi', { nivel: 'Contabilidade', master: false, modulos: ['financeiro'] });
+  montar('/admin');
+
+  expect(screen.getByRole('button', { name: /Notificações/ })).toBeInTheDocument();
+  expect(screen.getByText('Financeiro')).toBeInTheDocument();
 });
 
 test('sem o módulo de inscrições, o sininho não aparece', () => {

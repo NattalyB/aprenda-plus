@@ -68,6 +68,9 @@ public class InscricaoService {
     @Autowired
     private MatriculaRepository matriculaRepository;
 
+    @Autowired
+    private FinanceiroService financeiroService;
+
     public List<Inscricao> listarTodos() {
         return inscricaoRepository.findAll();
     }
@@ -205,7 +208,7 @@ public class InscricaoService {
 
         Inscricao salva = inscricaoRepository.save(dados);
 
-        sincronizarMatricula(idAluno, turmaAnterior, novaTurma, novoStatus, salva.getFormaPagamento());
+        sincronizarMatricula(idAluno, turmaAnterior, novaTurma, novoStatus, salva);
 
         // Liberou a vaga na turma antiga? Chama o primeiro da fila de lá
         boolean liberouVaga = ocupaVaga(statusAnterior) && (!ocupaVaga(novoStatus) || mudouDeTurma);
@@ -215,9 +218,11 @@ public class InscricaoService {
         return salva;
     }
 
-    // Cria, move, cancela ou conclui a matrícula conforme o status da inscrição
+    // Cria, move, cancela ou conclui a matrícula conforme o status da inscrição.
+    // Também cuida das parcelas: gera ao confirmar e cancela as em aberto ao cancelar.
     private void sincronizarMatricula(Integer idAluno, Integer turmaAnterior, Integer novaTurma,
-                                      String status, String formaPagamento) {
+                                      String status, Inscricao inscricao) {
+        String formaPagamento = inscricao == null ? null : inscricao.getFormaPagamento();
         if (idAluno == null || novaTurma == null) {
             return;
         }
@@ -252,9 +257,11 @@ public class InscricaoService {
             }
             matricula.setStatus("ativa");
             matriculaRepository.save(matricula);
+            financeiroService.prepararParcelas(matricula, inscricao == null ? null : inscricao.getValorTotal(), formaPagamento);
         } else if (CANCELADA.equals(status) && matricula != null) {
             matricula.setStatus("cancelada");
             matriculaRepository.save(matricula);
+            financeiroService.cancelarParcelasEmAberto(matricula.getIdMatricula());
         } else if (CONCLUIDA.equals(status) && matricula != null) {
             matricula.setStatus("concluida");
             matriculaRepository.save(matricula);

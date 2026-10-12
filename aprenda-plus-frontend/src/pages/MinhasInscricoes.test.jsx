@@ -4,10 +4,12 @@ import { renderizar, logarAluno } from '../testUtils';
 import { listarMinhasInscricoes, trocarTurmaDaInscricao } from '../services/inscricaoService';
 import { listarTurmasDisponiveis } from '../services/turmaService';
 import { mostrarAviso } from '../services/avisoService';
+import { listarMinhasParcelas } from '../services/financeiroService';
 
 jest.mock('../services/inscricaoService');
 jest.mock('../services/turmaService');
 jest.mock('../services/avisoService');
+jest.mock('../services/financeiroService');
 
 const inscricao = (dados = {}) => ({
   idInscricao: 10,
@@ -39,6 +41,7 @@ beforeEach(() => {
   localStorage.clear();
   listarMinhasInscricoes.mockResolvedValue([inscricao()]);
   listarTurmasDisponiveis.mockResolvedValue(turmasDoCurso);
+  listarMinhasParcelas.mockResolvedValue([]);
 });
 
 describe('estados da página', () => {
@@ -233,3 +236,39 @@ describe('troca de turma', () => {
     expect(screen.getByText('Carregando turmas...')).toBeInTheDocument();
   });
 });
+
+describe('pagamentos da inscrição', () => {
+  test('mostra as parcelas da turma da inscrição', async () => {
+    logarAluno('Lucas Almeida');
+    listarMinhasParcelas.mockResolvedValue([
+      { idPagamento: 1, idTurma: 3, numeroParcela: 1, totalParcelas: 2, valor: 4750, vencimento: '2026-10-19', status: 'pago', dataPagamento: '2026-10-12', curso: 'Redes de Computadores' },
+      { idPagamento: 2, idTurma: 3, numeroParcela: 2, totalParcelas: 2, valor: 4750, vencimento: '2026-11-19', status: 'pendente', curso: 'Redes de Computadores' },
+      { idPagamento: 3, idTurma: 99, numeroParcela: 1, totalParcelas: 1, valor: 10, vencimento: '2026-11-19', status: 'pendente', curso: 'Outro' },
+    ]);
+    renderizar(<MinhasInscricoes />);
+
+    await screen.findByText('Redes de Computadores');
+    expect(await within(card()).findByText(/1 de 2/)).toBeInTheDocument();
+    fireEvent.click(within(card()).getByRole('button', { name: 'Ver parcelas' }));
+    expect(within(card()).getAllByText(/Parcela \d\/2/)).toHaveLength(2);
+  });
+
+  test('se as parcelas não carregarem, a tela continua funcionando', async () => {
+    logarAluno();
+    listarMinhasParcelas.mockRejectedValue(new Error('offline'));
+    renderizar(<MinhasInscricoes />);
+
+    await screen.findByText('Redes de Computadores');
+    expect(screen.queryByText(/parcelas pagas/)).not.toBeInTheDocument();
+  });
+
+  test('resposta vazia vira lista vazia', async () => {
+    logarAluno();
+    listarMinhasParcelas.mockResolvedValue(null);
+    renderizar(<MinhasInscricoes />);
+
+    await screen.findByText('Redes de Computadores');
+    expect(screen.queryByText('Ver parcelas')).not.toBeInTheDocument();
+  });
+});
+

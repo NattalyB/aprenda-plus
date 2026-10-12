@@ -17,13 +17,14 @@ public final class Modulos {
     public static final String TURMAS = "turmas";
     public static final String INSCRICOES = "inscricoes";
     public static final String MATRICULAS = "matriculas";
+    public static final String FINANCEIRO = "financeiro";
     public static final String FUNCIONARIOS = "funcionarios";
     // Configuração dos níveis de acesso: exclusivo do Master
     public static final String SISTEMA = "sistema";
 
     // Módulos que o Master pode liberar para os outros níveis (o "sistema" não entra)
     public static final List<String> LIBERAVEIS = List.of(
-            ALUNOS, PROFESSORES, CURSOS, DISCIPLINAS, PERIODOS, TURMAS, INSCRICOES, MATRICULAS, FUNCIONARIOS);
+            ALUNOS, PROFESSORES, CURSOS, DISCIPLINAS, PERIODOS, TURMAS, INSCRICOES, MATRICULAS, FINANCEIRO, FUNCIONARIOS);
 
     // Todos os módulos (o que o Master tem)
     public static final List<String> TODOS;
@@ -52,7 +53,8 @@ public final class Modulos {
             Map.entry("/planos-de-aula", TURMAS),
             Map.entry("/inscricoes", INSCRICOES),
             Map.entry("/matriculas", MATRICULAS),
-            Map.entry("/pagamentos", MATRICULAS),
+            Map.entry("/pagamentos", FINANCEIRO),
+            Map.entry("/financeiro", FINANCEIRO),
             Map.entry("/funcionarios", FUNCIONARIOS),
             Map.entry("/niveis-acesso", SISTEMA));
 

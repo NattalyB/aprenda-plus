@@ -18,4 +18,8 @@ public interface InscricaoRepository extends JpaRepository<Inscricao, Integer> {
 
     // Primeira inscrição da lista de espera da turma (a mais antiga)
     Optional<Inscricao> findFirstByTurma_IdTurmaAndStatusOrderByIdInscricaoAsc(Integer idTurma, String status);
+
+    // Inscrição de um aluno numa turma com um status (ex.: a confirmada que deu origem à matrícula)
+    Optional<Inscricao> findFirstByAluno_IdAlunoAndTurma_IdTurmaAndStatusOrderByIdInscricaoDesc(
+            Integer idAluno, Integer idTurma, String status);
 }

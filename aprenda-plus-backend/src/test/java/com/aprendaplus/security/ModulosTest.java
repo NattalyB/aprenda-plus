@@ -16,7 +16,8 @@ class ModulosTest {
         assertEquals("alunos", Modulos.doCaminho("/alunos/3"));
         assertEquals("professores", Modulos.doCaminho("/curso-professor/1/2"));
         assertEquals("periodos", Modulos.doCaminho("/periodo-letivo-curso"));
-        assertEquals("matriculas", Modulos.doCaminho("/pagamentos/9"));
+        assertEquals("financeiro", Modulos.doCaminho("/pagamentos/9"));
+        assertEquals("financeiro", Modulos.doCaminho("/financeiro/resumo"));
         assertEquals("sistema", Modulos.doCaminho("/niveis-acesso/4"));
     }
 
@@ -47,6 +48,6 @@ class ModulosTest {
         assertTrue(Modulos.TODOS.contains(Modulos.SISTEMA));
         assertFalse(Modulos.LIBERAVEIS.contains(Modulos.SISTEMA));
         assertEquals(List.of("alunos", "professores", "cursos", "disciplinas", "periodos", "turmas",
-                "inscricoes", "matriculas", "funcionarios"), Modulos.LIBERAVEIS);
+                "inscricoes", "matriculas", "financeiro", "funcionarios"), Modulos.LIBERAVEIS);
     }
 }

@@ -11,6 +11,7 @@ import * as authService from './authService';
 import * as authAdminService from './authAdminService';
 import * as carrinhoService from './carrinhoService';
 import * as funcionarioService from './funcionarioService';
+import * as financeiroService from './financeiroService';
 import { mostrarAviso } from './avisoService';
 
 // Troca o axios de verdade por funções de mentira: nenhuma requisição sai do computador
@@ -303,3 +304,28 @@ describe('área do aluno e turmas disponíveis', () => {
     expect(api.put).toHaveBeenCalledWith('/inscricoes/10/turma', { idTurma: 4 });
   });
 });
+
+describe('financeiroService', () => {
+  test('rotas do financeiro devolvem os dados da resposta', async () => {
+    api.get.mockResolvedValue({ data: ['ok'] });
+    api.put.mockResolvedValue({ data: { status: 'pago' } });
+    api.post.mockResolvedValue({ data: { matriculas: 2 } });
+
+    expect(await financeiroService.listarParcelas()).toEqual(['ok']);
+    expect(await financeiroService.buscarResumoFinanceiro()).toEqual(['ok']);
+    expect(await financeiroService.buscarAlertasFinanceiros()).toEqual(['ok']);
+    expect(await financeiroService.listarMinhasParcelas()).toEqual(['ok']);
+    expect(await financeiroService.registrarPagamentoDaParcela(5, { dataPagamento: '2026-10-12' })).toEqual({ status: 'pago' });
+    expect(await financeiroService.estornarParcela(5)).toEqual({ status: 'pago' });
+    expect(await financeiroService.gerarParcelasQueFaltam()).toEqual({ matriculas: 2 });
+
+    expect(api.get).toHaveBeenCalledWith('/financeiro/parcelas');
+    expect(api.get).toHaveBeenCalledWith('/financeiro/resumo');
+    expect(api.get).toHaveBeenCalledWith('/financeiro/alertas');
+    expect(api.get).toHaveBeenCalledWith('/financeiro/meus');
+    expect(api.put).toHaveBeenCalledWith('/financeiro/parcelas/5/pagamento', { dataPagamento: '2026-10-12' });
+    expect(api.put).toHaveBeenCalledWith('/financeiro/parcelas/5/estorno');
+    expect(api.post).toHaveBeenCalledWith('/financeiro/gerar-parcelas');
+  });
+});
+

@@ -242,5 +242,19 @@ class AuthInterceptorTest {
         assertEquals(401, response.getStatus());
         assertTrue(response.getContentAsString().contains("não está mais ativa"));
     }
-}
 
+    @Test
+    void alunoVeAsPropriasParcelasMasNaoOFinanceiroDoPainel() throws Exception {
+        assertTrue(requisicao("GET", "/financeiro/meus", tokenAluno));
+        assertFalse(requisicao("GET", "/financeiro/parcelas", tokenAluno));
+        assertFalse(requisicao("PUT", "/financeiro/parcelas/3/pagamento", tokenAluno));
+        assertEquals(403, response.getStatus());
+    }
+
+    @Test
+    void baixaDeParcelaExigeOModuloFinanceiro() throws Exception {
+        assertFalse(doFuncionario(2, "PUT", "/financeiro/parcelas/3/pagamento"));
+        assertTrue(doFuncionario(1, "PUT", "/financeiro/parcelas/3/pagamento"));
+        assertTrue(doFuncionario(3, "GET", "/financeiro/resumo"));
+    }
+}

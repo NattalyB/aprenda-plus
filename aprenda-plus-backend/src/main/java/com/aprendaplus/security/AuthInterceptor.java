@@ -107,6 +107,7 @@ public class AuthInterceptor implements HandlerInterceptor {
         if ("POST".equals(metodo) && caminho.equals("/itens-carrinho")) return true;
         if ("DELETE".equals(metodo) && caminho.startsWith("/itens-carrinho/")) return true;
         if ("GET".equals(metodo) && caminho.equals("/inscricoes/minhas")) return true;          // área do aluno
+        if ("GET".equals(metodo) && caminho.equals("/financeiro/meus")) return true;            // parcelas do aluno
         if ("PUT".equals(metodo) && caminho.matches("/inscricoes/\\d+/turma")) return true;   // troca de turma
         return "POST".equals(metodo) && caminho.equals("/inscricoes");
     }

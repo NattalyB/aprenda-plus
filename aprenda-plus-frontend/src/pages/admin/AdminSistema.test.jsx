@@ -26,7 +26,7 @@ test('mostra os níveis e os módulos de cada um; o Master fica travado com tudo
   await screen.findByDisplayValue('Financeiro');
 
   const caixasMaster = within(linhaMaster()).getAllByRole('checkbox');
-  expect(caixasMaster).toHaveLength(9);
+  expect(caixasMaster).toHaveLength(10);
   caixasMaster.forEach((caixa) => {
     expect(caixa).toBeChecked();
     expect(caixa).toBeDisabled();

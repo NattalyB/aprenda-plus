@@ -2940,3 +2940,559 @@ img {
   min-width: 0;
   width: 150px;
 }
+
+/* ===== Financeiro ===== */
+
+/* Situação das parcelas (sempre com o texto escrito, nunca só a cor) */
+.parcela-pendente { background: #e0f2fe; color: #075985; }
+.parcela-atrasado { background: #fee2e2; color: #b91c1c; }
+.parcela-pago { background: #dcfce7; color: #166534; }
+.parcela-cancelado { background: #f3f4f6; color: #6b7280; }
+
+.financeiro-abas {
+  display: flex;
+  gap: 0.25rem;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 1.25rem;
+}
+
+.financeiro-abas button {
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  padding: 0.7rem 1rem;
+  font: inherit;
+  font-weight: 600;
+  color: #6b7280;
+  cursor: pointer;
+}
+
+.financeiro-abas button[aria-selected='true'] {
+  color: #0b2239;
+  border-bottom-color: #00b4d8;
+}
+
+.financeiro-aba-contador {
+  margin-left: 0.3rem;
+  font-size: 0.75rem;
+  background: #e5e7eb;
+  color: #374151;
+  border-radius: 999px;
+  padding: 0.1rem 0.45rem;
+}
+
+/* Cartões de indicadores */
+.financeiro-indicadores {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.25rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 0.9rem;
+}
+
+.financeiro-indicadores li {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.financeiro-indicadores span {
+  color: #6b7280;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.financeiro-indicadores strong {
+  color: #0b2239;
+  font-size: 1.45rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.financeiro-indicadores small {
+  color: #6b7280;
+  font-size: 0.78rem;
+}
+
+.financeiro-indicadores li.financeiro-alerta {
+  border-color: #fecaca;
+  background: #fff7f7;
+}
+
+.financeiro-indicadores li.financeiro-alerta strong {
+  color: #b91c1c;
+}
+
+.financeiro-cartao {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1.1rem 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.financeiro-cartao h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  color: #0b2239;
+}
+
+.financeiro-colunas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1rem;
+}
+
+/* Gráfico de barras por mês */
+.grafico {
+  margin: 0;
+}
+
+.grafico-legenda {
+  display: flex;
+  gap: 1.1rem;
+  font-size: 0.82rem;
+  color: #374151;
+  margin-bottom: 0.4rem;
+}
+
+.grafico-legenda i,
+.grafico-dica i {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  margin-right: 0.3rem;
+  vertical-align: -1px;
+}
+
+.grafico-area {
+  position: relative;
+}
+
+.grafico-area svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.grafico-grade {
+  stroke: #eef0f3;
+  stroke-width: 1;
+}
+
+.grafico-base {
+  stroke: #cbd5e1;
+  stroke-width: 1;
+}
+
+.grafico-eixo {
+  fill: #6b7280;
+  font-size: 11px;
+}
+
+.grafico-eixo-atual {
+  fill: #0b2239;
+  font-weight: 700;
+}
+
+.grafico-dica {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  background: #0b2239;
+  color: #fff;
+  border-radius: 8px;
+  padding: 0.5rem 0.7rem;
+  font-size: 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.grafico-tabela {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.grafico-tabela summary {
+  cursor: pointer;
+  color: #0077b6;
+  font-weight: 600;
+}
+
+.grafico-tabela table {
+  margin-top: 0.5rem;
+  border-collapse: collapse;
+  width: 100%;
+  max-width: 420px;
+}
+
+.grafico-tabela th,
+.grafico-tabela td {
+  text-align: left;
+  padding: 0.3rem 0.5rem;
+  border-bottom: 1px solid #f1f5f9;
+  font-variant-numeric: tabular-nums;
+}
+
+.grafico-vazio {
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+/* Barras horizontais (por curso e por forma de pagamento) */
+.barras {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.barras li {
+  display: grid;
+  grid-template-columns: minmax(150px, 1.6fr) 2fr auto;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.85rem;
+}
+
+.barras-nome {
+  color: #374151;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.barras-trilho {
+  height: 10px;
+  background: #f1f5f9;
+  border-radius: 0 4px 4px 0;
+}
+
+.barras-barra {
+  display: block;
+  height: 100%;
+  min-width: 2px;
+  background: #1d4ed8;
+  border-radius: 0 4px 4px 0;
+}
+
+.barras-valor {
+  color: #0b2239;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.barras-valor small {
+  color: #6b7280;
+  font-weight: 500;
+  margin-left: 0.25rem;
+}
+
+/* Lista de parcelas */
+.financeiro-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.financeiro-filtros .admin-busca {
+  margin: 0;
+  flex: 1;
+  min-width: 220px;
+}
+
+.financeiro-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.financeiro-chip {
+  border: 1px solid #d1d5db;
+  background: #fff;
+  color: #374151;
+  border-radius: 999px;
+  padding: 0.4rem 0.8rem;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.financeiro-chip span {
+  margin-left: 0.35rem;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.financeiro-chip.ativo {
+  background: #0b2239;
+  border-color: #0b2239;
+  color: #fff;
+}
+
+.financeiro-chip.ativo span {
+  color: #cbd5e1;
+}
+
+.financeiro-exportar {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.financeiro-total {
+  color: #6b7280;
+  font-size: 0.85rem;
+  margin: 0 0 0.6rem;
+}
+
+.financeiro-detalhe {
+  display: block;
+  color: #6b7280;
+  font-size: 0.78rem;
+}
+
+.financeiro-baixa {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.financeiro-baixa label {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.72rem;
+  color: #6b7280;
+  gap: 0.2rem;
+}
+
+.financeiro-baixa input,
+.financeiro-baixa select {
+  padding: 0.35rem 0.4rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 0.82rem;
+}
+
+/* Sininho: bloco do financeiro */
+.notificacoes-financeiro {
+  padding-bottom: 0.8rem;
+  margin-bottom: 0.8rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.notificacoes-financeiro ul {
+  margin: 0 0 0.6rem;
+}
+
+.notificacoes-atraso {
+  color: #b91c1c;
+  font-weight: 600;
+}
+
+/* ===== Área do aluno: pagamentos e recibo ===== */
+.meus-pagamentos {
+  margin-top: 0.9rem;
+  padding-top: 0.8rem;
+  border-top: 1px dashed #e5e7eb;
+}
+
+.meus-pagamentos-resumo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 1rem;
+  font-size: 0.9rem;
+  color: #374151;
+}
+
+.meus-pagamentos-atraso {
+  color: #b91c1c;
+  font-weight: 600;
+}
+
+.meus-pagamentos-botao,
+.meus-pagamentos-recibo {
+  background: none;
+  border: none;
+  color: #0077b6;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+
+.meus-pagamentos-botao {
+  margin-left: auto;
+}
+
+.meus-pagamentos-botao:hover,
+.meus-pagamentos-recibo:hover {
+  text-decoration: underline;
+}
+
+.meus-pagamentos-lista {
+  list-style: none;
+  padding: 0;
+  margin: 0.7rem 0 0;
+}
+
+.meus-pagamentos-lista li {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.2fr auto 60px;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 0.86rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.recibo-fundo {
+  position: fixed;
+  inset: 0;
+  background: rgba(11, 34, 57, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 100;
+}
+
+.recibo {
+  background: #fff;
+  border-radius: 14px;
+  width: min(560px, 100%);
+  padding: 1.75rem;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+  color: #1f2937;
+}
+
+.recibo-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #0b2239;
+}
+
+.recibo-topo img {
+  height: 38px;
+}
+
+.recibo-topo div {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.recibo-topo strong {
+  color: #0b2239;
+  font-size: 1rem;
+}
+
+.recibo-texto {
+  line-height: 1.6;
+  margin: 1.25rem 0;
+}
+
+.recibo-dados {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  margin: 0 0 1.25rem;
+}
+
+.recibo-dados dt {
+  font-size: 0.75rem;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.recibo-dados dd {
+  margin: 0.2rem 0 0;
+  font-weight: 600;
+}
+
+.recibo-aviso {
+  font-size: 0.78rem;
+  color: #6b7280;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 0.75rem;
+}
+
+.recibo-acoes {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+@media (max-width: 600px) {
+  .meus-pagamentos-lista li {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .recibo-dados {
+    grid-template-columns: 1fr;
+  }
+
+  .barras li {
+    grid-template-columns: 1fr;
+    gap: 0.25rem;
+  }
+}
+
+/* ===== Impressão: só o conteúdo (sem menu, botões ou topo) ===== */
+@media print {
+  .admin-sidebar,
+  .financeiro-sem-impressao,
+  .header,
+  .voltar-inicio,
+  .footer,
+  .recibo-acoes {
+    display: none !important;
+  }
+
+  .admin-main {
+    padding: 0;
+  }
+
+  /* Com o recibo aberto, imprime só ele */
+  body:has(.recibo-fundo) .carrinho-page > :not(.minhas-lista),
+  body:has(.recibo-fundo) .minhas-card > :not(.meus-pagamentos),
+  body:has(.recibo-fundo) .meus-pagamentos > :not(.recibo-fundo),
+  body:has(.recibo-fundo) .minhas-card:not(:has(.recibo-fundo)) {
+    display: none !important;
+  }
+
+  .recibo-fundo {
+    position: static;
+    background: none;
+    padding: 0;
+  }
+
+  .recibo {
+    box-shadow: none;
+    width: 100%;
+  }
+}

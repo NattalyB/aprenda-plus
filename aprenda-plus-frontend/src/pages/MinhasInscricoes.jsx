@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { estaLogado } from '../services/authService';
+import { estaLogado, getNomeAluno } from '../services/authService';
+import { listarMinhasParcelas } from '../services/financeiroService';
+import PagamentosDaInscricao from '../components/PagamentosDaInscricao';
 import { listarMinhasInscricoes, trocarTurmaDaInscricao } from '../services/inscricaoService';
 import { listarTurmasDisponiveis } from '../services/turmaService';
 import { mostrarAviso } from '../services/avisoService';
@@ -119,12 +121,17 @@ function MinhasInscricoes() {
   const [inscricoes, setInscricoes] = useState(null);
   const [erro, setErro] = useState(null);
   const [trocando, setTrocando] = useState(null);
+  const [parcelas, setParcelas] = useState([]);
 
   useEffect(() => {
     if (!logado) return;
     listarMinhasInscricoes()
       .then(setInscricoes)
       .catch(() => setErro('Não foi possível carregar suas inscrições.'));
+    // As parcelas são um extra: se falhar, a tela continua funcionando sem elas
+    listarMinhasParcelas()
+      .then((lista) => setParcelas(lista || []))
+      .catch(() => setParcelas([]));
   }, [logado]);
 
   const atualizarInscricao = (atualizada) => {
@@ -214,6 +221,11 @@ function MinhasInscricoes() {
                   </div>
                 )}
               </dl>
+
+              <PagamentosDaInscricao
+                parcelas={parcelas.filter((p) => p.idTurma === inscricao.idTurma)}
+                aluno={getNomeAluno()}
+              />
 
               {inscricao.status === 'aguardando_vaga' && (
                 <p className="minhas-aviso-fila">

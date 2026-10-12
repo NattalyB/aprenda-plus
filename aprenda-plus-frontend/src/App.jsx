@@ -31,6 +31,7 @@ import Aviso from './components/Aviso';
 import RotaModulo from './components/admin/RotaModulo';
 import AdminInicio from './pages/admin/AdminInicio';
 import AdminSistema from './pages/admin/AdminSistema';
+import AdminFinanceiro from './pages/admin/AdminFinanceiro';
 import VoltarInicio from './components/VoltarInicio';
 
 function SitePage({ children }) {
@@ -66,6 +67,7 @@ function App() {
         >
           <Route index element={<AdminInicio />} />
           <Route path="sistema" element={<RotaModulo modulo="sistema"><AdminSistema /></RotaModulo>} />
+          <Route path="financeiro" element={<RotaModulo modulo="financeiro"><AdminFinanceiro /></RotaModulo>} />
 
           <Route path="cursos" element={<RotaModulo modulo="cursos"><AdminCursos /></RotaModulo>} />
           <Route path="cursos/novo" element={<RotaModulo modulo="cursos"><AdminCursoForm /></RotaModulo>} />
