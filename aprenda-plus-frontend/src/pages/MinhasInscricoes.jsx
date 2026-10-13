@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { estaLogado, getNomeAluno } from '../services/authService';
 import { listarMinhasParcelas } from '../services/financeiroService';
 import PagamentosDaInscricao from '../components/PagamentosDaInscricao';
+import MeuDocumento from '../components/MeuDocumento';
 import { listarMinhasInscricoes, trocarTurmaDaInscricao } from '../services/inscricaoService';
 import { listarTurmasDisponiveis } from '../services/turmaService';
 import { mostrarAviso } from '../services/avisoService';
@@ -176,6 +177,8 @@ function MinhasInscricoes() {
       <p className="minhas-subtitulo">
         Acompanhe seus cursos e, se precisar, troque de turma enquanto houver vagas.
       </p>
+
+      <MeuDocumento />
 
       {inscricoes.length === 0 ? (
         <div className="carrinho-estado">

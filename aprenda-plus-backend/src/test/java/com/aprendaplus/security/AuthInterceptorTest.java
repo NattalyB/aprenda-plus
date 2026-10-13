@@ -257,4 +257,31 @@ class AuthInterceptorTest {
         assertTrue(doFuncionario(1, "PUT", "/financeiro/parcelas/3/pagamento"));
         assertTrue(doFuncionario(3, "GET", "/financeiro/resumo"));
     }
+
+    // ===== Documento de escolaridade =====
+
+    @Test
+    void visitantePodeSeCadastrarComODocumento() throws Exception {
+        assertTrue(requisicao("POST", "/alunos/com-documento", null));
+        assertFalse(requisicao("GET", "/documentos/situacao", null));
+        assertEquals(401, response.getStatus());
+    }
+
+    @Test
+    void alunoEnviaEVeOsPropriosDocumentosMasNaoRevisa() throws Exception {
+        assertTrue(requisicao("GET", "/documentos/meus", tokenAluno));
+        assertTrue(requisicao("POST", "/documentos/meus", tokenAluno));
+        assertTrue(requisicao("GET", "/documentos/4/arquivo", tokenAluno));
+
+        assertFalse(requisicao("GET", "/documentos/aluno/7", tokenAluno));
+        assertFalse(requisicao("PUT", "/documentos/4/revisao", tokenAluno));
+        assertEquals(403, response.getStatus());
+    }
+
+    @Test
+    void revisarDocumentoExigeOModuloAlunos() throws Exception {
+        assertTrue(doFuncionario(2, "PUT", "/documentos/4/revisao"));
+        assertFalse(doFuncionario(3, "PUT", "/documentos/4/revisao"));
+        assertTrue(doFuncionario(3, "GET", "/documentos/situacao"));
+    }
 }

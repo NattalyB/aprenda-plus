@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import ColunaOrdenavel from '../../components/admin/ColunaOrdenavel';
+import DocumentosDoAluno from '../../components/admin/DocumentosDoAluno';
+import { situacaoDosDocumentos, STATUS_DOCUMENTO } from '../../services/documentoService';
 import { useOrdenacao } from '../../utils/ordenacao';
 import { listarInscricoes, atualizarInscricao, deletarInscricao } from '../../services/inscricaoService';
 import { formatarValor } from '../../utils/precoCurso';
@@ -13,6 +16,13 @@ const STATUS_INSCRICAO = {
   aguardando_vaga: 'Aguardando vaga',
   concluida: 'Concluída',
   cancelada: 'Cancelada',
+};
+
+const FILTROS_DOCUMENTO = {
+  pendente: 'Documento em análise',
+  aprovado: 'Documento aprovado',
+  recusado: 'Documento recusado',
+  sem: 'Sem documento',
 };
 
 // Como pegar o valor de cada coluna na hora de ordenar
@@ -32,6 +42,18 @@ function AdminInscricoes() {
   const [sucesso, setSucesso] = useState(null);
   const [busca, setBusca] = useState('');
   const [statusFiltro, setStatusFiltro] = useState('');
+  const [parametros] = useSearchParams();
+  const [documentoFiltro, setDocumentoFiltro] = useState(parametros.get('documento') || '');
+  const [documentos, setDocumentos] = useState({}); // { idAluno: 'aprovado' | 'pendente' | 'recusado' }
+  const [revisando, setRevisando] = useState(null); // aluno com a janela de documentos aberta
+
+  const carregarDocumentos = () => {
+    situacaoDosDocumentos()
+      .then((response) => setDocumentos(response.data || {}))
+      .catch(() => setDocumentos({}));
+  };
+
+  const situacaoDoc = (inscricao) => documentos[inscricao.aluno?.idAluno] || 'sem';
 
   const carregar = () => {
     listarInscricoes()
@@ -47,7 +69,20 @@ function AdminInscricoes() {
 
   useEffect(() => {
     carregar();
+    carregarDocumentos();
   }, []);
+
+  const documentoRevisado = (documento) => {
+    carregarDocumentos();
+    setErro(null);
+    const nome = revisando?.nomeCompleto || 'do aluno';
+    setSucesso(
+      documento.status === 'aprovado'
+        ? `Documento aprovado! Agora você já pode confirmar o pagamento de ${nome}.`
+        : `Documento recusado. ${nome} vai receber um e-mail com o motivo.`
+    );
+    setRevisando(null);
+  };
 
   // Ao mudar o status, o servidor cuida da matrícula e da lista de espera:
   // - confirmada (pagamento aprovado) -> cria a matrícula do aluno na turma;
@@ -92,7 +127,8 @@ function AdminInscricoes() {
       normalizar(inscricao.aluno?.nomeCompleto).includes(termo) ||
       normalizar(inscricao.turma?.nome).includes(termo);
     const statusConfere = !statusFiltro || inscricao.status === statusFiltro;
-    return textoConfere && statusConfere;
+    const documentoConfere = !documentoFiltro || situacaoDoc(inscricao) === documentoFiltro;
+    return textoConfere && statusConfere && documentoConfere;
   });
 
   const { ordenados, ordem, alternar } = useOrdenacao(inscricoesFiltradas, CAMPOS_ORDENACAO);
@@ -140,6 +176,18 @@ function AdminInscricoes() {
             <option key={valor} value={valor}>{label}</option>
           ))}
         </select>
+
+        <select
+          name="filtroDocumento"
+          className="admin-filtro-select"
+          value={documentoFiltro}
+          onChange={(e) => setDocumentoFiltro(e.target.value)}
+        >
+          <option value="">Todos os documentos</option>
+          {Object.entries(FILTROS_DOCUMENTO).map(([valor, label]) => (
+            <option key={valor} value={valor}>{label}</option>
+          ))}
+        </select>
       </div>
 
       <div className="admin-card">
@@ -152,6 +200,7 @@ function AdminInscricoes() {
                 <ColunaOrdenavel coluna="turma" ordem={ordem} onOrdenar={alternar}>Turma</ColunaOrdenavel>
                 <ColunaOrdenavel coluna="valor" ordem={ordem} onOrdenar={alternar}>Valor</ColunaOrdenavel>
                 <ColunaOrdenavel coluna="pagamento" ordem={ordem} onOrdenar={alternar}>Pagamento</ColunaOrdenavel>
+                <th>Documento</th>
                 <ColunaOrdenavel coluna="status" ordem={ordem} onOrdenar={alternar}>Status</ColunaOrdenavel>
                 <th>Ações</th>
               </tr>
@@ -159,8 +208,8 @@ function AdminInscricoes() {
             <tbody>
               {inscricoesFiltradas.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="admin-vazio">
-                    {busca || statusFiltro ? 'Nenhuma inscrição encontrada com esses filtros.' : 'Nenhuma inscrição registrada ainda.'}
+                  <td colSpan={8} className="admin-vazio">
+                    {busca || statusFiltro || documentoFiltro ? 'Nenhuma inscrição encontrada com esses filtros.' : 'Nenhuma inscrição registrada ainda.'}
                   </td>
                 </tr>
               ) : (
@@ -171,6 +220,13 @@ function AdminInscricoes() {
                     <td>{inscricao.turma?.nome || '-'}</td>
                     <td>{formatarValor(inscricao.valorTotal)}</td>
                     <td>{inscricao.formaPagamento || '-'}</td>
+                    <td>
+                      <BotaoDocumento
+                        situacao={situacaoDoc(inscricao)}
+                        disabled={!inscricao.aluno?.idAluno}
+                        onClick={() => setRevisando(inscricao.aluno)}
+                      />
+                    </td>
                     <td>
                       <select
                         name={`status-${inscricao.idInscricao}`}
@@ -198,7 +254,41 @@ function AdminInscricoes() {
           </table>
         </div>
       </div>
+
+      {revisando && (
+        <div className="doc-painel-fundo" role="dialog" aria-modal="true" aria-label="Documento de escolaridade">
+          <div className="doc-painel">
+            <div className="doc-painel-topo">
+              <div>
+                <h2>Documento de escolaridade</h2>
+                <p>{revisando.nomeCompleto}</p>
+              </div>
+              <button type="button" className="admin-btn admin-btn-secundario" onClick={() => setRevisando(null)}>
+                Fechar
+              </button>
+            </div>
+            <DocumentosDoAluno idAluno={revisando.idAluno} onAlterado={documentoRevisado} />
+          </div>
+        </div>
+      )}
     </div>
+  );
+}
+
+// Selo do documento na tabela; clicar abre a janela de revisão
+function BotaoDocumento({ situacao, disabled, onClick }) {
+  const status = STATUS_DOCUMENTO[situacao];
+  const texto = status ? `${status.icone} ${status.texto}` : '— Sem documento';
+  return (
+    <button
+      type="button"
+      className={`doc-status doc-status-botao ${status ? status.classe : 'doc-status-sem'}`}
+      onClick={onClick}
+      disabled={disabled}
+      title="Ver documento de escolaridade"
+    >
+      {texto}
+    </button>
   );
 }
 

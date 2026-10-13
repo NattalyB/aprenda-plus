@@ -1,10 +1,12 @@
-import { screen, fireEvent, waitFor } from '@testing-library/react';
+import { screen, fireEvent, waitFor, act } from '@testing-library/react';
 import Cadastro from './Cadastro';
 import { renderizar } from '../testUtils';
-import { criarAluno } from '../services/alunoService';
+import { cadastrarAlunoComDocumento } from '../services/alunoService';
+import { mostrarAviso } from '../services/avisoService';
 import { buscarEnderecoPorCep } from '../services/cepService';
 
 jest.mock('../services/alunoService');
+jest.mock('../services/avisoService');
 // A consulta ao ViaCEP é simulada: nenhum teste acessa a internet
 jest.mock('../services/cepService', () => ({
   ...jest.requireActual('../services/cepService'),
@@ -27,10 +29,17 @@ const dados = {
   Senha: 'senha123',
 };
 
-const preencherEEnviar = () => {
+const pdf = () => new File(['%PDF-1.4'], 'certificado.pdf', { type: 'application/pdf' });
+
+const anexar = (arquivo) => {
+  fireEvent.change(screen.getByLabelText(/Certificado de conclusão/), { target: { files: [arquivo] } });
+};
+
+const preencherEEnviar = (arquivo = pdf()) => {
   Object.entries(dados).forEach(([campo, valor]) => {
     fireEvent.change(screen.getByLabelText(campo), { target: { value: valor } });
   });
+  if (arquivo) anexar(arquivo);
   fireEvent.click(screen.getByRole('button', { name: 'CRIAR CONTA' }));
 };
 
@@ -40,13 +49,13 @@ beforeEach(() => {
 });
 
 test('cadastro completo envia todos os dados e vai pro login', async () => {
-  criarAluno.mockResolvedValue({ data: { idAluno: 1 } });
+  cadastrarAlunoComDocumento.mockResolvedValue({ data: { idAluno: 1 } });
   renderizar(<Cadastro />, { rota: '/cadastro' });
 
   preencherEEnviar();
 
   await waitFor(() => expect(screen.getByTestId('endereco')).toHaveTextContent('/login'));
-  expect(criarAluno).toHaveBeenCalledWith(
+  expect(cadastrarAlunoComDocumento).toHaveBeenCalledWith(
     expect.objectContaining({
       nomeCompleto: 'Maria Silva',
       email: 'maria@teste.com',
@@ -54,8 +63,10 @@ test('cadastro completo envia todos os dados e vai pro login', async () => {
       complemento: 'Apto 2',
       estado: 'RS',
       senhaHash: 'senha123',
-    })
+    }),
+    expect.objectContaining({ name: 'certificado.pdf' })
   );
+  expect(mostrarAviso).toHaveBeenCalledWith(expect.stringContaining('enviado para análise'), 'sucesso');
 });
 
 test('todos os campos são obrigatórios, menos o complemento', () => {
@@ -73,11 +84,13 @@ test('todos os campos são obrigatórios, menos o complemento', () => {
 
 test.each([
   [{ response: { status: 400 } }, 'Verifique os dados preenchidos.'],
+  [{ response: { status: 400, data: { mensagem: 'Envie o documento em PDF, JPG ou PNG.' } } }, 'Envie o documento em PDF, JPG ou PNG.'],
+  [{ response: { status: 413 } }, 'O arquivo pode ter no máximo 5 MB.'],
   [{ response: { status: 409 } }, 'E-mail ou CPF já cadastrado.'],
   [{ response: { status: 500, data: { message: 'violates unique constraint' } } }, 'E-mail ou CPF já cadastrado.'],
   [new Error('Network Error'), 'Não foi possível concluir o cadastro. Tente novamente.'],
 ])('erro do servidor mostra a mensagem certa', async (erro, mensagem) => {
-  criarAluno.mockRejectedValue(erro);
+  cadastrarAlunoComDocumento.mockRejectedValue(erro);
   renderizar(<Cadastro />, { rota: '/cadastro' });
 
   preencherEEnviar();
@@ -97,4 +110,57 @@ test('ao digitar o CEP, o endereço é preenchido e continua editável', async (
 
   fireEvent.change(screen.getByLabelText('Bairro'), { target: { value: 'Igara II' } });
   expect(screen.getByLabelText('Bairro')).toHaveValue('Igara II');
+});
+
+describe('certificado de conclusão', () => {
+  test('sem o anexo, nem envia e explica o que falta', async () => {
+    renderizar(<Cadastro />);
+    preencherEEnviar(null);
+
+    expect(screen.getByText('Anexe o certificado de conclusão (PDF, JPG ou PNG).')).toBeInTheDocument();
+    expect(cadastrarAlunoComDocumento).not.toHaveBeenCalled();
+    await act(async () => {}); // deixa a busca do CEP terminar
+  });
+
+  test('arquivo de outro tipo é recusado antes de enviar', async () => {
+    renderizar(<Cadastro />);
+    preencherEEnviar(new File(['x'], 'certificado.docx'));
+
+    expect(screen.getByText('Envie o documento em PDF, JPG ou PNG.')).toBeInTheDocument();
+    expect(cadastrarAlunoComDocumento).not.toHaveBeenCalled();
+    await act(async () => {}); // deixa a busca do CEP terminar
+  });
+
+  test('arquivo com mais de 5 MB é recusado antes de enviar', async () => {
+    renderizar(<Cadastro />);
+    const grande = new File(['x'], 'foto.jpg', { type: 'image/jpeg' });
+    Object.defineProperty(grande, 'size', { value: 6 * 1024 * 1024 });
+    preencherEEnviar(grande);
+
+    expect(screen.getByText('O arquivo pode ter no máximo 5 MB.')).toBeInTheDocument();
+    await act(async () => {});
+  });
+
+  test('mostra o nome do arquivo escolhido e aceita arrastar', () => {
+    renderizar(<Cadastro />);
+    anexar(pdf());
+    expect(screen.getByText(/certificado\.pdf/)).toBeInTheDocument();
+
+    const foto = new File(['img'], 'foto.png', { type: 'image/png' });
+    const area = screen.getByTestId('certificado-area');
+    fireEvent.dragOver(area);
+    expect(area).toHaveClass('arrastando');
+    fireEvent.dragLeave(area);
+    expect(area).not.toHaveClass('arrastando');
+    fireEvent.drop(area, { dataTransfer: { files: [foto] } });
+    expect(screen.getByText(/foto\.png/)).toBeInTheDocument();
+    expect(area).toHaveClass('com-arquivo');
+  });
+
+  test('escolher e cancelar a janela de arquivos não apaga o anexo', () => {
+    renderizar(<Cadastro />);
+    anexar(pdf());
+    fireEvent.change(screen.getByLabelText(/Certificado de conclusão/), { target: { files: [] } });
+    expect(screen.getByText(/certificado\.pdf/)).toBeInTheDocument();
+  });
 });

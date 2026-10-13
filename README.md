@@ -19,6 +19,7 @@ Projeto final do curso **Desenvolvimento Full Stack** do programa **+PraTi / Cod
 - [Funcionalidades](#-funcionalidades)
 - [Fluxo da inscrição até a matrícula](#-fluxo-da-inscrição-até-a-matrícula)
 - [Financeiro](#-financeiro)
+- [Documento de escolaridade e e-mails](#-documento-de-escolaridade-e-e-mails)
 - [Tecnologias](#-tecnologias)
 - [Arquitetura](#-arquitetura)
 - [Estrutura de pastas](#-estrutura-de-pastas)
@@ -53,6 +54,7 @@ Projeto final do curso **Desenvolvimento Full Stack** do programa **+PraTi / Cod
 - **Cadastro e login de alunos**, com validação de todos os campos (exceto o complemento do endereço).
 - **Endereço preenchido pelo CEP:** ao digitar o CEP, rua, bairro, cidade e estado são preenchidos automaticamente pela API pública do ViaCEP.
 - **Contas inativas ou bloqueadas** não conseguem entrar nem comprar. A tela explica o motivo.
+- **Certificado de conclusão no cadastro:** o aluno anexa o certificado (ou histórico) de conclusão do ensino médio em **PDF, JPG ou PNG** (até 5 MB), clicando ou arrastando o arquivo. O documento fica salvo no banco de dados (veja [Documento de escolaridade](#-documento-de-escolaridade-e-e-mails)).
 
 **Carrinho e pagamento**
 
@@ -69,6 +71,7 @@ Projeto final do curso **Desenvolvimento Full Stack** do programa **+PraTi / Cod
 - Para quem está na **lista de espera**, um aviso explica o que acontece quando uma vaga abrir.
 - **Meus pagamentos:** em cada curso, o aluno vê quantas parcelas já pagou, a próxima a vencer e as que estão em atraso, com a lista completa das parcelas.
 - **Recibo:** cada parcela paga tem um recibo pronto para imprimir ou salvar em PDF.
+- **Documento de escolaridade:** o aluno acompanha a análise do certificado (*em análise*, *aprovado* ou *recusado*). Se for recusado, vê o motivo e envia um novo arquivo ali mesmo.
 
 **Geral**
 
@@ -119,8 +122,9 @@ Projeto final do curso **Desenvolvimento Full Stack** do programa **+PraTi / Cod
 
   Só turmas com inscrições abertas recebem alunos.
 - **Inscrições:** listagem com a forma de pagamento escolhida pelo aluno e troca de status direto na tabela. Ao **confirmar o pagamento**, a matrícula é criada automaticamente.
+- **Revisão do documento:** a coluna *Documento* mostra a situação do certificado de cada aluno. Um clique abre o arquivo (PDF ou foto) na própria tela, com os botões **Aprovar** e **Recusar** (a recusa pede o motivo). O pagamento só pode ser confirmado depois que o documento for aprovado. O certificado também aparece na edição do aluno.
 - **Notificações 🔔:** um sininho no topo do painel, que confere tudo a cada minuto:
-  - para quem tem o módulo Inscrições, mostra quantas inscrições novas chegaram desde a última vez que o funcionário olhou (cada funcionário tem a sua própria marcação de "vistas");
+  - para quem tem o módulo Inscrições, mostra quantas inscrições novas chegaram desde a última vez que o funcionário olhou (cada funcionário tem a sua própria marcação de "vistas") e quantos **documentos aguardam análise**, com um atalho para a lista já filtrada;
   - para quem tem o módulo Financeiro, mostra as parcelas em atraso e as que vencem nos próximos 7 dias.
 
 **Financeiro** (detalhes na seção [Financeiro](#-financeiro))
@@ -142,6 +146,8 @@ Projeto final do curso **Desenvolvimento Full Stack** do programa **+PraTi / Cod
 ## 🔄 Fluxo da inscrição até a matrícula
 
 ```
+     cadastro com o certificado de conclusão
+                       │
                  compra no site
                        │
         ┌──────────────┴───────────────┐
@@ -152,9 +158,13 @@ Projeto final do curso **Desenvolvimento Full Stack** do programa **+PraTi / Cod
         │              abriu vaga     · não ocupa vaga
         │              (automático)   · ainda não paga
         ▼
+ secretaria aprova o DOCUMENTO de escolaridade
+        │
+        ▼
  CONFIRMADA (admin aprova o pagamento)
         │
-        └──▶ MATRÍCULA "ativa" criada automaticamente
+        ├──▶ MATRÍCULA "ativa" criada automaticamente
+        └──▶ E-MAIL de matrícula confirmada para o aluno
 ```
 
 - **Inscrição × matrícula:**
@@ -205,6 +215,39 @@ O módulo Financeiro usa a tabela `pagamento`, que já estava no modelo do banco
 
 ---
 
+## 📜 Documento de escolaridade e e-mails
+
+Os cursos são para quem já concluiu o ensino médio, então a matrícula passa por uma conferência do certificado:
+
+1. **No cadastro**, o aluno anexa o certificado (ou histórico) de conclusão. Os dados e o arquivo vão juntos, numa requisição só (`POST /alunos/com-documento`, *multipart*). Se o arquivo for inválido, **nem a conta é criada**, para o aluno não ficar com cadastro pela metade.
+2. **A secretaria revisa** pelo painel (coluna *Documento* em Inscrições, ou na edição do aluno): abre o PDF ou a foto na própria tela e **aprova** ou **recusa** informando o motivo.
+3. **Recusado?** O aluno recebe um e-mail com o motivo e envia outro arquivo em "Minhas inscrições".
+4. **Pagamento:** o painel só deixa marcar a inscrição como *Confirmada* quando o aluno tem um documento **aprovado**. Se tentar antes, aparece: *"Antes de confirmar o pagamento, aprove o documento de escolaridade do aluno."*
+5. **Confirmado:** a matrícula é criada e o aluno recebe o **e-mail de matrícula confirmada**.
+
+**Como o arquivo é guardado e protegido**
+
+- Fica no **PostgreSQL**, na tabela `documento_aluno` (coluna `bytea`), junto com o nome, o tipo, o tamanho, a situação e as datas de envio e revisão.
+- O tipo é conferido pelo **conteúdo** do arquivo (os primeiros bytes de um PDF, PNG ou JPEG), e não pela extensão: renomear um `.exe` para `.pdf` não passa.
+- Limite de **5 MB**, conferido no navegador (antes de enviar) e de novo no servidor.
+- O aluno só consegue abrir os **próprios** documentos. O arquivo nunca aparece nas listagens da API, só na rota de download, que exige login.
+
+**E-mails automáticos (Brevo)**
+
+Os e-mails são enviados pela API HTTP do [Brevo](https://www.brevo.com/) (plano gratuito: 300 e-mails por dia), com o visual da AprendaPlus:
+
+| Quando | E-mail |
+|---|---|
+| O pagamento é confirmado | Matrícula confirmada, com curso e turma |
+| Abre uma vaga e o aluno sai da lista de espera | Vaga liberada: pode concluir o pagamento |
+| A secretaria recusa o documento | Documento recusado, com o motivo |
+
+- O e-mail só sai **depois** que a alteração é gravada no banco: se algo der errado e a operação for desfeita, ninguém recebe um aviso falso.
+- O envio é feito em segundo plano: se o Brevo estiver fora do ar, o painel continua funcionando normalmente.
+- Sem a chave do Brevo configurada (por exemplo, rodando localmente), o sistema funciona igual, só não envia os e-mails.
+
+---
+
 ## 🛠 Tecnologias
 
 ### Back-end
@@ -240,6 +283,7 @@ O módulo Financeiro usa a tabela `pagamento`, que já estava no modelo do banco
 |---|---|
 | **Render** | Hospedagem do back-end e do banco PostgreSQL |
 | **GitHub Pages** | Hospedagem do front-end |
+| **Brevo** | Envio dos e-mails automáticos (matrícula, vaga liberada, documento recusado) |
 | **GitHub** | Versionamento e organização das tarefas |
 
 ---
@@ -413,8 +457,8 @@ A meta do projeto era **cobertura mínima de 70%**. Os dois lados ficaram bem ac
 
 | | Testes | Cobertura | Ferramentas |
 |---|---|---|---|
-| **Back-end** | **438** | **99%** das instruções, 94% dos desvios (*branches*), 100% dos métodos e das classes | JUnit 5, Mockito, MockMvc, JaCoCo |
-| **Front-end** | **467** | **99,7%** das instruções, 96,9% dos desvios (*branches*), 99,9% das funções | Jest, Testing Library |
+| **Back-end** | **475** | **99%** das instruções, 94% dos desvios (*branches*), 100% dos métodos e das classes | JUnit 5, Mockito, MockMvc, JaCoCo |
+| **Front-end** | **510** | **99,7%** das instruções, 96,4% dos desvios (*branches*), 99,9% das funções | Jest, Testing Library |
 
 ### Back-end
 
@@ -435,6 +479,8 @@ O que é testado:
   - **disciplinas em vários cursos** e total de horas dos professores;
   - **funcionários do painel:** senha obrigatória e mínima, senha mantida na edição, nível obrigatório e as travas de contas Master;
   - **níveis de acesso:** criar, renomear e excluir níveis, Master intocável e nível em uso protegido;
+  - **documento de escolaridade:** tipo conferido pelo conteúdo, limite de 5 MB, nome do arquivo limpo, aprovação e recusa (com motivo obrigatório e e-mail para o aluno), e a trava que impede confirmar o pagamento sem documento aprovado;
+  - **e-mails:** conteúdo de cada mensagem, envio só depois de gravar no banco e nenhum envio quando o Brevo não está configurado;
   - **financeiro:** geração das parcelas (Pix, cartão e boleto, com os centavos na última), parcelas atrasadas, baixa, estorno, cancelamento e reabertura, "gerar as que faltam" e todos os indicadores do resumo.
 - **Controllers:** todas as rotas (listar, buscar, criar, editar e excluir), a validação dos dados recebidos e as mensagens de erro.
 - **Segurança:**
@@ -442,7 +488,7 @@ O que é testado:
   - as permissões de cada perfil;
   - contas inativas ou bloqueadas;
   - os **níveis de acesso**: cada funcionário só altera os módulos liberados, consulta livre exceto Funcionários e Sistema, e rotas sem módulo só para o Master;
-  - a regra de que o aluno só mexe no **próprio** carrinho e nas **próprias** inscrições;
+  - a regra de que o aluno só mexe no **próprio** carrinho, nas **próprias** inscrições e nos **próprios** documentos;
   - a tentativa de criar uma inscrição adulterada (em nome de outro aluno, já confirmada ou pagando R$ 0,01).
 - **Configuração e erros:** registro da proteção da API, liberação de CORS só para os endereços autorizados e as mensagens devolvidas quando o banco recusa uma exclusão ou um dado repetido.
 
@@ -470,7 +516,9 @@ O que é testado:
 - **Páginas:**
   - Home, login e cadastro;
   - carrinho: Pix com desconto, cartão, boleto, limite de parcelas, lista de espera e mensagem de erro vinda do servidor;
-  - "Minhas inscrições": troca de turma e turmas lotadas;
+  - cadastro com o certificado (tipo, tamanho, arrastar e soltar);
+  - "Minhas inscrições": troca de turma, turmas lotadas e o cartão do documento (em análise, aprovado, recusado com motivo e reenvio);
+  - revisão do documento no painel: abrir o arquivo, aprovar, recusar com motivo e filtrar as inscrições pela situação do documento;
   - todas as listas e formulários do painel admin, incluindo ordenação por coluna, erro ao excluir um registro em uso, funcionários e aviso de matrícula criada;
   - painel por nível de acesso: menu e atalhos de cada nível, tela de acesso restrito, menu recolhível com o nome ao passar o mouse e o módulo Sistema.
 - **Navegação do site:** ordem do topo, "Voltar ao início" e a logo limpando a pesquisa.
@@ -489,8 +537,8 @@ O que é testado:
 
 | Quem | Pode acessar |
 |---|---|
-| **Visitante** | Ver cursos e turmas disponíveis, cadastrar-se e fazer login |
-| **Aluno** | O próprio carrinho, a criação de inscrições, "Minhas inscrições" (com as próprias parcelas) e a troca de turma das próprias inscrições |
+| **Visitante** | Ver cursos e turmas disponíveis, cadastrar-se (com o certificado) e fazer login |
+| **Aluno** | O próprio carrinho, a criação de inscrições, "Minhas inscrições" (com as próprias parcelas e documentos) e a troca de turma das próprias inscrições |
 | **Funcionário** | Os módulos liberados pelo seu nível de acesso (consultas são livres, exceto Funcionários e Sistema) |
 | **Master** | Todas as rotas, inclusive o módulo Sistema |
 
@@ -553,6 +601,9 @@ O serviço `aprenda-plus-backend` é atualizado automaticamente a cada `git push
 | Variável | Descrição |
 |---|---|
 | `JWT_SECRET` | Chave secreta que assina os tokens |
+| `BREVO_API_KEY` | Chave da API do Brevo, para enviar os e-mails |
+| `EMAIL_REMETENTE` | E-mail que aparece como remetente (precisa estar verificado no Brevo) |
+| `EMAIL_SITE` | Endereço do site usado nos botões dos e-mails (opcional; o padrão é o GitHub Pages) |
 | Dados de conexão do banco | Endereço, usuário e senha do PostgreSQL do Render |
 
 > Quando uma atualização muda a estrutura do banco, o script SQL correspondente da pasta `database` é executado também no banco do Render, antes do deploy.
@@ -583,7 +634,7 @@ O comando gera a versão de produção e publica a pasta `dist` na branch `gh-pa
 - Criar todas as inscrições do carrinho em uma única operação no servidor, para que um erro em um curso não deixe a compra pela metade.
 - Integrar um gateway de pagamento real (Mercado Pago, Stripe...), dando baixa nas parcelas automaticamente quando o pagamento for aprovado.
 - Multa e juros para parcelas em atraso.
-- Avisar o aluno por e-mail quando ele sair da lista de espera ou quando a matrícula for criada.
+- Avisar por e-mail também quando uma parcela estiver perto de vencer.
 - Permitir que o próprio aluno cancele uma inscrição em "Minhas inscrições".
 - Mostrar também as matrículas na área do aluno.
 - Notificações do painel em tempo real (WebSocket), sem precisar consultar a API a cada minuto.

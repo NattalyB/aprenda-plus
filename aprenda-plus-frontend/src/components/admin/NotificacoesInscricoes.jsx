@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { listarInscricoes } from '../../services/inscricaoService';
 import { buscarAlertasFinanceiros } from '../../services/financeiroService';
+import { situacaoDosDocumentos } from '../../services/documentoService';
 import { formatarValor } from '../../utils/precoCurso';
 
 // De quanto em quanto tempo o painel confere se chegaram inscrições novas
@@ -18,12 +19,13 @@ const lerUltimaVista = () => {
 const salvarUltimaVista = (id) => localStorage.setItem(chaveVistas(), String(id));
 
 // Sininho do painel: mostra quantas inscrições chegaram desde a última vez que o funcionário olhou
-// e, para quem cuida do financeiro, as parcelas que vencem em breve ou estão em atraso.
+// e quantos certificados de conclusão esperam análise; para quem cuida do financeiro,, as parcelas que vencem em breve ou estão em atraso.
 function NotificacoesInscricoes({ inscricoes: mostrarInscricoes = true, financeiro: mostrarFinanceiro = false }) {
   const navigate = useNavigate();
   const [novas, setNovas] = useState([]);
   const [alertas, setAlertas] = useState({ vencendoEmBreve: 0, atrasadas: 0 });
   const [aberto, setAberto] = useState(false);
+  const [documentosPendentes, setDocumentosPendentes] = useState(0);
   const maiorIdRef = useRef(0);
 
   const verificar = () => {
@@ -35,6 +37,13 @@ function NotificacoesInscricoes({ inscricoes: mostrarInscricoes = true, financei
         });
     }
     if (!mostrarInscricoes) return;
+    situacaoDosDocumentos()
+      .then((resposta) =>
+        setDocumentosPendentes(Object.values(resposta?.data || {}).filter((s) => s === 'pendente').length)
+      )
+      .catch(() => {
+        // Tenta de novo na próxima verificação
+      });
     listarInscricoes()
       .then((response) => {
         const inscricoes = response.data || [];
@@ -76,16 +85,26 @@ function NotificacoesInscricoes({ inscricoes: mostrarInscricoes = true, financei
     navigate('/admin/inscricoes');
   };
 
+  const verDocumentos = () => {
+    setAberto(false);
+    navigate('/admin/inscricoes?documento=pendente');
+  };
+
   const verFinanceiroAgora = () => {
     setAberto(false);
     navigate('/admin/financeiro');
   };
 
   const avisosFinanceiros = alertas.vencendoEmBreve + alertas.atrasadas;
-  const quantidade = novas.length + avisosFinanceiros;
+  const quantidade = novas.length + avisosFinanceiros + documentosPendentes;
   const partes = [];
   if (novas.length > 0) {
     partes.push(`${novas.length} ${novas.length === 1 ? 'inscrição nova' : 'inscrições novas'}`);
+  }
+  if (documentosPendentes > 0) {
+    partes.push(
+      `${documentosPendentes} ${documentosPendentes === 1 ? 'documento para analisar' : 'documentos para analisar'}`
+    );
   }
   if (avisosFinanceiros > 0) {
     partes.push(`${avisosFinanceiros} ${avisosFinanceiros === 1 ? 'aviso financeiro' : 'avisos financeiros'}`);
@@ -137,6 +156,21 @@ function NotificacoesInscricoes({ inscricoes: mostrarInscricoes = true, financei
               )}
               <button type="button" className="admin-btn admin-btn-sm admin-btn-primary" onClick={verFinanceiroAgora}>
                 Ver financeiro
+              </button>
+            </div>
+          )}
+
+          {mostrarInscricoes && documentosPendentes > 0 && (
+            <div className="notificacoes-documentos">
+              <h2>Documentos</h2>
+              <p>
+                📄 {documentosPendentes}{' '}
+                {documentosPendentes === 1
+                  ? 'certificado de conclusão aguarda análise'
+                  : 'certificados de conclusão aguardam análise'}
+              </p>
+              <button type="button" className="admin-btn admin-btn-sm admin-btn-primary" onClick={verDocumentos}>
+                Analisar documentos
               </button>
             </div>
           )}

@@ -19,6 +19,7 @@ class ModulosTest {
         assertEquals("financeiro", Modulos.doCaminho("/pagamentos/9"));
         assertEquals("financeiro", Modulos.doCaminho("/financeiro/resumo"));
         assertEquals("sistema", Modulos.doCaminho("/niveis-acesso/4"));
+        assertEquals("alunos", Modulos.doCaminho("/documentos/4/revisao"));
     }
 
     @Test

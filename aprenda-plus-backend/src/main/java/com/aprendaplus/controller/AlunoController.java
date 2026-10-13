@@ -4,8 +4,12 @@ import com.aprendaplus.entity.Aluno;
 import com.aprendaplus.service.AlunoService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -38,6 +42,24 @@ public class AlunoController {
             return ResponseEntity.badRequest().body(resposta);
         }
         return ResponseEntity.ok(alunoService.salvar(aluno));
+    }
+
+    // Cadastro pelo site: os dados do aluno + o certificado de conclusão, numa requisição só.
+    // Se o arquivo for inválido, o aluno nem chega a ser criado.
+    @PostMapping(value = "/com-documento", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> cadastrarComDocumento(@Valid @RequestPart("aluno") Aluno aluno,
+                                                   @RequestPart(name = "documento", required = false) MultipartFile documento)
+            throws IOException {
+        if (aluno.getSenhaHash() == null || aluno.getSenhaHash().isBlank()) {
+            Map<String, Object> resposta = new LinkedHashMap<>();
+            resposta.put("mensagem", "Verifique os dados preenchidos.");
+            resposta.put("erros", Map.of("senhaHash", "A senha é obrigatória."));
+            return ResponseEntity.badRequest().body(resposta);
+        }
+        aluno.setIdAluno(null);
+        byte[] conteudo = documento == null ? null : documento.getBytes();
+        String nome = documento == null ? null : documento.getOriginalFilename();
+        return ResponseEntity.ok(alunoService.cadastrarComDocumento(aluno, nome, conteudo));
     }
 
     @PutMapping("/{id}")

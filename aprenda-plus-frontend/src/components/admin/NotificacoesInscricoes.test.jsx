@@ -3,9 +3,14 @@ import NotificacoesInscricoes, { INTERVALO_MS } from './NotificacoesInscricoes';
 import { renderizar } from '../../testUtils';
 import { listarInscricoes } from '../../services/inscricaoService';
 import { buscarAlertasFinanceiros } from '../../services/financeiroService';
+import { situacaoDosDocumentos } from '../../services/documentoService';
 
 jest.mock('../../services/inscricaoService');
 jest.mock('../../services/financeiroService');
+jest.mock('../../services/documentoService', () => ({
+  ...jest.requireActual('../../services/documentoService'),
+  situacaoDosDocumentos: jest.fn(),
+}));
 
 const inscricao = (id, nome = `Aluno ${id}`) => ({
   idInscricao: id,
@@ -21,6 +26,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   localStorage.clear();
   localStorage.setItem('idFuncionario', '1');
+  situacaoDosDocumentos.mockResolvedValue({ data: {} });
 });
 
 test('no primeiro acesso começa em dia, sem avisar o que já existia', async () => {
@@ -200,3 +206,46 @@ describe('avisos do financeiro', () => {
   });
 });
 
+
+describe('documentos para analisar', () => {
+  test('conta os certificados em análise e leva para as inscrições já filtradas', async () => {
+    listarInscricoes.mockResolvedValue({ data: [] });
+    situacaoDosDocumentos.mockResolvedValue({ data: { 7: 'pendente', 8: 'aprovado', 9: 'pendente' } });
+    renderizar(<NotificacoesInscricoes />, { rota: '/admin' });
+
+    await waitFor(() => expect(botao()).toHaveAccessibleName('Notificações: 2 documentos para analisar'));
+    fireEvent.click(botao());
+    expect(screen.getByText(/2 certificados de conclusão aguardam análise/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Analisar documentos' }));
+    expect(screen.getByTestId('endereco')).toHaveTextContent('/admin/inscricoes');
+  });
+
+  test('um documento no singular; falha ou resposta vazia não mostra nada', async () => {
+    listarInscricoes.mockResolvedValue({ data: [] });
+    situacaoDosDocumentos.mockResolvedValueOnce({ data: { 7: 'pendente' } });
+    const { unmount } = renderizar(<NotificacoesInscricoes />);
+    await waitFor(() => expect(botao()).toHaveAccessibleName('Notificações: 1 documento para analisar'));
+    fireEvent.click(botao());
+    expect(screen.getByText(/1 certificado de conclusão aguarda análise/)).toBeInTheDocument();
+    unmount();
+
+    situacaoDosDocumentos.mockResolvedValueOnce(undefined);
+    const segundo = renderizar(<NotificacoesInscricoes />);
+    await waitFor(() => expect(situacaoDosDocumentos).toHaveBeenCalledTimes(2));
+    expect(botao()).toHaveAccessibleName('Notificações: nenhuma inscrição nova');
+    segundo.unmount();
+
+    situacaoDosDocumentos.mockRejectedValueOnce(new Error('rede'));
+    renderizar(<NotificacoesInscricoes />);
+    await waitFor(() => expect(situacaoDosDocumentos).toHaveBeenCalledTimes(3));
+    expect(screen.queryByText('Documentos')).not.toBeInTheDocument();
+  });
+
+  test('quem não cuida de inscrições não vê documentos', async () => {
+    buscarAlertasFinanceiros.mockResolvedValue({ vencendoEmBreve: 0, atrasadas: 0 });
+    renderizar(<NotificacoesInscricoes inscricoes={false} financeiro />);
+    await waitFor(() => expect(buscarAlertasFinanceiros).toHaveBeenCalled());
+    expect(situacaoDosDocumentos).not.toHaveBeenCalled();
+  });
+});

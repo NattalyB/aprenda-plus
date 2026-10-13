@@ -5,11 +5,16 @@ import { listarMinhasInscricoes, trocarTurmaDaInscricao } from '../services/insc
 import { listarTurmasDisponiveis } from '../services/turmaService';
 import { mostrarAviso } from '../services/avisoService';
 import { listarMinhasParcelas } from '../services/financeiroService';
+import { listarMeusDocumentos } from '../services/documentoService';
 
 jest.mock('../services/inscricaoService');
 jest.mock('../services/turmaService');
 jest.mock('../services/avisoService');
 jest.mock('../services/financeiroService');
+jest.mock('../services/documentoService', () => ({
+  ...jest.requireActual('../services/documentoService'),
+  listarMeusDocumentos: jest.fn(),
+}));
 
 const inscricao = (dados = {}) => ({
   idInscricao: 10,
@@ -42,6 +47,7 @@ beforeEach(() => {
   listarMinhasInscricoes.mockResolvedValue([inscricao()]);
   listarTurmasDisponiveis.mockResolvedValue(turmasDoCurso);
   listarMinhasParcelas.mockResolvedValue([]);
+  listarMeusDocumentos.mockResolvedValue({ data: [] });
 });
 
 describe('estados da página', () => {

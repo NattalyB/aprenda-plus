@@ -22,6 +22,7 @@ import { listarTurmas, deletarTurma } from '../../services/turmaService';
 import { listarInscricoes, atualizarInscricao, deletarInscricao } from '../../services/inscricaoService';
 import { listarMatriculas, deletarMatricula } from '../../services/matriculaService';
 import { listarFuncionarios, deletarFuncionario } from '../../services/funcionarioService';
+import { situacaoDosDocumentos } from '../../services/documentoService';
 
 jest.mock('../../services/alunoService');
 jest.mock('../../services/professorService');
@@ -32,6 +33,10 @@ jest.mock('../../services/turmaService');
 jest.mock('../../services/inscricaoService');
 jest.mock('../../services/matriculaService');
 jest.mock('../../services/funcionarioService');
+jest.mock('../../services/documentoService', () => ({
+  ...jest.requireActual('../../services/documentoService'),
+  situacaoDosDocumentos: jest.fn(),
+}));
 
 const busca = (placeholder, valor) =>
   fireEvent.change(screen.getByPlaceholderText(placeholder), { target: { value: valor } });
@@ -45,6 +50,7 @@ const linhas = () => screen.getAllByRole('row').slice(1);
 beforeEach(() => {
   jest.clearAllMocks();
   jest.spyOn(window, 'confirm').mockReturnValue(true);
+  situacaoDosDocumentos.mockResolvedValue({ data: {} });
 });
 
 afterEach(() => window.confirm.mockRestore());

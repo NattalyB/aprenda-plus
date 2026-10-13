@@ -6,9 +6,14 @@ import { logarAdmin } from '../../testUtils';
 import { listarInscricoes } from '../../services/inscricaoService';
 import { buscarMeuAcesso } from '../../services/authAdminService';
 import { buscarAlertasFinanceiros } from '../../services/financeiroService';
+import { situacaoDosDocumentos } from '../../services/documentoService';
 
 jest.mock('../../services/inscricaoService');
 jest.mock('../../services/financeiroService');
+jest.mock('../../services/documentoService', () => ({
+  ...jest.requireActual('../../services/documentoService'),
+  situacaoDosDocumentos: jest.fn(),
+}));
 jest.mock('../../services/authAdminService', () => ({
   ...jest.requireActual('../../services/authAdminService'),
   buscarMeuAcesso: jest.fn(),
@@ -35,6 +40,7 @@ beforeEach(() => {
   localStorage.clear();
   listarInscricoes.mockResolvedValue({ data: [] });
   buscarAlertasFinanceiros.mockResolvedValue({ vencendoEmBreve: 0, atrasadas: 0 });
+  situacaoDosDocumentos.mockResolvedValue({ data: {} });
   buscarMeuAcesso.mockReturnValue(new Promise(() => {})); // por padrão o servidor não responde
 });
 

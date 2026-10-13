@@ -6,12 +6,16 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Arrays;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -152,5 +156,58 @@ class AlunoControllerTest {
                 .andExpect(status().isNoContent());
 
         verify(alunoService).deletar(1);
+    }
+
+    // ---------- Cadastro com o certificado de conclusão ----------
+
+    private MockMultipartFile parteAluno(String json) {
+        return new MockMultipartFile("aluno", "", MediaType.APPLICATION_JSON_VALUE, json.getBytes());
+    }
+
+    @Test
+    void deveCadastrarAlunoComODocumentoAnexado() throws Exception {
+        byte[] pdf = "%PDF-1.4 certificado".getBytes();
+        MockMultipartFile documento = new MockMultipartFile("documento", "certificado.pdf", "application/pdf", pdf);
+        when(alunoService.cadastrarComDocumento(any(Aluno.class), eq("certificado.pdf"), eq(pdf)))
+                .thenReturn(alunoSalvo());
+
+        mockMvc.perform(multipart("/alunos/com-documento")
+                        .file(parteAluno(ALUNO_VALIDO))
+                        .file(documento))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.idAluno").value(1))
+                .andExpect(jsonPath("$.senhaHash").doesNotExist());
+    }
+
+    @Test
+    void cadastroComDocumentoSemArquivoDeixaOServicoRecusar() throws Exception {
+        when(alunoService.cadastrarComDocumento(any(Aluno.class), isNull(), isNull()))
+                .thenThrow(new com.aprendaplus.exception.RegraDeNegocioException(
+                        "Anexe o certificado de conclusão (PDF, JPG ou PNG)."));
+
+        mockMvc.perform(multipart("/alunos/com-documento")
+                        .file(parteAluno(ALUNO_VALIDO)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.mensagem").value("Anexe o certificado de conclusão (PDF, JPG ou PNG)."));
+    }
+
+    @Test
+    void cadastroComDocumentoExigeSenha() throws Exception {
+        String alunoSemSenha = ALUNO_VALIDO.replace("\"senhaHash\": \"senha123\",", "");
+
+        mockMvc.perform(multipart("/alunos/com-documento")
+                        .file(parteAluno(alunoSemSenha)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erros.senhaHash").value("A senha é obrigatória."));
+
+        verify(alunoService, never()).cadastrarComDocumento(any(Aluno.class), anyString(), any());
+    }
+
+    @Test
+    void cadastroComDocumentoValidaOsDadosDoAluno() throws Exception {
+        mockMvc.perform(multipart("/alunos/com-documento")
+                        .file(parteAluno("{\"nomeCompleto\": \"Sem Dados\"}")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erros.email").exists());
     }
 }

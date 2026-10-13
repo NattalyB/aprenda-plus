@@ -39,6 +39,7 @@ public final class Modulos {
     private static final Map<String, String> ROTAS = Map.ofEntries(
             Map.entry("/alunos", ALUNOS),
             Map.entry("/carrinhos", ALUNOS),
+            Map.entry("/documentos", ALUNOS),
             Map.entry("/itens-carrinho", ALUNOS),
             Map.entry("/professores", PROFESSORES),
             Map.entry("/curso-professor", PROFESSORES),

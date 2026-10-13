@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.aprendaplus.entity.Aluno;
 import com.aprendaplus.repository.AlunoRepository;
@@ -14,6 +15,9 @@ public class AlunoService {
 
     @Autowired
     private AlunoRepository alunoRepository;
+
+    @Autowired
+    private DocumentoService documentoService;
 
     private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
 
@@ -43,6 +47,16 @@ public class AlunoService {
         }
 
         return alunoRepository.save(aluno);
+    }
+
+    // Cadastro pelo site com o certificado de conclusão (pré-requisito da matrícula).
+    // O arquivo é conferido ANTES de criar o aluno; tudo é gravado junto ou nada é gravado.
+    @Transactional
+    public Aluno cadastrarComDocumento(Aluno aluno, String nomeArquivo, byte[] conteudo) {
+        documentoService.validarArquivo(nomeArquivo, conteudo);
+        Aluno salvo = salvar(aluno);
+        documentoService.salvar(salvo.getIdAluno(), nomeArquivo, conteudo);
+        return salvo;
     }
 
     public void deletar(Integer id) {

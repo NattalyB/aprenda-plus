@@ -3496,3 +3496,425 @@ img {
     width: 100%;
   }
 }
+
+/* ===== Documento de escolaridade (certificado de conclusão) ===== */
+.form-dica-bloco {
+  display: block;
+  margin: -0.25rem 0 0.75rem;
+  line-height: 1.5;
+}
+
+/* Campo de anexo: o input fica escondido só visualmente (continua acessível) */
+.campo-arquivo {
+  position: relative;
+  border: 2px dashed #cbd5e1;
+  border-radius: 10px;
+  background: #f8fafc;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.campo-arquivo:hover,
+.campo-arquivo.arrastando {
+  border-color: #00b4d8;
+  background: #ecfeff;
+}
+
+.campo-arquivo.com-arquivo {
+  border-style: solid;
+  border-color: #16a34a;
+  background: #f0fdf4;
+}
+
+.campo-arquivo-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  overflow: hidden;
+}
+
+.campo-arquivo-input:focus-visible + .campo-arquivo-label {
+  outline: 3px solid rgba(0, 180, 216, 0.45);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+.campo-arquivo-label {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 1rem 1.1rem;
+  cursor: pointer;
+}
+
+.campo-arquivo-icone {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.campo-arquivo-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+  color: #1f2937;
+  font-size: 0.92rem;
+}
+
+.campo-arquivo-dica,
+.campo-arquivo-nome {
+  color: #6b7280;
+  font-size: 0.82rem;
+  overflow-wrap: anywhere;
+}
+
+.campo-arquivo-nome {
+  color: #166534;
+}
+
+/* Selo de situação */
+.doc-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+.doc-status-pendente {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.doc-status-aprovado {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.doc-status-recusado {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.doc-status-sem {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.doc-status-botao {
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.doc-status-botao:hover:not(:disabled) {
+  border-color: currentColor;
+}
+
+.doc-status-botao:disabled {
+  cursor: default;
+}
+
+/* Botão com cara de link */
+.link-botao {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #1d4ed8;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.link-botao:hover {
+  color: #001e42;
+}
+
+/* Cartão na área do aluno */
+.meu-documento {
+  background: #fff;
+  border-radius: 14px;
+  padding: 1.25rem 1.4rem;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 2px 10px rgba(0, 30, 66, 0.06);
+  border-left: 4px solid #00b4d8;
+}
+
+.meu-documento-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.meu-documento-topo h2 {
+  font-size: 1.05rem;
+  color: #001e42;
+  margin: 0;
+}
+
+.meu-documento-texto {
+  color: #4b5563;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  margin: 0.6rem 0;
+}
+
+.meu-documento-motivo {
+  background: #fef2f2;
+  color: #991b1b;
+  border-radius: 8px;
+  padding: 0.6rem 0.8rem;
+  font-size: 0.9rem;
+  margin: 0 0 0.6rem;
+}
+
+.meu-documento-arquivo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 1rem;
+  font-size: 0.9rem;
+  color: #1f2937;
+  overflow-wrap: anywhere;
+}
+
+.meu-documento-arquivo small {
+  color: #6b7280;
+}
+
+.meu-documento-envio {
+  margin-top: 0.9rem;
+}
+
+.meu-documento-acoes {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+}
+
+/* Lista de documentos no painel */
+.doc-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.doc-lista li {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #fafafa;
+}
+
+.doc-lista-info {
+  flex: 1 1 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+  font-size: 0.85rem;
+  color: #6b7280;
+  overflow-wrap: anywhere;
+}
+
+.doc-lista-info strong {
+  color: #1f2937;
+  font-size: 0.92rem;
+}
+
+.doc-lista-motivo {
+  color: #b91c1c;
+}
+
+.doc-secao {
+  margin-top: 2rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+/* Janela de revisão (lista de documentos do aluno) */
+.doc-painel-fundo,
+.doc-visualizar-fundo {
+  position: fixed;
+  inset: 0;
+  background: rgba(11, 34, 57, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 1100;
+}
+
+.doc-visualizar-fundo {
+  z-index: 1200;
+}
+
+.doc-painel {
+  background: #fff;
+  border-radius: 14px;
+  width: min(640px, 100%);
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 1.25rem 1.4rem;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+}
+
+.doc-painel-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.doc-painel-topo h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #001e42;
+}
+
+.doc-painel-topo p {
+  margin: 0.2rem 0 0;
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+/* Visualizador do arquivo */
+.doc-visualizar {
+  background: #fff;
+  border-radius: 14px;
+  width: min(900px, 100%);
+  height: min(92vh, 900px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.doc-visualizar-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.doc-visualizar-topo strong {
+  color: #001e42;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.doc-visualizar-acoes {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.doc-visualizar-conteudo {
+  flex: 1;
+  min-height: 0;
+  background: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+  padding: 0.5rem;
+}
+
+.doc-visualizar-conteudo iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: #fff;
+}
+
+.doc-visualizar-conteudo img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.doc-visualizar-rodape {
+  border-top: 1px solid #e5e7eb;
+  padding: 0.8rem 1rem;
+}
+
+.doc-revisao label {
+  display: block;
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: #1f2937;
+  margin-bottom: 0.35rem;
+}
+
+.doc-revisao textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1.5px solid #d1d5db;
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
+  font: inherit;
+  resize: vertical;
+}
+
+.doc-revisao textarea:focus {
+  outline: none;
+  border-color: #00b4d8;
+  box-shadow: 0 0 0 3px rgba(0, 180, 216, 0.2);
+}
+
+.doc-revisao .form-dica {
+  margin: 0 0 0.6rem;
+}
+
+.doc-revisao-botoes {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 0.6rem;
+}
+
+/* Sininho: documentos */
+.notificacoes-documentos {
+  padding-bottom: 0.8rem;
+  margin-bottom: 0.8rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.notificacoes-documentos p {
+  margin: 0 0 0.6rem;
+  font-size: 0.88rem;
+}
+
+@media (max-width: 600px) {
+  .doc-visualizar {
+    height: 92vh;
+  }
+
+  .doc-visualizar-topo {
+    flex-wrap: wrap;
+  }
+
+  .doc-painel-topo {
+    flex-direction: column;
+  }
+}

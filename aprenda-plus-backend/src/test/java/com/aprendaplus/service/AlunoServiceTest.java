@@ -23,6 +23,9 @@ class AlunoServiceTest {
     @Mock
     private AlunoRepository alunoRepository;
 
+    @Mock
+    private DocumentoService documentoService;
+
     @InjectMocks
     private AlunoService alunoService;
 
@@ -132,5 +135,37 @@ class AlunoServiceTest {
         alunoService.deletar(1);
 
         verify(alunoRepository).deleteById(1);
+    }
+
+    // ===== Cadastro pelo site, com o certificado de conclusão =====
+
+    @Test
+    void cadastroComDocumentoConfereOArquivoAntesESalvaOsDois() {
+        byte[] pdf = "%PDF-1.4".getBytes();
+        when(alunoRepository.save(any(Aluno.class))).thenAnswer(invocation -> {
+            Aluno a = invocation.getArgument(0);
+            a.setIdAluno(15);
+            return a;
+        });
+        Aluno novo = new Aluno();
+        novo.setSenhaHash("segredo1");
+
+        Aluno salvo = alunoService.cadastrarComDocumento(novo, "certificado.pdf", pdf);
+
+        assertEquals(15, salvo.getIdAluno());
+        org.mockito.InOrder ordem = org.mockito.Mockito.inOrder(documentoService, alunoRepository);
+        ordem.verify(documentoService).validarArquivo("certificado.pdf", pdf);
+        ordem.verify(alunoRepository).save(novo);
+        ordem.verify(documentoService).salvar(15, "certificado.pdf", pdf);
+    }
+
+    @Test
+    void cadastroComArquivoInvalidoNemCriaOAluno() {
+        when(documentoService.validarArquivo(any(), any()))
+                .thenThrow(new com.aprendaplus.exception.RegraDeNegocioException("Envie o documento em PDF, JPG ou PNG."));
+
+        assertThrows(com.aprendaplus.exception.RegraDeNegocioException.class,
+                () -> alunoService.cadastrarComDocumento(new Aluno(), "x.exe", new byte[]{1}));
+        verify(alunoRepository, never()).save(any());
     }
 }

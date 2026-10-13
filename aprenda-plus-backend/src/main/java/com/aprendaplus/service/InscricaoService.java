@@ -71,6 +71,12 @@ public class InscricaoService {
     @Autowired
     private FinanceiroService financeiroService;
 
+    @Autowired
+    private DocumentoService documentoService;
+
+    @Autowired
+    private EmailService emailService;
+
     public List<Inscricao> listarTodos() {
         return inscricaoRepository.findAll();
     }
@@ -206,9 +212,20 @@ public class InscricaoService {
             }
         }
 
+        // Pré-requisito: a secretaria precisa aprovar o certificado de conclusão antes de confirmar
+        boolean confirmandoAgora = CONFIRMADA.equals(novoStatus) && !CONFIRMADA.equals(statusAnterior);
+        if (confirmandoAgora && idAluno != null && !documentoService.temDocumentoAprovado(idAluno)) {
+            throw new RegraDeNegocioException("Antes de confirmar o pagamento, aprove o documento de escolaridade "
+                    + "do aluno (certificado de conclusão). Use o botão \"Documento\" na lista de inscrições.");
+        }
+
         Inscricao salva = inscricaoRepository.save(dados);
 
         sincronizarMatricula(idAluno, turmaAnterior, novaTurma, novoStatus, salva);
+
+        if (confirmandoAgora && idAluno != null) {
+            avisarMatriculaConfirmada(idAluno, novaTurma);
+        }
 
         // Liberou a vaga na turma antiga? Chama o primeiro da fila de lá
         boolean liberouVaga = ocupaVaga(statusAnterior) && (!ocupaVaga(novoStatus) || mudouDeTurma);
@@ -278,7 +295,24 @@ public class InscricaoService {
                 .ifPresent(primeira -> {
                     primeira.setStatus(PENDENTE);
                     inscricaoRepository.save(primeira);
+                    Aluno aluno = primeira.getAluno();
+                    if (aluno != null) {
+                        emailService.vagaLiberada(aluno.getEmail(), aluno.getNomeCompleto(),
+                                turma.getCurso() == null ? null : turma.getCurso().getNome(), turma.getNome());
+                    }
                 });
+    }
+
+    // E-mail "matrícula confirmada" (sai só depois que tudo for gravado)
+    private void avisarMatriculaConfirmada(Integer idAluno, Integer idTurma) {
+        Aluno aluno = alunoRepository.findById(idAluno).orElse(null);
+        if (aluno == null) {
+            return;
+        }
+        Turma turma = idTurma == null ? null : turmaRepository.findById(idTurma).orElse(null);
+        String curso = turma == null || turma.getCurso() == null ? "AprendaPlus" : turma.getCurso().getNome();
+        emailService.matriculaConfirmada(aluno.getEmail(), aluno.getNomeCompleto(), curso,
+                turma == null ? null : turma.getNome());
     }
 
     // Canceladas e quem está na lista de espera não ocupam vaga

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { buscarAlunoPorId, criarAluno, atualizarAluno } from '../../services/alunoService';
 import CampoCep from '../../components/CampoCep';
+import DocumentosDoAluno from '../../components/admin/DocumentosDoAluno';
 
 function AdminAlunoForm() {
   const navigate = useNavigate();
@@ -196,6 +197,13 @@ function AdminAlunoForm() {
             </button>
           </div>
         </form>
+
+        {modoEdicao && (
+          <section className="doc-secao" aria-label="Documento de escolaridade">
+            <h2 className="form-section-title">Documento de escolaridade</h2>
+            <DocumentosDoAluno idAluno={id} />
+          </section>
+        )}
       </div>
     </div>
   );

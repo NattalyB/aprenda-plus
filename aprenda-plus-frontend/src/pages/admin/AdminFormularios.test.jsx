@@ -36,6 +36,10 @@ jest.mock('../../services/periodoLetivoService');
 jest.mock('../../services/turmaService');
 jest.mock('../../services/matriculaService');
 jest.mock('../../services/funcionarioService');
+jest.mock('../../services/documentoService', () => ({
+  ...jest.requireActual('../../services/documentoService'),
+  listarDocumentosDoAluno: jest.fn(() => Promise.resolve({ data: [] })),
+}));
 jest.mock('../../services/cepService', () => ({
   ...jest.requireActual('../../services/cepService'),
   buscarEnderecoPorCep: jest.fn(),
@@ -90,6 +94,9 @@ describe('Formulário de aluno', () => {
     // O hash da senha nunca aparece no formulário
     expect(screen.getByLabelText('Nova senha (opcional)')).toHaveValue('');
     expect(screen.getByLabelText('Nova senha (opcional)')).not.toBeRequired();
+    // Na edição aparece o documento de escolaridade do aluno, para a secretaria revisar
+    expect(screen.getByRole('region', { name: 'Documento de escolaridade' })).toBeInTheDocument();
+    expect(await screen.findByText('Este aluno ainda não enviou o certificado de conclusão.')).toBeInTheDocument();
 
     digita('Status', 'bloqueado');
     salvar();
@@ -99,6 +106,7 @@ describe('Formulário de aluno', () => {
     expect(id).toBe('3');
     expect(dados.status).toBe('bloqueado');
     expect(dados).not.toHaveProperty('senhaHash');
+
   });
 
   test('editar com senha nova envia a senha', async () => {

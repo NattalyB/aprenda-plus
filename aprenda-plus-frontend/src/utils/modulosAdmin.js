@@ -10,7 +10,7 @@ export const MODULOS = [
   { chave: 'inscricoes', rota: '/admin/inscricoes', menu: 'Inscrições', titulo: 'Inscrições', icone: '🧾', descricao: 'Compras dos alunos e pagamentos' },
   { chave: 'matriculas', rota: '/admin/matriculas', menu: 'Matrículas', titulo: 'Matrículas', icone: '✅', descricao: 'Alunos matriculados nas turmas' },
   { chave: 'financeiro', rota: '/admin/financeiro', menu: 'Financeiro', titulo: 'Financeiro', icone: '💰', descricao: 'Parcelas, recebimentos e indicadores' },
-  { chave: 'funcionarios', rota: '/admin/funcionarios', menu: 'Funcionários do painel', titulo: 'Funcionários', icone: '🪪', descricao: 'Quem acessa o painel' },
+  { chave: 'funcionarios', rota: '/admin/funcionarios', menu: 'Funcionários do painel', titulo: 'Funcionários', icone: '👥', descricao: 'Quem acessa o painel' },
   { chave: 'sistema', rota: '/admin/sistema', menu: 'Sistema', titulo: 'Sistema', icone: '⚙️', descricao: 'Níveis de acesso e permissões' },
 ];
 

@@ -59,6 +59,12 @@ class InscricaoServiceTest {
     @Mock
     private FinanceiroService financeiroService;
 
+    @Mock
+    private DocumentoService documentoService;
+
+    @Mock
+    private EmailService emailService;
+
     @InjectMocks
     private InscricaoService inscricaoService;
 
@@ -72,6 +78,8 @@ class InscricaoServiceTest {
         inscricao.setValorTotal(new BigDecimal("199.90"));
         // Por padrão, toda turma tem vaga (os testes de vagas mudam isso)
         lenient().when(turmaService.vagasRestantes(any())).thenReturn(10L);
+        // Por padrão, o documento de escolaridade do aluno já foi aprovado
+        lenient().when(documentoService.temDocumentoAprovado(any())).thenReturn(true);
     }
 
     // ===== Operações básicas (usadas pelo painel do admin) =====
@@ -827,6 +835,65 @@ class InscricaoServiceTest {
         assertEquals("Cartão de crédito · 3x", criada.getPlanoPagamento());
         // E as parcelas são geradas com o valor e a forma de pagamento da inscrição
         verify(financeiroService).prepararParcelas(criada, new BigDecimal("950.00"), "Cartão de crédito · 3x");
+        // Aluno não encontrado para o e-mail: nada é enviado (e nada quebra)
+        verify(emailService, never()).matriculaConfirmada(any(), any(), any(), any());
+    }
+
+    @Test
+    void naoConfirmaSemODocumentoDeEscolaridadeAprovado() {
+        when(inscricaoRepository.findById(10)).thenReturn(Optional.of(inscricaoDoAluno(10, 7, 3, 2, "pendente_pagamento")));
+        when(documentoService.temDocumentoAprovado(7)).thenReturn(false);
+
+        RegraDeNegocioException erro = assertThrows(RegraDeNegocioException.class,
+                () -> inscricaoService.atualizarPeloAdmin(10, doPainel(7, 3, "confirmada")));
+
+        assertTrue(erro.getMessage().startsWith("Antes de confirmar o pagamento, aprove o documento de escolaridade"));
+        verify(inscricaoRepository, never()).save(any());
+        verifyNoInteractions(matriculaRepository, emailService);
+    }
+
+    @Test
+    void confirmarEnviaOEmailDeMatriculaConfirmada() {
+        when(inscricaoRepository.findById(10)).thenReturn(Optional.of(inscricaoDoAluno(10, 7, 3, 2, "pendente_pagamento")));
+        saveDevolveAPropriaInscricao();
+        Aluno aluno = new Aluno();
+        aluno.setIdAluno(7);
+        aluno.setNomeCompleto("Lucas Almeida");
+        aluno.setEmail("lucas@aluno.com");
+        when(alunoRepository.findById(7)).thenReturn(Optional.of(aluno));
+        when(turmaRepository.findById(3)).thenReturn(Optional.of(turmaNova(3, 2)));
+
+        inscricaoService.atualizarPeloAdmin(10, doPainel(7, 3, "confirmada"));
+
+        verify(emailService).matriculaConfirmada("lucas@aluno.com", "Lucas Almeida", "Curso 2", "Turma 3");
+    }
+
+    @Test
+    void emailDeConfirmacaoSemTurmaUsaONomeDaEscola() {
+        when(inscricaoRepository.findById(10)).thenReturn(Optional.of(inscricaoDoAluno(10, 7, 3, 2, "pendente_pagamento")));
+        saveDevolveAPropriaInscricao();
+        Aluno aluno = new Aluno();
+        aluno.setEmail("lucas@aluno.com");
+        when(alunoRepository.findById(7)).thenReturn(Optional.of(aluno));
+        when(turmaRepository.findById(3)).thenReturn(Optional.empty());
+
+        inscricaoService.atualizarPeloAdmin(10, doPainel(7, 3, "confirmada"));
+
+        verify(emailService).matriculaConfirmada("lucas@aluno.com", null, "AprendaPlus", null);
+    }
+
+    @Test
+    void emailDeConfirmacaoComTurmaSemCurso() {
+        when(inscricaoRepository.findById(10)).thenReturn(Optional.of(inscricaoDoAluno(10, 7, 3, 2, "pendente_pagamento")));
+        saveDevolveAPropriaInscricao();
+        when(alunoRepository.findById(7)).thenReturn(Optional.of(new Aluno()));
+        Turma semCurso = turmaNova(3, 2);
+        semCurso.setCurso(null);
+        when(turmaRepository.findById(3)).thenReturn(Optional.of(semCurso));
+
+        inscricaoService.atualizarPeloAdmin(10, doPainel(7, 3, "confirmada"));
+
+        verify(emailService).matriculaConfirmada(null, null, "AprendaPlus", "Turma 3");
     }
 
     @Test
@@ -894,6 +961,8 @@ class InscricaoServiceTest {
         verify(inscricaoRepository).save(naFila);
         // As parcelas que ainda não foram pagas deixam de ser cobradas
         verify(financeiroService).cancelarParcelasEmAberto(1);
+        // E quem saiu da fila recebe o e-mail avisando da vaga
+        verify(emailService).vagaLiberada(any(), any(), org.mockito.ArgumentMatchers.eq("Curso 2"), org.mockito.ArgumentMatchers.eq("Turma 3"));
     }
 
     @Test

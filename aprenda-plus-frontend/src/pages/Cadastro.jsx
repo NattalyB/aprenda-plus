@@ -1,12 +1,16 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { criarAluno } from '../services/alunoService';
+import { cadastrarAlunoComDocumento } from '../services/alunoService';
+import { conferirArquivoDoDocumento } from '../services/documentoService';
+import { mostrarAviso } from '../services/avisoService';
 import CampoCep from '../components/CampoCep';
+import CampoArquivo from '../components/CampoArquivo';
 
 function Cadastro() {
   const navigate = useNavigate();
   const [erro, setErro] = useState(null);
   const [enviando, setEnviando] = useState(false);
+  const [certificado, setCertificado] = useState(null);
 
   const [form, setForm] = useState({
     nomeCompleto: '',
@@ -31,18 +35,30 @@ function Cadastro() {
   const handleSubmit = (e) => {
     e.preventDefault();
     setErro(null);
-    setEnviando(true);
 
-    criarAluno(form)
+    // O certificado é conferido antes de enviar, pra não perder o formulário à toa
+    const problemaNoArquivo = conferirArquivoDoDocumento(certificado);
+    if (problemaNoArquivo) {
+      setErro(problemaNoArquivo);
+      return;
+    }
+
+    setEnviando(true);
+    cadastrarAlunoComDocumento(form, certificado)
       .then(() => {
+        mostrarAviso('Conta criada! Seu certificado foi enviado para análise da secretaria.', 'sucesso');
         navigate('/login');
       })
       .catch((error) => {
         setEnviando(false);
-        if (error.response?.status === 400) {
-          setErro('Verifique os dados preenchidos.');
-        } else if (error.response?.status === 409 || error.response?.data?.message?.includes('unique')) {
+        const status = error.response?.status;
+        const mensagem = error.response?.data?.mensagem;
+        if (status === 409 || error.response?.data?.message?.includes('unique')) {
           setErro('E-mail ou CPF já cadastrado.');
+        } else if (status === 413) {
+          setErro('O arquivo pode ter no máximo 5 MB.');
+        } else if (status === 400) {
+          setErro(mensagem || 'Verifique os dados preenchidos.');
         } else {
           setErro('Não foi possível concluir o cadastro. Tente novamente.');
         }
@@ -142,6 +158,19 @@ function Cadastro() {
               <input id="senhaHash" name="senhaHash" type="password" placeholder="Crie uma senha" value={form.senhaHash} onChange={handleChange} required />
             </div>
           </div>
+
+          {/* ===== Escolaridade ===== */}
+          <h2 className="form-section-title">Escolaridade</h2>
+          <p className="form-dica form-dica-bloco">
+            Nossos cursos são para quem já concluiu o ensino médio. Anexe o certificado (ou histórico) de
+            conclusão: a secretaria confere o documento antes de liberar a sua matrícula.
+          </p>
+          <CampoArquivo
+            id="certificado"
+            label="Certificado de conclusão do ensino médio"
+            arquivo={certificado}
+            onChange={setCertificado}
+          />
 
           <button type="submit" className="form-btn" disabled={enviando}>
             {enviando ? 'SALVANDO...' : 'CRIAR CONTA'}
