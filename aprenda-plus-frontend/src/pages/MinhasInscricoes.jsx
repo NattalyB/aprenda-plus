@@ -230,6 +230,12 @@ function MinhasInscricoes() {
                 aluno={getNomeAluno()}
               />
 
+              {(inscricao.status === 'confirmada' || inscricao.status === 'concluida') && inscricao.idTurma && (
+                <Link to={`/sala/${inscricao.idTurma}`} className="admin-btn admin-btn-primary minhas-btn-sala">
+                  🎓 Entrar na sala de aula
+                </Link>
+              )}
+
               {inscricao.status === 'aguardando_vaga' && (
                 <p className="minhas-aviso-fila">
                   ⏳ Você está na lista de espera desta turma e ainda não precisa pagar. Quando abrir uma vaga, sua

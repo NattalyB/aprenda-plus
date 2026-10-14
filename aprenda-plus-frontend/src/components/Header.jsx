@@ -173,8 +173,13 @@ function Header() {
         )}
       </div>
 
-      {/* Ordem fixa: Minhas inscrições · Carrinho · (aluno + Sair) */}
+      {/* Ordem fixa: Sala de aula · Minhas inscrições · Carrinho · (aluno + Sair) */}
       <div className="header-actions">
+        {logado && (
+          <Link to="/sala" className="header-minhas">
+            <span aria-hidden="true">🎓</span> <span className="header-minhas-texto">Sala de aula</span>
+          </Link>
+        )}
         {logado && (
           <Link to="/minhas-inscricoes" className="header-minhas">
             <span aria-hidden="true">📚</span> <span className="header-minhas-texto">Minhas inscrições</span>

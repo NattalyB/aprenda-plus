@@ -55,8 +55,9 @@ public class EmailService {
                 "<p>Olá, <strong>" + html(primeiroNome(nome)) + "</strong>!</p>"
                         + "<p>Seu pagamento foi aprovado e a sua matrícula no curso <strong>" + html(curso) + "</strong>"
                         + (turma == null ? "" : " (" + html(turma) + ")") + " está confirmada.</p>"
-                        + "<p>Entre no site com o mesmo e-mail e senha do cadastro para acompanhar o seu curso.</p>",
-                "Acessar minha área");
+                        + "<p>Entre no site com o mesmo e-mail e senha do cadastro e clique em <strong>Sala de aula</strong>"
+                        + " para assistir às aulas e acompanhar o seu progresso.</p>",
+                "Entrar na sala de aula");
     }
 
     public void vagaLiberada(String email, String nome, String curso, String turma) {
@@ -76,6 +77,17 @@ public class EmailService {
                         + (motivo == null || motivo.isBlank() ? "" : "<p><strong>Motivo:</strong> " + html(motivo) + "</p>")
                         + "<p>Envie um novo arquivo em <strong>Minhas inscrições</strong> para continuarmos a sua matrícula.</p>",
                 "Enviar novo documento");
+    }
+
+    public void novoAviso(String email, String nome, String turma, String titulo, String mensagem) {
+        String texto = mensagem == null ? "" : mensagem.length() > 600 ? mensagem.substring(0, 600) + "..." : mensagem;
+        enviar(email, nome, "Novo aviso na sua turma: " + titulo,
+                "Novo aviso no mural",
+                "<p>Olá, <strong>" + html(primeiroNome(nome)) + "</strong>!</p>"
+                        + "<p>Tem aviso novo no mural da turma <strong>" + html(turma) + "</strong>:</p>"
+                        + "<div style=\"border-left:4px solid #00b4d8;background:#f0f9ff;padding:12px 16px;border-radius:6px\">"
+                        + "<strong>" + html(titulo) + "</strong><br>" + html(texto).replace("\n", "<br>") + "</div>",
+                "Abrir a sala de aula");
     }
 
     // ===== Envio =====

@@ -1,5 +1,6 @@
 package com.aprendaplus.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 
@@ -34,6 +35,24 @@ public class Aula {
     @Column(name = "tipo_aula", length = 30)
     private String tipoAula;
 
+    // Sala de aula EAD
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "disciplina_id")
+    private Disciplina disciplina;
+
+    @Column(name = "video_url", length = 300)
+    private String videoUrl;
+
+    @Column(name = "material_url", length = 300)
+    private String materialUrl;
+
+    @Column(name = "duracao_minutos")
+    private Integer duracaoMinutos;
+
+    @Column(name = "publicada", nullable = false)
+    private Boolean publicada = true;
+
     // Getters e Setters
 
     public Integer getIdAula() { return idAula; }
@@ -59,4 +78,19 @@ public class Aula {
 
     public String getTipoAula() { return tipoAula; }
     public void setTipoAula(String tipoAula) { this.tipoAula = tipoAula; }
+
+    public Disciplina getDisciplina() { return disciplina; }
+    public void setDisciplina(Disciplina disciplina) { this.disciplina = disciplina; }
+
+    public String getVideoUrl() { return videoUrl; }
+    public void setVideoUrl(String videoUrl) { this.videoUrl = videoUrl; }
+
+    public String getMaterialUrl() { return materialUrl; }
+    public void setMaterialUrl(String materialUrl) { this.materialUrl = materialUrl; }
+
+    public Integer getDuracaoMinutos() { return duracaoMinutos; }
+    public void setDuracaoMinutos(Integer duracaoMinutos) { this.duracaoMinutos = duracaoMinutos; }
+
+    public Boolean getPublicada() { return publicada; }
+    public void setPublicada(Boolean publicada) { this.publicada = publicada; }
 }

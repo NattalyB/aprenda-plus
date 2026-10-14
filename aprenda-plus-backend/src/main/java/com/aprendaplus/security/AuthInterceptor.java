@@ -95,6 +95,7 @@ public class AuthInterceptor implements HandlerInterceptor {
         if ("GET".equals(metodo)) {
             if (caminho.equals("/cursos") || caminho.startsWith("/cursos/")) return true;   // vitrine de cursos
             if (caminho.equals("/turmas") || caminho.startsWith("/turmas/")) return true;   // turmas dos cursos
+            if (caminho.startsWith("/certificados/")) return true;                         // validação de certificado
         }
 
         if ("POST".equals(metodo) && caminho.equals("/alunos/com-documento")) return true;  // cadastro pelo site
@@ -112,7 +113,19 @@ public class AuthInterceptor implements HandlerInterceptor {
         if (caminho.equals("/documentos/meus") && ("GET".equals(metodo) || "POST".equals(metodo))) return true;
         if ("GET".equals(metodo) && caminho.matches("/documentos/\\d+/arquivo")) return true;  // o próprio documento
         if ("PUT".equals(metodo) && caminho.matches("/inscricoes/\\d+/turma")) return true;   // troca de turma
+        if (ehRotaDaSala(metodo, caminho)) return true;                                        // sala de aula EAD
         return "POST".equals(metodo) && caminho.equals("/inscricoes");
+    }
+
+    // Sala de aula EAD: a matrícula na turma é conferida no SalaDeAulaService
+    private boolean ehRotaDaSala(String metodo, String caminho) {
+        if ("GET".equals(metodo)) {
+            return caminho.equals("/sala/minhas-turmas") || caminho.matches("/sala/turmas/\\d+");
+        }
+        if ("PUT".equals(metodo) || "DELETE".equals(metodo)) {
+            return caminho.matches("/sala/aulas/\\d+/concluida");
+        }
+        return "POST".equals(metodo) && caminho.matches("/sala/turmas/\\d+/certificado");
     }
 
     // Regras do painel:

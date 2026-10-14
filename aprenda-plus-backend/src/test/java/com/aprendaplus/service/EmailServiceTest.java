@@ -14,6 +14,7 @@ import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 class EmailServiceTest {
@@ -113,5 +114,36 @@ class EmailServiceTest {
         String html = configurado().modelo("Olá", "<p>corpo</p>", "Entrar");
         assertTrue(html.contains("https://site/"));
         assertTrue(html.contains("<p>corpo</p>"));
+    }
+
+    @Test
+    void avisoDoMuralVaiComOTextoResumido() {
+        EmailService servico = spy(configurado());
+        doNothing().when(servico).enviar(any(), any(), any(), any(), any(), any());
+
+        servico.novoAviso("lucas@aluno.com", "Lucas", "Turma A", "Prova <dia 10>", "Linha 1\nLinha 2");
+        servico.novoAviso("lucas@aluno.com", "Lucas", "Turma A", "Longo", "x".repeat(700));
+        servico.novoAviso("lucas@aluno.com", "Lucas", "Turma A", "Vazio", null);
+
+        ArgumentCaptor<String> corpo = ArgumentCaptor.forClass(String.class);
+        verify(servico, times(3)).enviar(eq("lucas@aluno.com"), eq("Lucas"), any(), eq("Novo aviso no mural"),
+                corpo.capture(), eq("Abrir a sala de aula"));
+        assertTrue(corpo.getAllValues().get(0).contains("Prova &lt;dia 10&gt;"));
+        assertTrue(corpo.getAllValues().get(0).contains("Linha 1<br>Linha 2"));
+        assertTrue(corpo.getAllValues().get(1).contains("x".repeat(600) + "..."));
+        assertFalse(corpo.getAllValues().get(1).contains("x".repeat(601)));
+        verify(servico).enviar(any(), any(), eq("Novo aviso na sua turma: Vazio"), any(), any(), any());
+    }
+
+    @Test
+    void emailDeMatriculaConfirmadaLevaParaASalaDeAula() {
+        EmailService servico = spy(configurado());
+        doNothing().when(servico).enviar(any(), any(), any(), any(), any(), any());
+
+        servico.matriculaConfirmada("lucas@aluno.com", "Lucas", "Redes", null);
+
+        ArgumentCaptor<String> corpo = ArgumentCaptor.forClass(String.class);
+        verify(servico).enviar(any(), any(), any(), any(), corpo.capture(), eq("Entrar na sala de aula"));
+        assertTrue(corpo.getValue().contains("Sala de aula"));
     }
 }

@@ -199,22 +199,25 @@ describe('Header: busca com sugestões', () => {
 });
 
 describe('Header: ordem do topo e logo', () => {
-  test('aluno logado: Minhas inscrições, Carrinho e depois nome + Sair', async () => {
+  test('aluno logado: Sala de aula, Minhas inscrições, Carrinho e depois nome + Sair', async () => {
     logarAluno('Lucas Almeida');
     renderizar(<Header />);
     await screen.findByText(/\(0\)/);
 
     const acoes = document.querySelector('.header-actions');
     const textos = Array.from(acoes.children).map((el) => el.textContent.replace(/\s+/g, ' ').trim());
-    expect(textos[0]).toContain('Minhas inscrições');
-    expect(textos[1]).toContain('Carrinho');
-    expect(textos[2]).toContain('Lucas');
-    expect(textos[2]).toContain('Sair');
+    expect(textos[0]).toContain('Sala de aula');
+    expect(textos[1]).toContain('Minhas inscrições');
+    expect(textos[2]).toContain('Carrinho');
+    expect(textos[3]).toContain('Lucas');
+    expect(textos[3]).toContain('Sair');
+    expect(screen.getByRole('link', { name: /Sala de aula/ })).toHaveAttribute('href', '/sala');
   });
 
-  test('visitante não vê "Minhas inscrições"', () => {
+  test('visitante não vê "Minhas inscrições" nem a sala de aula', () => {
     renderizar(<Header />);
     expect(screen.queryByText('Minhas inscrições')).not.toBeInTheDocument();
+    expect(screen.queryByText('Sala de aula')).not.toBeInTheDocument();
   });
 
   test('clicar na logo limpa a pesquisa e volta para o início', async () => {

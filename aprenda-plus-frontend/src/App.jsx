@@ -33,6 +33,11 @@ import AdminInicio from './pages/admin/AdminInicio';
 import AdminSistema from './pages/admin/AdminSistema';
 import AdminFinanceiro from './pages/admin/AdminFinanceiro';
 import VoltarInicio from './components/VoltarInicio';
+import MinhasTurmasEad from './pages/sala/MinhasTurmasEad';
+import SalaTurma from './pages/sala/SalaTurma';
+import CertificadoConclusao from './pages/sala/CertificadoConclusao';
+import ValidarCertificado from './pages/ValidarCertificado';
+import AdminSalaDeAula from './pages/admin/AdminSalaDeAula';
 
 function SitePage({ children }) {
   return (
@@ -55,6 +60,11 @@ function App() {
         <Route path="/cadastro" element={<SitePage><Cadastro /></SitePage>} />
         <Route path="/carrinho" element={<SitePage><Carrinho /></SitePage>} />
         <Route path="/minhas-inscricoes" element={<SitePage><MinhasInscricoes /></SitePage>} />
+        <Route path="/sala" element={<SitePage><MinhasTurmasEad /></SitePage>} />
+        <Route path="/sala/:idTurma" element={<SitePage><SalaTurma /></SitePage>} />
+        <Route path="/sala/:idTurma/certificado" element={<CertificadoConclusao />} />
+        <Route path="/certificado" element={<SitePage><ValidarCertificado /></SitePage>} />
+        <Route path="/certificado/:codigo" element={<SitePage><ValidarCertificado /></SitePage>} />
 
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route
@@ -92,6 +102,8 @@ function App() {
           <Route path="turmas" element={<RotaModulo modulo="turmas"><AdminTurmas /></RotaModulo>} />
           <Route path="turmas/novo" element={<RotaModulo modulo="turmas"><AdminTurmaForm /></RotaModulo>} />
           <Route path="turmas/:id/editar" element={<RotaModulo modulo="turmas"><AdminTurmaForm /></RotaModulo>} />
+
+          <Route path="aulas" element={<RotaModulo modulo="aulas"><AdminSalaDeAula /></RotaModulo>} />
 
           <Route path="inscricoes" element={<RotaModulo modulo="inscricoes"><AdminInscricoes /></RotaModulo>} />
 

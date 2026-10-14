@@ -8,4 +8,5 @@ test('rodapé mostra contato e créditos', () => {
   expect(screen.getByText(/aprendaplus@gmail.com/)).toBeInTheDocument();
   expect(screen.getByText('Alunos +Pra TI')).toBeInTheDocument();
   expect(screen.getByAltText('Aprenda Plus')).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: 'Validar certificado' })).toHaveAttribute('href', '#/certificado');
 });

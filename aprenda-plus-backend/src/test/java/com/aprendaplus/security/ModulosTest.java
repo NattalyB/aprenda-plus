@@ -20,6 +20,8 @@ class ModulosTest {
         assertEquals("financeiro", Modulos.doCaminho("/financeiro/resumo"));
         assertEquals("sistema", Modulos.doCaminho("/niveis-acesso/4"));
         assertEquals("alunos", Modulos.doCaminho("/documentos/4/revisao"));
+        assertEquals("aulas", Modulos.doCaminho("/planos-de-aula/turma/5/aulas"));
+        assertEquals("aulas", Modulos.doCaminho("/aulas/3"));
     }
 
     @Test
@@ -48,7 +50,7 @@ class ModulosTest {
         assertEquals(Modulos.LIBERAVEIS.size() + 1, Modulos.TODOS.size());
         assertTrue(Modulos.TODOS.contains(Modulos.SISTEMA));
         assertFalse(Modulos.LIBERAVEIS.contains(Modulos.SISTEMA));
-        assertEquals(List.of("alunos", "professores", "cursos", "disciplinas", "periodos", "turmas",
+        assertEquals(List.of("alunos", "professores", "cursos", "disciplinas", "periodos", "turmas", "aulas",
                 "inscricoes", "matriculas", "financeiro", "funcionarios"), Modulos.LIBERAVEIS);
     }
 }

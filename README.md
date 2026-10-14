@@ -20,6 +20,7 @@ Projeto final do curso **Desenvolvimento Full Stack** do programa **+PraTi / Cod
 - [Fluxo da inscrição até a matrícula](#-fluxo-da-inscrição-até-a-matrícula)
 - [Financeiro](#-financeiro)
 - [Documento de escolaridade e e-mails](#-documento-de-escolaridade-e-e-mails)
+- [Sala de aula EAD](#-sala-de-aula-ead)
 - [Tecnologias](#-tecnologias)
 - [Arquitetura](#-arquitetura)
 - [Estrutura de pastas](#-estrutura-de-pastas)
@@ -73,6 +74,16 @@ Projeto final do curso **Desenvolvimento Full Stack** do programa **+PraTi / Cod
 - **Meus pagamentos:** em cada curso, o aluno vê quantas parcelas já pagou, a próxima a vencer e as que estão em atraso, com a lista completa das parcelas.
 - **Recibo:** cada parcela paga tem um recibo pronto para imprimir ou salvar em PDF.
 - **Documento de escolaridade:** o aluno acompanha a análise do certificado (*em análise*, *aprovado* ou *recusado*). Se for recusado, vê o motivo e envia um novo arquivo ali mesmo.
+- Cada curso confirmado tem o atalho **"Entrar na sala de aula"**.
+
+**Sala de aula EAD** (detalhes na seção [Sala de aula EAD](#-sala-de-aula-ead))
+
+- Depois da matrícula confirmada, o aluno entra com o **mesmo e-mail e senha** e encontra as turmas dele em **🎓 Sala de aula**, cada uma com a barra de progresso.
+- Aulas em vídeo (YouTube), texto e material de apoio, organizadas por disciplina. Aulas com data de liberação aparecem com cadeado até o dia certo.
+- O aluno marca cada aula como **concluída** e acompanha o percentual do curso.
+- **Mural de avisos** da turma, com avisos fixados no topo.
+- **Certificado de conclusão** liberado ao terminar todas as aulas, pronto para imprimir ou salvar em PDF, com **código de verificação**.
+- **Validar certificado:** qualquer pessoa digita o código no site (link no rodapé) e confere se o certificado é verdadeiro.
 
 **Geral**
 
@@ -129,6 +140,13 @@ Projeto final do curso **Desenvolvimento Full Stack** do programa **+PraTi / Cod
   - para quem tem o módulo Inscrições, mostra quantas inscrições novas chegaram desde a última vez que o funcionário olhou (cada funcionário tem a sua própria marcação de "vistas") e quantos **documentos aguardam análise**, com um atalho para a lista já filtrada;
   - para quem tem o módulo Financeiro, mostra as parcelas em atraso e as que vencem nos próximos 7 dias.
 
+**Sala de aula (EAD)**
+
+- Escolha a turma e o professor responsável, e monte as aulas: título, disciplina, tipo (videoaula, leitura, ao vivo ou atividade), link do YouTube (com prévia do vídeo), material de apoio, texto, duração e data de liberação. Uma aula pode ficar como **rascunho** até estar pronta.
+- Mude a ordem das aulas com as setas e **copie as aulas de outra turma** do mesmo curso com um clique.
+- **Mural:** publique avisos para a turma, fixe os importantes e, se quiser, avise os alunos por e-mail.
+- **Andamento:** progresso de cada aluno, última atividade, quem concluiu e quem já emitiu o certificado.
+
 **Financeiro** (detalhes na seção [Financeiro](#-financeiro))
 
 - Painel com indicadores e gráficos de receita.
@@ -166,7 +184,8 @@ Projeto final do curso **Desenvolvimento Full Stack** do programa **+PraTi / Cod
  CONFIRMADA (admin aprova o pagamento)
         │
         ├──▶ MATRÍCULA "ativa" criada automaticamente
-        └──▶ E-MAIL de matrícula confirmada para o aluno
+        ├──▶ E-MAIL de matrícula confirmada para o aluno
+        └──▶ acesso à SALA DE AULA ──▶ todas as aulas concluídas ──▶ CERTIFICADO
 ```
 
 - **Inscrição × matrícula:**
@@ -247,6 +266,44 @@ Os e-mails são enviados pela API HTTP do [Brevo](https://www.brevo.com/) (plano
 - O e-mail só sai **depois** que a alteração é gravada no banco: se algo der errado e a operação for desfeita, ninguém recebe um aviso falso.
 - O envio é feito em segundo plano: se o Brevo estiver fora do ar, o painel continua funcionando normalmente.
 - Sem a chave do Brevo configurada (por exemplo, rodando localmente), o sistema funciona igual, só não envia os e-mails.
+
+---
+
+## 🎬 Sala de aula EAD
+
+A sala de aula é o "Moodle" do AprendaPlus: cada turma tem a sua, montada pela equipe no painel.
+
+**Quem entra:** só alunos com matrícula **ativa** ou **concluída** na turma. Matrícula trancada mostra o aviso para falar com a secretaria; quem não é da turma recebe *"Você não está matriculado nesta turma."*. A conferência é feita no servidor, não só na tela.
+
+**Aulas**
+
+- Os vídeos são do **YouTube** e tocam dentro do site (no modo sem cookies do YouTube). O painel aceita qualquer formato de link (`youtube.com/watch`, `youtu.be`, `shorts`, `live`) e guarda sempre o mesmo formato.
+- **Data de liberação:** antes do dia, o aluno vê só o título e a data. O vídeo, o texto e o material nem são enviados pela API, então não dá para "pular" a liberação.
+- **Rascunho:** aula não publicada não aparece para o aluno e não conta no progresso.
+- O material de apoio é um link (Google Drive, PDF, site...).
+
+**Progresso e certificado**
+
+- O progresso é calculado no servidor: aulas concluídas ÷ aulas publicadas.
+- Com 100%, o aluno emite o certificado. Ele traz nome, curso, turma, carga horária, professor, data e um **código de verificação** no formato `XXXX-XXXX-XXXX`, sem letras e números que se confundem (O/0, I/1). O certificado é emitido uma vez só: pedir de novo devolve o mesmo.
+- A página do certificado foi feita para imprimir em **A4 deitado** (ou salvar em PDF pelo navegador).
+- **Validação pública:** `#/certificado/CODIGO` mostra se o certificado existe e para quem foi emitido.
+
+**Mural e e-mails**
+
+- Avisos fixados aparecem primeiro. Ao publicar, a equipe pode marcar **"Avisar os alunos por e-mail"**: o aviso vai para todos os alunos com matrícula ativa ou concluída na turma (pelo Brevo).
+- O autor do aviso é o funcionário que estava logado.
+
+**Banco de dados** (script `database/sala-de-aula.sql`)
+
+| Tabela | Para que serve |
+|---|---|
+| `aula` (colunas novas) | disciplina, link do vídeo, link do material, duração e se está publicada |
+| `aula_concluida` | quais aulas cada aluno concluiu e quando |
+| `aviso_turma` | mural de avisos de cada turma |
+| `certificado` | certificados emitidos, com código único |
+
+As tabelas `plano_de_aula` e `aula` já existiam no modelo do banco: a sala de aula de cada turma é o plano de aula dela.
 
 ---
 
@@ -459,8 +516,8 @@ A meta do projeto era **cobertura mínima de 70%**. Os dois lados ficaram bem ac
 
 | | Testes | Cobertura | Ferramentas |
 |---|---|---|---|
-| **Back-end** | **475** | **99%** das instruções, 94% dos desvios (*branches*), 100% dos métodos e das classes | JUnit 5, Mockito, MockMvc, JaCoCo |
-| **Front-end** | **521** | **99,7%** das instruções, 96,4% dos desvios (*branches*), 99,9% das funções | Jest, Testing Library |
+| **Back-end** | **540** | **99%** das instruções, 94% dos desvios (*branches*), 100% dos métodos e das classes | JUnit 5, Mockito, MockMvc, JaCoCo |
+| **Front-end** | **586** | **99,6%** das instruções, 96,5% dos desvios (*branches*), 99,9% das funções | Jest, Testing Library |
 
 ### Back-end
 
@@ -483,6 +540,8 @@ O que é testado:
   - **níveis de acesso:** criar, renomear e excluir níveis, Master intocável e nível em uso protegido;
   - **documento de escolaridade:** tipo conferido pelo conteúdo, limite de 5 MB, nome do arquivo limpo, aprovação e recusa (com motivo obrigatório e e-mail para o aluno), e a trava que impede confirmar o pagamento sem documento aprovado;
   - **e-mails:** conteúdo de cada mensagem, envio só depois de gravar no banco e nenhum envio quando o Brevo não está configurado;
+  - **sala de aula:** professor responsável, aulas (validação do link do YouTube, disciplina do curso certo, rascunho), ordem, exclusão com renumeração, cópia entre turmas, mural com e-mail para os alunos e andamento da turma;
+  - **área do aluno na sala:** acesso só com matrícula ativa, aulas bloqueadas até a data de liberação, progresso, certificado só com 100% (e emitido uma vez só) e validação pública pelo código;
   - **financeiro:** geração das parcelas (Pix, cartão e boleto, com os centavos na última), parcelas atrasadas, baixa, estorno, cancelamento e reabertura, "gerar as que faltam" e todos os indicadores do resumo.
 - **Controllers:** todas as rotas (listar, buscar, criar, editar e excluir), a validação dos dados recebidos e as mensagens de erro.
 - **Segurança:**
@@ -490,7 +549,7 @@ O que é testado:
   - as permissões de cada perfil;
   - contas inativas ou bloqueadas;
   - os **níveis de acesso**: cada funcionário só altera os módulos liberados, consulta livre exceto Funcionários e Sistema, e rotas sem módulo só para o Master;
-  - a regra de que o aluno só mexe no **próprio** carrinho, nas **próprias** inscrições e nos **próprios** documentos;
+  - a regra de que o aluno só mexe no **próprio** carrinho, nas **próprias** inscrições e nos **próprios** documentos, e só entra na sala de aula das próprias turmas;
   - a tentativa de criar uma inscrição adulterada (em nome de outro aluno, já confirmada ou pagando R$ 0,01).
 - **Configuração e erros:** registro da proteção da API, liberação de CORS só para os endereços autorizados e as mensagens devolvidas quando o banco recusa uma exclusão ou um dado repetido.
 
@@ -520,6 +579,8 @@ O que é testado:
   - carrinho: Pix com desconto, cartão, boleto, limite de parcelas, lista de espera e mensagem de erro vinda do servidor;
   - cadastro com o certificado (tipo, tamanho, arrastar e soltar);
   - "Minhas inscrições": troca de turma, turmas lotadas e o cartão do documento (em análise, aprovado, recusado com motivo e reenvio);
+  - sala de aula: lista de turmas, aula aberta (vídeo, texto e material), aulas bloqueadas, concluir e desmarcar, mural, certificado e validação pública;
+  - painel da sala de aula: criar a sala, cadastrar e editar aulas, ordem, cópia entre turmas, mural e andamento;
   - revisão do documento no painel: abrir o arquivo, aprovar, recusar com motivo e filtrar as inscrições pela situação do documento;
   - todas as listas e formulários do painel admin, incluindo ordenação por coluna, erro ao excluir um registro em uso, funcionários e aviso de matrícula criada;
   - painel por nível de acesso: menu e atalhos de cada nível, tela de acesso restrito, menu recolhível com o nome ao passar o mouse e o módulo Sistema.
@@ -539,8 +600,8 @@ O que é testado:
 
 | Quem | Pode acessar |
 |---|---|
-| **Visitante** | Ver cursos e turmas disponíveis, cadastrar-se (com o certificado) e fazer login |
-| **Aluno** | O próprio carrinho, a criação de inscrições, "Minhas inscrições" (com as próprias parcelas e documentos) e a troca de turma das próprias inscrições |
+| **Visitante** | Ver cursos e turmas disponíveis, cadastrar-se (com o certificado), fazer login e validar um certificado |
+| **Aluno** | O próprio carrinho, a criação de inscrições, "Minhas inscrições" (com as próprias parcelas e documentos), a troca de turma das próprias inscrições e a sala de aula das turmas em que está matriculado |
 | **Funcionário** | Os módulos liberados pelo seu nível de acesso (consultas são livres, exceto Funcionários e Sistema) |
 | **Master** | Todas as rotas, inclusive o módulo Sistema |
 
@@ -642,6 +703,7 @@ O comando gera a versão de produção e publica a pasta `dist` na branch `gh-pa
 - Notificações do painel em tempo real (WebSocket), sem precisar consultar a API a cada minuto.
 - Recuperação de senha por e-mail.
 - Cadastrar a imagem do curso pelo painel admin, em vez de deixá-la no código.
+- QR Code no certificado, levando direto para a página de validação.
 
 ---
 

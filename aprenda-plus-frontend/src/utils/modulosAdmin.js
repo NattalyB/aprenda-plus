@@ -7,6 +7,7 @@ export const MODULOS = [
   { chave: 'disciplinas', rota: '/admin/disciplinas', menu: 'Cadastro de disciplinas', titulo: 'Disciplinas', icone: '📝', descricao: 'Disciplinas e carga horária' },
   { chave: 'periodos', rota: '/admin/periodos-letivos', menu: 'Períodos letivos', titulo: 'Períodos letivos', icone: '📅', descricao: 'Semestres e datas' },
   { chave: 'turmas', rota: '/admin/turmas', menu: 'Cadastro de turmas', titulo: 'Turmas', icone: '🏫', descricao: 'Turmas, horários e vagas' },
+  { chave: 'aulas', rota: '/admin/aulas', menu: 'Sala de aula (EAD)', titulo: 'Sala de aula', icone: '🎬', descricao: 'Aulas, vídeos, avisos e progresso dos alunos' },
   { chave: 'inscricoes', rota: '/admin/inscricoes', menu: 'Inscrições', titulo: 'Inscrições', icone: '🧾', descricao: 'Compras dos alunos e pagamentos' },
   { chave: 'matriculas', rota: '/admin/matriculas', menu: 'Matrículas', titulo: 'Matrículas', icone: '✅', descricao: 'Alunos matriculados nas turmas' },
   { chave: 'financeiro', rota: '/admin/financeiro', menu: 'Financeiro', titulo: 'Financeiro', icone: '💰', descricao: 'Parcelas, recebimentos e indicadores' },

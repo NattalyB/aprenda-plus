@@ -278,3 +278,19 @@ describe('pagamentos da inscrição', () => {
   });
 });
 
+
+describe('sala de aula', () => {
+  test('inscrição confirmada ou concluída tem o atalho para a sala de aula', async () => {
+    logarAluno();
+    listarMinhasInscricoes.mockResolvedValue([
+      inscricao({ status: 'confirmada' }),
+      inscricao({ idInscricao: 11, curso: 'Design', idTurma: 8, status: 'concluida' }),
+      inscricao({ idInscricao: 12, curso: 'Redes', idTurma: 9, status: 'pendente_pagamento' }),
+    ]);
+    renderizar(<MinhasInscricoes />);
+
+    await screen.findByText('Redes de Computadores');
+    const links = screen.getAllByRole('link', { name: /Entrar na sala de aula/ });
+    expect(links.map((l) => l.getAttribute('href'))).toEqual(['/sala/3', '/sala/8']);
+  });
+});

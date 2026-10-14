@@ -31,7 +31,7 @@ test('mostra um atalho para cada módulo liberado', () => {
 test('o Master vê todos os atalhos, inclusive Sistema', () => {
   montar({ nivel: 'Master', master: true, modulos: [] });
 
-  expect(screen.getAllByRole('link')).toHaveLength(11);
+  expect(screen.getAllByRole('link')).toHaveLength(12);
   expect(screen.getByText('Sistema')).toBeInTheDocument();
   expect(screen.getByRole('heading', { name: 'Olá!' })).toBeInTheDocument();
 });

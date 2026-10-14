@@ -10,6 +10,9 @@ function Footer() {
         <div className="contact-info">
           <h4>FALE CONOSCO</h4>
           <p>aprendaplus@gmail.com | (51) 0000-0000</p>
+          <p>
+            <a href="#/certificado" className="footer-link">Validar certificado</a>
+          </p>
         </div>
       </div>
       <div className="footer-bottom">

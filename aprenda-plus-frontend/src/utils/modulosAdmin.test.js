@@ -1,11 +1,11 @@
 import { MODULOS, MODULOS_LIBERAVEIS, moduloPorChave, podeUsar, modulosLiberados } from './modulosAdmin';
 
-test('são os mesmos 11 módulos do back-end, e o Sistema não pode ser liberado', () => {
+test('são os mesmos 12 módulos do back-end, e o Sistema não pode ser liberado', () => {
   expect(MODULOS.map((m) => m.chave)).toEqual([
     'alunos', 'professores', 'cursos', 'disciplinas', 'periodos',
-    'turmas', 'inscricoes', 'matriculas', 'financeiro', 'funcionarios', 'sistema',
+    'turmas', 'aulas', 'inscricoes', 'matriculas', 'financeiro', 'funcionarios', 'sistema',
   ]);
-  expect(MODULOS_LIBERAVEIS).toHaveLength(10);
+  expect(MODULOS_LIBERAVEIS).toHaveLength(11);
   expect(moduloPorChave('turmas').rota).toBe('/admin/turmas');
   expect(moduloPorChave('xpto')).toBeUndefined();
 });

@@ -182,6 +182,7 @@ class AuthInterceptorTest {
         case 1 -> java.util.Set.copyOf(Modulos.TODOS);
         case 2 -> java.util.Set.of("alunos", "cursos", "funcionarios");
         case 3 -> java.util.Set.of("inscricoes", "matriculas");
+        case 5 -> java.util.Set.of("aulas");
         default -> null;
     };
 
@@ -283,5 +284,40 @@ class AuthInterceptorTest {
         assertTrue(doFuncionario(2, "PUT", "/documentos/4/revisao"));
         assertFalse(doFuncionario(3, "PUT", "/documentos/4/revisao"));
         assertTrue(doFuncionario(3, "GET", "/documentos/situacao"));
+    }
+
+    // ===== Sala de aula EAD =====
+
+    @Test
+    void alunoUsaASalaDeAula() throws Exception {
+        assertTrue(requisicao("GET", "/sala/minhas-turmas", tokenAluno));
+        assertTrue(requisicao("GET", "/sala/turmas/5", tokenAluno));
+        assertTrue(requisicao("PUT", "/sala/aulas/9/concluida", tokenAluno));
+        assertTrue(requisicao("DELETE", "/sala/aulas/9/concluida", tokenAluno));
+        assertTrue(requisicao("POST", "/sala/turmas/5/certificado", tokenAluno));
+
+        assertFalse(requisicao("POST", "/sala/turmas/5", tokenAluno));
+        assertFalse(requisicao("GET", "/sala/aulas/9/concluida", tokenAluno));
+        assertFalse(requisicao("DELETE", "/sala/turmas/5/certificado", tokenAluno));
+        assertFalse(requisicao("PATCH", "/sala/aulas/9/concluida", tokenAluno));
+        assertFalse(requisicao("GET", "/planos-de-aula/turma/5", tokenAluno));
+        assertEquals(403, response.getStatus());
+    }
+
+    @Test
+    void visitanteNaoEntraNaSalaMasValidaCertificado() throws Exception {
+        assertFalse(requisicao("GET", "/sala/minhas-turmas", null));
+        assertEquals(401, response.getStatus());
+        assertTrue(requisicao("GET", "/certificados/ABCD-EFGH-JKLM", null));
+        assertFalse(requisicao("DELETE", "/certificados/ABCD-EFGH-JKLM", null));
+    }
+
+    @Test
+    void montarAsAulasExigeOModuloSalaDeAula() throws Exception {
+        assertFalse(doFuncionario(2, "POST", "/planos-de-aula/turma/5/aulas"));
+        assertEquals(403, response.getStatus());
+        assertTrue(doFuncionario(2, "GET", "/planos-de-aula/turma/5"));
+        assertTrue(doFuncionario(1, "POST", "/planos-de-aula/turma/5/aulas"));
+        assertTrue(doFuncionario(5, "PUT", "/planos-de-aula/aulas/3/mover"));
     }
 }

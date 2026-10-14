@@ -15,6 +15,7 @@ public final class Modulos {
     public static final String DISCIPLINAS = "disciplinas";
     public static final String PERIODOS = "periodos";
     public static final String TURMAS = "turmas";
+    public static final String AULAS = "aulas";
     public static final String INSCRICOES = "inscricoes";
     public static final String MATRICULAS = "matriculas";
     public static final String FINANCEIRO = "financeiro";
@@ -24,7 +25,7 @@ public final class Modulos {
 
     // Módulos que o Master pode liberar para os outros níveis (o "sistema" não entra)
     public static final List<String> LIBERAVEIS = List.of(
-            ALUNOS, PROFESSORES, CURSOS, DISCIPLINAS, PERIODOS, TURMAS, INSCRICOES, MATRICULAS, FINANCEIRO, FUNCIONARIOS);
+            ALUNOS, PROFESSORES, CURSOS, DISCIPLINAS, PERIODOS, TURMAS, AULAS, INSCRICOES, MATRICULAS, FINANCEIRO, FUNCIONARIOS);
 
     // Todos os módulos (o que o Master tem)
     public static final List<String> TODOS;
@@ -50,8 +51,8 @@ public final class Modulos {
             Map.entry("/periodos-letivos", PERIODOS),
             Map.entry("/periodo-letivo-curso", PERIODOS),
             Map.entry("/turmas", TURMAS),
-            Map.entry("/aulas", TURMAS),
-            Map.entry("/planos-de-aula", TURMAS),
+            Map.entry("/aulas", AULAS),
+            Map.entry("/planos-de-aula", AULAS),
             Map.entry("/inscricoes", INSCRICOES),
             Map.entry("/matriculas", MATRICULAS),
             Map.entry("/pagamentos", FINANCEIRO),
