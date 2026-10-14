@@ -62,6 +62,7 @@ Projeto final do curso **Desenvolvimento Full Stack** do programa **+PraTi / Cod
 - **Formas de pagamento:**
   - **Pix** à vista com **5% de desconto**;
   - **Cartão de crédito** e **boleto**, parcelados sem juros. Na compra de vários cursos juntos, vale o **maior** limite de parcelas entre os cursos do carrinho.
+- **Lembrete do certificado:** quem ainda não enviou o certificado de conclusão (ou teve o documento recusado) vê um aviso no carrinho e pode anexar o arquivo ali mesmo, antes de concluir a compra.
 - **Conclusão da inscrição:** cria uma inscrição para cada curso na primeira turma aberta **com vaga**. Se todas as turmas abertas estiverem cheias, o aluno entra na **lista de espera** (veja o [fluxo](#-fluxo-da-inscrição-até-a-matrícula)). O valor de cada inscrição é **calculado pelo servidor** a partir do preço do curso, e não pelo navegador.
 
 **Área do aluno: "Minhas inscrições"**
@@ -121,6 +122,7 @@ Projeto final do curso **Desenvolvimento Full Stack** do programa **+PraTi / Cod
   - Cancelada
 
   Só turmas com inscrições abertas recebem alunos.
+- **Alunos da turma:** a lista de turmas mostra quantos alunos estão matriculados em cada uma (ex.: *👥 28 / 40*). Um clique abre a lista com o nome, o e-mail, a data e a situação de cada matrícula, e cada nome leva ao cadastro do aluno.
 - **Inscrições:** listagem com a forma de pagamento escolhida pelo aluno e troca de status direto na tabela. Ao **confirmar o pagamento**, a matrícula é criada automaticamente.
 - **Revisão do documento:** a coluna *Documento* mostra a situação do certificado de cada aluno. Um clique abre o arquivo (PDF ou foto) na própria tela, com os botões **Aprovar** e **Recusar** (a recusa pede o motivo). O pagamento só pode ser confirmado depois que o documento for aprovado. O certificado também aparece na edição do aluno.
 - **Notificações 🔔:** um sininho no topo do painel, que confere tudo a cada minuto:
@@ -458,7 +460,7 @@ A meta do projeto era **cobertura mínima de 70%**. Os dois lados ficaram bem ac
 | | Testes | Cobertura | Ferramentas |
 |---|---|---|---|
 | **Back-end** | **475** | **99%** das instruções, 94% dos desvios (*branches*), 100% dos métodos e das classes | JUnit 5, Mockito, MockMvc, JaCoCo |
-| **Front-end** | **510** | **99,7%** das instruções, 96,4% dos desvios (*branches*), 99,9% das funções | Jest, Testing Library |
+| **Front-end** | **521** | **99,7%** das instruções, 96,4% dos desvios (*branches*), 99,9% das funções | Jest, Testing Library |
 
 ### Back-end
 

@@ -22,9 +22,11 @@ const EXPLICACAO = {
   recusado: 'Envie um novo arquivo para continuar com a matrícula.',
 };
 
-// Cartão "Documento de escolaridade" da área do aluno
-function MeuDocumento() {
+// Cartão "Documento de escolaridade" da área do aluno.
+// lembrete = versão do carrinho: só aparece para quem ainda precisa enviar (nunca enviou ou foi recusado).
+function MeuDocumento({ lembrete = false }) {
   const [documentos, setDocumentos] = useState(null);
+  const [precisaEnviar, setPrecisaEnviar] = useState(false);
   const [arquivo, setArquivo] = useState(null);
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState(null);
@@ -33,11 +35,18 @@ function MeuDocumento() {
 
   useEffect(() => {
     listarMeusDocumentos()
-      .then((resposta) => setDocumentos(resposta.data || []))
+      .then((resposta) => {
+        const lista = resposta.data || [];
+        const temValido = lista.some((d) => d.status === 'aprovado' || d.status === 'pendente');
+        setPrecisaEnviar(!temValido);
+        setDocumentos(lista);
+      })
       .catch(() => setDocumentos(undefined)); // sem o cartão se a consulta falhar
   }, []);
 
   if (documentos === null || documentos === undefined) return null;
+  // No carrinho, quem já mandou (em análise ou aprovado) não vê nada
+  if (lembrete && !precisaEnviar) return null;
 
   // O aprovado vale mais que qualquer outro; senão, o mais recente (a lista já vem do mais novo pro mais antigo)
   const atual = documentos.find((d) => d.status === 'aprovado') || documentos[0];
@@ -64,7 +73,7 @@ function MeuDocumento() {
   };
 
   return (
-    <section className="meu-documento" aria-label="Documento de escolaridade">
+    <section className={lembrete ? 'meu-documento meu-documento-lembrete' : 'meu-documento'} aria-label="Documento de escolaridade">
       <div className="meu-documento-topo">
         <h2>📜 Documento de escolaridade</h2>
         {status && (
@@ -73,6 +82,13 @@ function MeuDocumento() {
           </span>
         )}
       </div>
+
+      {lembrete && (
+        <p className="meu-documento-texto">
+          <strong>Falta o seu certificado de conclusão do ensino médio.</strong> Você pode concluir a compra agora,
+          mas a matrícula só é confirmada depois que a secretaria aprovar o documento.
+        </p>
+      )}
 
       {atual ? (
         <>

@@ -8,6 +8,7 @@ import { mostrarAviso } from '../services/avisoService';
 import { getImagemCurso } from '../utils/imagensCursos';
 import { formatarValor, arredondar, DESCONTO_PIX } from '../utils/precoCurso';
 import PrecoCurso from '../components/PrecoCurso';
+import MeuDocumento from '../components/MeuDocumento';
 
 const PERCENTUAL_PIX = Math.round(DESCONTO_PIX * 100);
 
@@ -264,6 +265,8 @@ function Carrinho() {
       </p>
 
       {erro && <div className="form-erro">{erro}</div>}
+
+      <MeuDocumento lembrete />
 
       <div className="carrinho-layout">
         {/* ===== Lista de itens ===== */}

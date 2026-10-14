@@ -147,3 +147,30 @@ test('se a consulta falhar, o cartão simplesmente não aparece', async () => {
   await waitFor(() => expect(listarMeusDocumentos).toHaveBeenCalled());
   await waitFor(() => expect(container).toBeEmptyDOMElement());
 });
+
+describe('lembrete no carrinho', () => {
+  test('quem nunca enviou vê o aviso e já pode mandar o arquivo', async () => {
+    listarMeusDocumentos.mockResolvedValue({ data: [] });
+    enviarMeuDocumento.mockResolvedValue({ data: documento({ nomeArquivo: 'novo.pdf' }) });
+    render(<MeuDocumento lembrete />);
+
+    expect(await screen.findByText('Falta o seu certificado de conclusão do ensino médio.')).toBeInTheDocument();
+    anexar(pdf());
+    fireEvent.click(screen.getByRole('button', { name: 'Enviar documento' }));
+    // Depois de enviar, o cartão continua na tela mostrando que está em análise
+    expect(await screen.findByText(/Em análise/)).toBeInTheDocument();
+  });
+
+  test('quem foi recusado também vê o aviso', async () => {
+    listarMeusDocumentos.mockResolvedValue({ data: [documento({ status: 'recusado', observacao: 'Ilegível' })] });
+    render(<MeuDocumento lembrete />);
+    expect(await screen.findByText('Ilegível')).toBeInTheDocument();
+  });
+
+  test.each(['pendente', 'aprovado'])('com documento %s, não aparece nada', async (status) => {
+    listarMeusDocumentos.mockResolvedValue({ data: [documento({ status })] });
+    const { container } = render(<MeuDocumento lembrete />);
+    await waitFor(() => expect(listarMeusDocumentos).toHaveBeenCalled());
+    await waitFor(() => expect(container).toBeEmptyDOMElement());
+  });
+});

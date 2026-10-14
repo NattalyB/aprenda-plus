@@ -51,6 +51,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   jest.spyOn(window, 'confirm').mockReturnValue(true);
   situacaoDosDocumentos.mockResolvedValue({ data: {} });
+  listarMatriculas.mockResolvedValue({ data: [] }); // a lista de turmas também conta os matriculados
 });
 
 afterEach(() => window.confirm.mockRestore());

@@ -10,6 +10,10 @@ jest.mock('../services/carrinhoService');
 jest.mock('../services/turmaService');
 jest.mock('../services/inscricaoService');
 jest.mock('../services/avisoService');
+jest.mock('../services/documentoService', () => ({
+  ...jest.requireActual('../services/documentoService'),
+  listarMeusDocumentos: jest.fn(() => Promise.resolve({ data: [{ idDocumento: 1, status: 'aprovado', nomeArquivo: 'c.pdf' }] })),
+}));
 
 // Dois cursos: um pode ser pago em até 24x, o outro em até 12x
 const itens = [
