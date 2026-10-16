@@ -48,6 +48,8 @@ test('rotas do painel da sala de aula', async () => {
   expect(api.post).toHaveBeenCalledWith('/planos-de-aula/turma/5/copiar', null, { params: { origem: 2 } });
   await conteudo.publicarAvisoEad(5, { titulo: 'X' });
   expect(api.post).toHaveBeenCalledWith('/planos-de-aula/turma/5/avisos', { titulo: 'X' });
+  await conteudo.editarAvisoEad(3, { titulo: 'Y' });
+  expect(api.put).toHaveBeenCalledWith('/planos-de-aula/avisos/3', { titulo: 'Y' });
   await expect(conteudo.excluirAvisoEad(3)).resolves.toEqual({ ok: 'delete' });
   expect(api.delete).toHaveBeenCalledWith('/planos-de-aula/avisos/3');
 });

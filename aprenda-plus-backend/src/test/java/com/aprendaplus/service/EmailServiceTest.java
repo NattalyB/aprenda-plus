@@ -146,4 +146,25 @@ class EmailServiceTest {
         verify(servico).enviar(any(), any(), any(), any(), corpo.capture(), eq("Entrar na sala de aula"));
         assertTrue(corpo.getValue().contains("Sala de aula"));
     }
+
+    @Test
+    void emailDeNovaSenhaLevaParaOLinkCerto() {
+        EmailService servico = spy(configurado());
+        doNothing().when(servico).enviarComLink(any(), any(), any(), any(), any(), any(), any());
+
+        servico.redefinirSenha("lucas@aluno.com", "Lucas", "https://site/#/redefinir-senha?token=abc");
+
+        ArgumentCaptor<String> corpo = ArgumentCaptor.forClass(String.class);
+        verify(servico).enviarComLink(eq("lucas@aluno.com"), eq("Lucas"), eq("Crie uma nova senha no AprendaPlus"),
+                any(), corpo.capture(), eq("Criar nova senha"), eq("https://site/#/redefinir-senha?token=abc"));
+        assertTrue(corpo.getValue().contains("1 hora"));
+        assertTrue(configurado().modelo("T", "c", "Criar", "https://site/#/x").contains("href=\"https://site/#/x\""));
+    }
+
+    @Test
+    void montaOLinkDoSiteComOuSemBarraNoFim() {
+        assertEquals("https://site/#/x", configurado().linkDoSite("#/x"));
+        assertEquals("https://outro/#/x", new EmailService("", "", "https://outro", cliente).linkDoSite("#/x"));
+        assertEquals("#/x", new EmailService("", "", null, cliente).linkDoSite("#/x"));
+    }
 }

@@ -21,6 +21,7 @@ Projeto final do curso **Desenvolvimento Full Stack** do programa **+PraTi / Cod
 - [Financeiro](#-financeiro)
 - [Documento de escolaridade e e-mails](#-documento-de-escolaridade-e-e-mails)
 - [Sala de aula EAD](#-sala-de-aula-ead)
+- [Recuperação de senha](#-recuperação-de-senha)
 - [Tecnologias](#-tecnologias)
 - [Arquitetura](#-arquitetura)
 - [Estrutura de pastas](#-estrutura-de-pastas)
@@ -53,6 +54,9 @@ Projeto final do curso **Desenvolvimento Full Stack** do programa **+PraTi / Cod
 **Cadastro e login**
 
 - **Cadastro e login de alunos**, com validação de todos os campos (exceto o complemento do endereço).
+- **Máscaras no CPF e no telefone** (`000.000.000-00` e `(51) 99999-9999`, que se ajusta para telefone fixo), com a biblioteca `react-number-format`. O CPF é enviado ao servidor só com os números.
+- **Senha com "olho"** para mostrar o que foi digitado e campo **Confirmar senha**, que avisa na hora se as duas são iguais (mínimo de 6 caracteres).
+- **Esqueci minha senha:** o aluno recebe por e-mail um link para criar uma nova senha (veja [Recuperação de senha](#-recuperação-de-senha)).
 - **Endereço preenchido pelo CEP:** ao digitar o CEP, rua, bairro, cidade e estado são preenchidos automaticamente pela API pública do ViaCEP.
 - **Contas inativas ou bloqueadas** não conseguem entrar nem comprar. A tela explica o motivo.
 - **Certificado de conclusão no cadastro:** o aluno anexa o certificado (ou histórico) de conclusão do ensino médio em **PDF, JPG ou PNG** (até 5 MB), clicando ou arrastando o arquivo. O documento fica salvo no banco de dados (veja [Documento de escolaridade](#-documento-de-escolaridade-e-e-mails)).
@@ -144,7 +148,7 @@ Projeto final do curso **Desenvolvimento Full Stack** do programa **+PraTi / Cod
 
 - Escolha a turma e o professor responsável, e monte as aulas: título, disciplina, tipo (videoaula, leitura, ao vivo ou atividade), link do YouTube (com prévia do vídeo), material de apoio, texto, duração e data de liberação. Uma aula pode ficar como **rascunho** até estar pronta.
 - Mude a ordem das aulas com as setas e **copie as aulas de outra turma** do mesmo curso com um clique.
-- **Mural:** publique avisos para a turma, fixe os importantes e, se quiser, avise os alunos por e-mail.
+- **Mural:** publique avisos para a turma, fixe os importantes e, se quiser, avise os alunos por e-mail. Os avisos podem ser **editados** depois (sem mandar o e-mail de novo) ou excluídos.
 - **Andamento:** progresso de cada aluno, última atividade, quem concluiu e quem já emitiu o certificado.
 
 **Financeiro** (detalhes na seção [Financeiro](#-financeiro))
@@ -154,6 +158,7 @@ Projeto final do curso **Desenvolvimento Full Stack** do programa **+PraTi / Cod
 
 **Listas e mensagens**
 
+- **Paginação em todas as listas de cadastro:** 20 registros por página (dá para trocar para 30 ou 50), com "Mostrando 21–40 de 132". Ao buscar ou filtrar, a lista volta para a primeira página.
 - **Filtros em todas as listas:**
   - busca por nome (e por CPF em alunos, professores e matrículas);
   - filtros por categoria, curso ou status.
@@ -307,6 +312,23 @@ As tabelas `plano_de_aula` e `aula` já existiam no modelo do banco: a sala de a
 
 ---
 
+## 🔑 Recuperação de senha
+
+Alunos e funcionários do painel podem criar uma nova senha sozinhos, pelo link **"Esqueci minha senha"** na tela de login.
+
+1. A pessoa informa o e-mail. A resposta é sempre a mesma (*"Se este e-mail estiver cadastrado, você vai receber..."*), exista ou não a conta, para ninguém usar a tela para descobrir quem é cliente.
+2. Se a conta existe e está ativa, chega um e-mail (Brevo) com o botão **Criar nova senha**. O link leva para `#/redefinir-senha` (aluno) ou `#/admin/redefinir-senha` (painel).
+3. A pessoa digita a nova senha duas vezes e volta para o login certo.
+
+**Segurança do link**
+
+- O código do link tem 32 bytes aleatórios (`SecureRandom`) e **vale por 1 hora**.
+- Pode ser usado **uma vez só**. Pedir um novo link cancela os anteriores.
+- No banco fica só o **hash SHA-256** do código (tabela `redefinicao_senha`, script `database/recuperacao-de-senha.sql`): mesmo quem visse a tabela não conseguiria usar os links.
+- A nova senha é gravada com BCrypt, como no cadastro.
+
+---
+
 ## 🛠 Tecnologias
 
 ### Back-end
@@ -332,6 +354,7 @@ As tabelas `plano_de_aula` e `aula` já existiam no modelo do banco: a sala de a
 | **Vite 8** | Build e servidor de desenvolvimento |
 | **React Router 7** | Navegação entre páginas |
 | **Axios** | Comunicação com a API |
+| **react-number-format** | Máscaras de CPF e telefone |
 | **ViaCEP** | Preenchimento do endereço pelo CEP |
 | **CSS puro** | Estilização e responsividade |
 | **Jest 30 + Testing Library** | Testes automatizados e cobertura |
@@ -516,8 +539,8 @@ A meta do projeto era **cobertura mínima de 70%**. Os dois lados ficaram bem ac
 
 | | Testes | Cobertura | Ferramentas |
 |---|---|---|---|
-| **Back-end** | **540** | **99%** das instruções, 94% dos desvios (*branches*), 100% dos métodos e das classes | JUnit 5, Mockito, MockMvc, JaCoCo |
-| **Front-end** | **586** | **99,6%** das instruções, 96,5% dos desvios (*branches*), 99,9% das funções | Jest, Testing Library |
+| **Back-end** | **558** | **99%** das instruções, 94% dos desvios (*branches*), 100% dos métodos e das classes | JUnit 5, Mockito, MockMvc, JaCoCo |
+| **Front-end** | **626** | **99,6%** das instruções, 96,5% dos desvios (*branches*), 99,9% das funções | Jest, Testing Library |
 
 ### Back-end
 
@@ -541,6 +564,7 @@ O que é testado:
   - **documento de escolaridade:** tipo conferido pelo conteúdo, limite de 5 MB, nome do arquivo limpo, aprovação e recusa (com motivo obrigatório e e-mail para o aluno), e a trava que impede confirmar o pagamento sem documento aprovado;
   - **e-mails:** conteúdo de cada mensagem, envio só depois de gravar no banco e nenhum envio quando o Brevo não está configurado;
   - **sala de aula:** professor responsável, aulas (validação do link do YouTube, disciplina do curso certo, rascunho), ordem, exclusão com renumeração, cópia entre turmas, mural com e-mail para os alunos e andamento da turma;
+  - **recuperação de senha:** link só para contas ativas, código guardado como hash, validade de 1 hora, uso único, links antigos cancelados e senha mínima;
   - **área do aluno na sala:** acesso só com matrícula ativa, aulas bloqueadas até a data de liberação, progresso, certificado só com 100% (e emitido uma vez só) e validação pública pelo código;
   - **financeiro:** geração das parcelas (Pix, cartão e boleto, com os centavos na última), parcelas atrasadas, baixa, estorno, cancelamento e reabertura, "gerar as que faltam" e todos os indicadores do resumo.
 - **Controllers:** todas as rotas (listar, buscar, criar, editar e excluir), a validação dos dados recebidos e as mensagens de erro.
@@ -580,7 +604,8 @@ O que é testado:
   - cadastro com o certificado (tipo, tamanho, arrastar e soltar);
   - "Minhas inscrições": troca de turma, turmas lotadas e o cartão do documento (em análise, aprovado, recusado com motivo e reenvio);
   - sala de aula: lista de turmas, aula aberta (vídeo, texto e material), aulas bloqueadas, concluir e desmarcar, mural, certificado e validação pública;
-  - painel da sala de aula: criar a sala, cadastrar e editar aulas, ordem, cópia entre turmas, mural e andamento;
+  - painel da sala de aula: criar a sala, cadastrar e editar aulas, ordem, cópia entre turmas, mural (com edição de avisos) e andamento;
+  - esqueci minha senha e criar nova senha (aluno e painel), senha com "olho" e confirmação, máscaras de CPF e telefone e paginação das listas;
   - revisão do documento no painel: abrir o arquivo, aprovar, recusar com motivo e filtrar as inscrições pela situação do documento;
   - todas as listas e formulários do painel admin, incluindo ordenação por coluna, erro ao excluir um registro em uso, funcionários e aviso de matrícula criada;
   - painel por nível de acesso: menu e atalhos de cada nível, tela de acesso restrito, menu recolhível com o nome ao passar o mouse e o módulo Sistema.
@@ -701,7 +726,6 @@ O comando gera a versão de produção e publica a pasta `dist` na branch `gh-pa
 - Permitir que o próprio aluno cancele uma inscrição em "Minhas inscrições".
 - Mostrar também as matrículas na área do aluno.
 - Notificações do painel em tempo real (WebSocket), sem precisar consultar a API a cada minuto.
-- Recuperação de senha por e-mail.
 - Cadastrar a imagem do curso pelo painel admin, em vez de deixá-la no código.
 - QR Code no certificado, levando direto para a página de validação.
 

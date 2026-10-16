@@ -225,17 +225,9 @@ public class ConteudoEadService {
     @Transactional
     public PlanoDaTurma publicarAviso(Integer idTurma, AvisoForm form, Integer idFuncionario) {
         Turma turma = turma(idTurma);
-        String titulo = texto(form == null ? null : form.titulo());
-        String mensagem = texto(form == null ? null : form.mensagem());
-        if (titulo == null || mensagem == null) {
-            throw new RegraDeNegocioException("Preencha o título e a mensagem do aviso.");
-        }
-        if (titulo.length() > 120) {
-            throw new RegraDeNegocioException("O título do aviso pode ter no máximo 120 caracteres.");
-        }
-        if (mensagem.length() > 4000) {
-            throw new RegraDeNegocioException("A mensagem pode ter no máximo 4.000 caracteres.");
-        }
+        String[] textos = textosDoAviso(form);
+        String titulo = textos[0];
+        String mensagem = textos[1];
 
         AvisoTurma aviso = new AvisoTurma();
         aviso.setTurma(turma);
@@ -255,6 +247,38 @@ public class ConteudoEadService {
             }
         }
         return montar(turma, planoRepository.findFirstByTurma_IdTurma(idTurma).orElse(null));
+    }
+
+    // Edita título, mensagem e se o aviso fica fixado (não manda e-mail de novo)
+    @Transactional
+    public PlanoDaTurma editarAviso(Integer idAviso, AvisoForm form) {
+        AvisoTurma aviso = avisoRepository.findById(idAviso)
+                .orElseThrow(() -> new RegraDeNegocioException("Aviso não encontrado."));
+        String[] textos = textosDoAviso(form);
+        aviso.setTitulo(textos[0]);
+        aviso.setMensagem(textos[1]);
+        if (form.fixado() != null) {
+            aviso.setFixado(form.fixado());
+        }
+        avisoRepository.save(aviso);
+        Turma turma = aviso.getTurma();
+        return montar(turma, planoRepository.findFirstByTurma_IdTurma(turma.getIdTurma()).orElse(null));
+    }
+
+    // Confere e limpa o título e a mensagem: [titulo, mensagem]
+    private static String[] textosDoAviso(AvisoForm form) {
+        String titulo = texto(form == null ? null : form.titulo());
+        String mensagem = texto(form == null ? null : form.mensagem());
+        if (titulo == null || mensagem == null) {
+            throw new RegraDeNegocioException("Preencha o título e a mensagem do aviso.");
+        }
+        if (titulo.length() > 120) {
+            throw new RegraDeNegocioException("O título do aviso pode ter no máximo 120 caracteres.");
+        }
+        if (mensagem.length() > 4000) {
+            throw new RegraDeNegocioException("A mensagem pode ter no máximo 4.000 caracteres.");
+        }
+        return new String[]{titulo, mensagem};
     }
 
     @Transactional

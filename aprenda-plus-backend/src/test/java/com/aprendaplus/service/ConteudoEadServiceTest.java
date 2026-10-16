@@ -717,4 +717,42 @@ class ConteudoEadServiceTest {
         assertNull(ConteudoEadService.texto("   "));
         assertEquals("a b", ConteudoEadService.texto(" a b "));
     }
+
+    @Test
+    void editarAvisoTrocaOTextoEOFixado() {
+        Turma t = turma(5);
+        AvisoTurma aviso = new AvisoTurma();
+        aviso.setTurma(t);
+        aviso.setTitulo("Antigo");
+        aviso.setMensagem("Texto antigo");
+        aviso.setAutor("Ana");
+        aviso.setFixado(true);
+        when(avisoRepository.findById(3)).thenReturn(Optional.of(aviso));
+
+        service.editarAviso(3, new AvisoForm(" Prova adiada ", " Agora é dia 12. ", false, true));
+        assertEquals("Prova adiada", aviso.getTitulo());
+        assertEquals("Agora é dia 12.", aviso.getMensagem());
+        assertFalse(aviso.getFixado());
+        assertEquals("Ana", aviso.getAutor());
+
+        // sem informar o fixado, mantém como estava; e editar nunca manda e-mail
+        service.editarAviso(3, new AvisoForm("Prova", "Dia 12", null, true));
+        assertFalse(aviso.getFixado());
+        verify(avisoRepository, times(2)).save(aviso);
+        verifyNoInteractions(emailService);
+    }
+
+    @Test
+    void editarAvisoValidaETemQueExistir() {
+        when(avisoRepository.findById(3)).thenReturn(Optional.of(new AvisoTurma()));
+        when(avisoRepository.findById(4)).thenReturn(Optional.empty());
+
+        assertEquals("Preencha o título e a mensagem do aviso.",
+                assertThrows(RegraDeNegocioException.class, () -> service.editarAviso(3, new AvisoForm("", "x", null, null))).getMessage());
+        assertEquals("Preencha o título e a mensagem do aviso.",
+                assertThrows(RegraDeNegocioException.class, () -> service.editarAviso(3, null)).getMessage());
+        assertEquals("Aviso não encontrado.",
+                assertThrows(RegraDeNegocioException.class, () -> service.editarAviso(4, new AvisoForm("a", "b", null, null))).getMessage());
+        verify(avisoRepository, never()).save(any());
+    }
 }

@@ -38,6 +38,8 @@ import SalaTurma from './pages/sala/SalaTurma';
 import CertificadoConclusao from './pages/sala/CertificadoConclusao';
 import ValidarCertificado from './pages/ValidarCertificado';
 import AdminSalaDeAula from './pages/admin/AdminSalaDeAula';
+import EsqueciSenha from './pages/EsqueciSenha';
+import RedefinirSenha from './pages/RedefinirSenha';
 
 function SitePage({ children }) {
   return (
@@ -66,7 +68,12 @@ function App() {
         <Route path="/certificado" element={<SitePage><ValidarCertificado /></SitePage>} />
         <Route path="/certificado/:codigo" element={<SitePage><ValidarCertificado /></SitePage>} />
 
-        <Route path="/admin/login" element={<AdminLogin />} />
+        <Route path="/esqueci-senha" element={<SitePage><EsqueciSenha /></SitePage>} />
+        <Route path="/redefinir-senha" element={<SitePage><RedefinirSenha /></SitePage>} />
+
+        <Route path="/admin/login" element={<><AdminLogin /><Aviso /></>} />
+        <Route path="/admin/esqueci-senha" element={<><EsqueciSenha painel /><Aviso /></>} />
+        <Route path="/admin/redefinir-senha" element={<><RedefinirSenha painel /><Aviso /></>} />
         <Route
           path="/admin"
           element={

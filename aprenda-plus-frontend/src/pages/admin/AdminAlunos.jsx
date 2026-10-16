@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import ColunaOrdenavel from '../../components/admin/ColunaOrdenavel';
 import { useOrdenacao } from '../../utils/ordenacao';
+import { usePaginacao } from '../../utils/paginacao';
+import Paginacao from '../../components/admin/Paginacao';
 import { Link } from 'react-router-dom';
 import { listarAlunos, deletarAluno } from '../../services/alunoService';
 
@@ -68,6 +70,7 @@ function AdminAlunos() {
   });
 
   const { ordenados, ordem, alternar } = useOrdenacao(alunosFiltrados, CAMPOS_ORDENACAO);
+  const pagina = usePaginacao(ordenados);
 
   if (carregando) return <p>Carregando alunos...</p>;
 
@@ -119,7 +122,7 @@ function AdminAlunos() {
                   </td>
                 </tr>
               ) : (
-                ordenados.map((aluno) => (
+                pagina.itens.map((aluno) => (
                   <tr key={aluno.idAluno}>
                     <td>{aluno.idAluno}</td>
                     <td>{aluno.nomeCompleto}</td>
@@ -150,6 +153,7 @@ function AdminAlunos() {
             </tbody>
           </table>
         </div>
+        <Paginacao {...pagina} nome="alunos" />
       </div>
     </div>
   );

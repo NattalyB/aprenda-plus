@@ -62,3 +62,10 @@ test('tem link para criar conta', () => {
   renderizar(<Login />, { rota: '/login' });
   expect(screen.getByRole('link', { name: 'Cadastre-se' })).toHaveAttribute('href', '/cadastro');
 });
+
+test('tem o link de esqueci minha senha e o olho na senha', () => {
+  renderizar(<Login />, { rota: '/login' });
+  expect(screen.getByRole('link', { name: 'Esqueci minha senha' })).toHaveAttribute('href', '/esqueci-senha');
+  fireEvent.click(screen.getByRole('button', { name: 'Mostrar senha' }));
+  expect(screen.getByLabelText('Senha')).toHaveAttribute('type', 'text');
+});

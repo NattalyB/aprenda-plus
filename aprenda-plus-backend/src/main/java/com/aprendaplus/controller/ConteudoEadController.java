@@ -76,6 +76,11 @@ public class ConteudoEadController {
         return ResponseEntity.ok(conteudoEadService.publicarAviso(idTurma, aviso, usuarioId));
     }
 
+    @PutMapping("/avisos/{idAviso}")
+    public ResponseEntity<?> editarAviso(@PathVariable Integer idAviso, @RequestBody AvisoForm aviso) {
+        return ResponseEntity.ok(conteudoEadService.editarAviso(idAviso, aviso));
+    }
+
     @DeleteMapping("/avisos/{idAviso}")
     public ResponseEntity<?> excluirAviso(@PathVariable Integer idAviso) {
         return ResponseEntity.ok(conteudoEadService.excluirAviso(idAviso));

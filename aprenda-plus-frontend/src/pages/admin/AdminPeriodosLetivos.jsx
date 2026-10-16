@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import ColunaOrdenavel from '../../components/admin/ColunaOrdenavel';
 import { useOrdenacao } from '../../utils/ordenacao';
+import { usePaginacao } from '../../utils/paginacao';
+import Paginacao from '../../components/admin/Paginacao';
 import { Link } from 'react-router-dom';
 import { listarPeriodosLetivos, deletarPeriodoLetivo } from '../../services/periodoLetivoService';
 
@@ -76,6 +78,7 @@ function AdminPeriodosLetivos() {
   });
 
   const { ordenados, ordem, alternar } = useOrdenacao(periodosFiltrados, CAMPOS_ORDENACAO);
+  const pagina = usePaginacao(ordenados);
 
   if (carregando) return <p>Carregando períodos letivos...</p>;
 
@@ -142,7 +145,7 @@ function AdminPeriodosLetivos() {
                   </td>
                 </tr>
               ) : (
-                ordenados.map((periodo) => (
+                pagina.itens.map((periodo) => (
                   <tr key={periodo.idPeriodoLetivo}>
                     <td>{periodo.idPeriodoLetivo}</td>
                     <td>{periodo.nome}</td>
@@ -173,6 +176,7 @@ function AdminPeriodosLetivos() {
             </tbody>
           </table>
         </div>
+        <Paginacao {...pagina} nome="períodos letivos" />
       </div>
     </div>
   );

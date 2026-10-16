@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import ColunaOrdenavel from '../../components/admin/ColunaOrdenavel';
 import { useOrdenacao } from '../../utils/ordenacao';
+import { usePaginacao } from '../../utils/paginacao';
+import Paginacao from '../../components/admin/Paginacao';
 import { Link } from 'react-router-dom';
 import { listarFuncionarios, deletarFuncionario } from '../../services/funcionarioService';
 import { getAcessoAdmin } from '../../services/authAdminService';
@@ -71,6 +73,7 @@ function AdminFuncionarios() {
   });
 
   const { ordenados, ordem, alternar } = useOrdenacao(funcionariosFiltrados, CAMPOS_ORDENACAO);
+  const pagina = usePaginacao(ordenados);
 
   if (carregando) return <p>Carregando funcionários...</p>;
 
@@ -123,7 +126,7 @@ function AdminFuncionarios() {
                   </td>
                 </tr>
               ) : (
-                ordenados.map((funcionario) => (
+                pagina.itens.map((funcionario) => (
                   <tr key={funcionario.idFuncionario}>
                     <td>{funcionario.idFuncionario}</td>
                     <td>
@@ -168,6 +171,7 @@ function AdminFuncionarios() {
             </tbody>
           </table>
         </div>
+        <Paginacao {...pagina} nome="funcionários" />
       </div>
     </div>
   );

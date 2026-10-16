@@ -35,6 +35,10 @@ test.each([
   ['#/cadastro', 'Crie sua conta e comece a aprender hoje mesmo.'],
   ['#/carrinho', 'Faça login para ver seu carrinho'],
   ['#/admin/login', 'Entre com sua conta de funcionário.'],
+  ['#/esqueci-senha', 'Digite o e-mail da sua conta. Vamos enviar um link para você criar uma nova senha.'],
+  ['#/admin/esqueci-senha', 'Digite o e-mail da sua conta. Vamos enviar um link para você criar uma nova senha.'],
+  ['#/redefinir-senha?token=abc', 'Escolha a sua nova senha (mínimo de 6 caracteres).'],
+  ['#/admin/redefinir-senha', 'Este link está incompleto. Peça um novo link de nova senha.'],
 ])('o endereço %s abre a tela certa', async (endereco, texto) => {
   abrir(endereco);
   expect(await screen.findByText(texto)).toBeInTheDocument();

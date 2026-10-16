@@ -5107,3 +5107,159 @@ img {
     grid-template-columns: 1fr;
   }
 }
+
+/* ===== Campo de senha com "olho" ===== */
+.campo-senha {
+  position: relative;
+  display: flex;
+}
+
+.campo-senha input {
+  flex: 1;
+  width: 100%;
+  padding-right: 2.8rem !important;
+}
+
+.campo-senha-olho {
+  position: absolute;
+  right: 0.35rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+}
+
+.campo-senha-olho:hover {
+  color: #001e42;
+  background: #f1f5f9;
+}
+
+.campo-senha-olho:focus-visible {
+  outline: 2px solid #00b4d8;
+  outline-offset: 1px;
+}
+
+.senha-confere {
+  margin: -0.4rem 0 0;
+  font-size: 0.85rem;
+  color: #b45309;
+}
+
+.senha-confere.ok {
+  color: #15803d;
+  font-weight: 600;
+}
+
+.form-link-senha {
+  align-self: flex-end;
+  margin-top: 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #0369a1;
+  text-decoration: none;
+}
+
+.form-link-senha:hover {
+  text-decoration: underline;
+}
+
+.form-sucesso-grande {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #14532d;
+  border-radius: 10px;
+  padding: 1rem 1.1rem;
+  line-height: 1.5;
+}
+
+.sala-aviso.editando {
+  border-left-color: #00b4d8;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.sala-aviso.editando .form-field {
+  margin: 0;
+}
+
+/* ===== Paginação das listas do painel ===== */
+.paginacao {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0.8rem 1rem;
+  border-top: 1px solid #e5e7eb;
+  font-size: 0.88rem;
+  color: #475569;
+}
+
+.paginacao-botoes {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.paginacao-botoes button {
+  min-width: 2.1rem;
+  height: 2.1rem;
+  padding: 0 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #fff;
+  color: #1f2937;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.paginacao-botoes button:hover:not(:disabled):not(.ativa) {
+  border-color: #00b4d8;
+  color: #001e42;
+}
+
+.paginacao-botoes button.ativa {
+  background: #001e42;
+  border-color: #001e42;
+  color: #fff;
+}
+
+.paginacao-botoes button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.paginacao-reticencias {
+  padding: 0 0.25rem;
+  color: #94a3b8;
+}
+
+.paginacao-quantidade {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.paginacao-quantidade select {
+  padding: 0.3rem 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font: inherit;
+  background: #fff;
+}
+
+@media (max-width: 600px) {
+  .paginacao {
+    justify-content: center;
+  }
+}

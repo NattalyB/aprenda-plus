@@ -5,12 +5,17 @@ import { conferirArquivoDoDocumento } from '../services/documentoService';
 import { mostrarAviso } from '../services/avisoService';
 import CampoCep from '../components/CampoCep';
 import CampoArquivo from '../components/CampoArquivo';
+import CampoSenha from '../components/CampoSenha';
+import { CampoCpf, CampoTelefone } from '../components/CamposFormatados';
+
+export const SENHA_MINIMA = 6;
 
 function Cadastro() {
   const navigate = useNavigate();
   const [erro, setErro] = useState(null);
   const [enviando, setEnviando] = useState(false);
   const [certificado, setCertificado] = useState(null);
+  const [confirmarSenha, setConfirmarSenha] = useState('');
 
   const [form, setForm] = useState({
     nomeCompleto: '',
@@ -35,6 +40,15 @@ function Cadastro() {
   const handleSubmit = (e) => {
     e.preventDefault();
     setErro(null);
+
+    if (form.senhaHash.length < SENHA_MINIMA) {
+      setErro(`A senha deve ter pelo menos ${SENHA_MINIMA} caracteres.`);
+      return;
+    }
+    if (form.senhaHash !== confirmarSenha) {
+      setErro('As senhas digitadas não são iguais.');
+      return;
+    }
 
     // O certificado é conferido antes de enviar, pra não perder o formulário à toa
     const problemaNoArquivo = conferirArquivoDoDocumento(certificado);
@@ -90,7 +104,7 @@ function Cadastro() {
             <div className="form-row">
               <div className="form-field">
                 <label htmlFor="telefone">Telefone</label>
-                <input id="telefone" name="telefone" placeholder="(51) 99999-9999" value={form.telefone} onChange={handleChange} required />
+                <CampoTelefone value={form.telefone} onChange={handleChange} required />
               </div>
               <div className="form-field">
                 <label htmlFor="dataNascimento">Data de nascimento</label>
@@ -100,7 +114,7 @@ function Cadastro() {
 
             <div className="form-field">
               <label htmlFor="cpf">CPF</label>
-              <input id="cpf" name="cpf" placeholder="Apenas números" value={form.cpf} onChange={handleChange} maxLength={11} required />
+              <CampoCpf value={form.cpf} onChange={handleChange} required />
             </div>
           </div>
 
@@ -153,10 +167,41 @@ function Cadastro() {
           {/* ===== Acesso ===== */}
           <h2 className="form-section-title">Acesso</h2>
           <div className="form-grid">
-            <div className="form-field">
-              <label htmlFor="senhaHash">Senha</label>
-              <input id="senhaHash" name="senhaHash" type="password" placeholder="Crie uma senha" value={form.senhaHash} onChange={handleChange} required />
+            <div className="form-row">
+              <div className="form-field">
+                <label htmlFor="senhaHash">Senha</label>
+                <CampoSenha
+                  id="senhaHash"
+                  placeholder={`Mínimo de ${SENHA_MINIMA} caracteres`}
+                  value={form.senhaHash}
+                  onChange={handleChange}
+                  autoComplete="new-password"
+                  minLength={SENHA_MINIMA}
+                  required
+                />
+              </div>
+              <div className="form-field">
+                <label htmlFor="confirmarSenha">Confirmar senha</label>
+                <CampoSenha
+                  id="confirmarSenha"
+                  placeholder="Digite a senha de novo"
+                  value={confirmarSenha}
+                  onChange={(e) => setConfirmarSenha(e.target.value)}
+                  autoComplete="new-password"
+                  aria-describedby="senhas-conferem"
+                  required
+                />
+              </div>
             </div>
+            {confirmarSenha && (
+              <p
+                id="senhas-conferem"
+                className={confirmarSenha === form.senhaHash ? 'senha-confere ok' : 'senha-confere'}
+                aria-live="polite"
+              >
+                {confirmarSenha === form.senhaHash ? '✓ As senhas são iguais' : 'As senhas ainda não são iguais'}
+              </p>
+            )}
           </div>
 
           {/* ===== Escolaridade ===== */}

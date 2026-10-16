@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import ColunaOrdenavel from '../../components/admin/ColunaOrdenavel';
 import { useOrdenacao } from '../../utils/ordenacao';
+import { usePaginacao } from '../../utils/paginacao';
+import Paginacao from '../../components/admin/Paginacao';
 import { Link } from 'react-router-dom';
 import { listarMatriculas, deletarMatricula } from '../../services/matriculaService';
 
@@ -86,6 +88,7 @@ function AdminMatriculas() {
   });
 
   const { ordenados, ordem, alternar } = useOrdenacao(matriculasFiltradas, CAMPOS_ORDENACAO);
+  const pagina = usePaginacao(ordenados);
 
   if (carregando) return <p>Carregando matrículas...</p>;
 
@@ -152,7 +155,7 @@ function AdminMatriculas() {
                   </td>
                 </tr>
               ) : (
-                ordenados.map((matricula) => (
+                pagina.itens.map((matricula) => (
                   <tr key={matricula.idMatricula}>
                     <td>{matricula.idMatricula}</td>
                     <td>{matricula.aluno?.nomeCompleto || '-'}</td>
@@ -185,6 +188,7 @@ function AdminMatriculas() {
             </tbody>
           </table>
         </div>
+        <Paginacao {...pagina} nome="matrículas" />
       </div>
     </div>
   );

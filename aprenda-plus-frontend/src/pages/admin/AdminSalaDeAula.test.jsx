@@ -17,6 +17,7 @@ import {
   copiarAulasDaTurma,
   publicarAvisoEad,
   excluirAvisoEad,
+  editarAvisoEad,
 } from '../../services/conteudoEadService';
 
 jest.mock('../../services/turmaService');
@@ -433,4 +434,44 @@ test('respostas vazias não quebram a tela', async () => {
   abrir('/admin/aulas?turma=9');
   expect(await screen.findByText('Aula 1')).toBeInTheDocument();
   expect(screen.getByRole('option', { name: 'Escolha uma turma...' })).toBeInTheDocument();
+});
+
+test('mural: edita um aviso já publicado', async () => {
+  const aviso = { idAviso: 7, titulo: 'Prova', mensagem: 'Dia 10', autor: 'Ana', fixado: true, criadoEm: null };
+  buscarSalaDaTurma.mockResolvedValue(sala({ avisos: [aviso] }));
+  editarAvisoEad
+    .mockRejectedValueOnce({ response: { data: { mensagem: 'Aviso não encontrado.' } } })
+    .mockRejectedValueOnce(new Error('x'))
+    .mockResolvedValueOnce(sala({ avisos: [{ ...aviso, titulo: 'Prova adiada', fixado: false }] }));
+  abrir();
+  await screen.findByText('Aula 1');
+  fireEvent.click(screen.getByRole('tab', { name: '📌 Mural (1)' }));
+
+  fireEvent.click(screen.getByRole('button', { name: 'Editar aviso Prova' }));
+  const edicao = screen.getByRole('form', { name: 'Editar aviso Prova' });
+  expect(within(edicao).getByLabelText('Título do aviso')).toHaveValue('Prova');
+  expect(within(edicao).getByLabelText('Mensagem do aviso')).toHaveValue('Dia 10');
+
+  // cancelar volta ao cartão sem salvar
+  fireEvent.click(within(edicao).getByRole('button', { name: 'Cancelar' }));
+  expect(screen.queryByRole('form', { name: 'Editar aviso Prova' })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Editar aviso Prova' }));
+
+  const form = screen.getByRole('form', { name: 'Editar aviso Prova' });
+  fireEvent.change(within(form).getByLabelText('Título do aviso'), { target: { value: ' ' } });
+  fireEvent.click(within(form).getByRole('button', { name: 'Salvar' }));
+  expect(within(form).getByText('Preencha o título e a mensagem do aviso.')).toBeInTheDocument();
+
+  fireEvent.change(within(form).getByLabelText('Título do aviso'), { target: { value: 'Prova adiada' } });
+  fireEvent.click(within(form).getByLabelText(/Fixar no topo/));
+  fireEvent.click(within(form).getByRole('button', { name: 'Salvar' }));
+  expect(await within(form).findByText('Aviso não encontrado.')).toBeInTheDocument();
+  fireEvent.click(within(form).getByRole('button', { name: 'Salvar' }));
+  expect(await within(form).findByText('Não foi possível salvar o aviso.')).toBeInTheDocument();
+  fireEvent.click(within(form).getByRole('button', { name: 'Salvar' }));
+
+  expect(await screen.findByText('Aviso atualizado.')).toBeInTheDocument();
+  expect(editarAvisoEad).toHaveBeenLastCalledWith(7, { titulo: 'Prova adiada', mensagem: 'Dia 10', fixado: false });
+  expect(screen.queryByRole('form', { name: /Editar aviso/ })).not.toBeInTheDocument();
+  expect(screen.getByText('Prova adiada')).toBeInTheDocument();
 });

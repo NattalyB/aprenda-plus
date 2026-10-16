@@ -14,6 +14,7 @@ import {
   copiarAulasDaTurma,
   publicarAvisoEad,
   excluirAvisoEad,
+  editarAvisoEad,
 } from '../../services/conteudoEadService';
 import FormAula from '../../components/admin/sala/FormAula';
 import MuralDaTurma from '../../components/admin/sala/MuralDaTurma';
@@ -134,6 +135,9 @@ function AdminSalaDeAula() {
   const publicarAviso = (aviso) => executar(publicarAvisoEad(idTurma, aviso), aviso.enviarEmail
     ? 'Aviso publicado e enviado por e-mail aos alunos.'
     : 'Aviso publicado no mural.');
+
+  const editarAviso = (aviso, dados) =>
+    executar(editarAvisoEad(aviso.idAviso, { titulo: dados.titulo, mensagem: dados.mensagem, fixado: dados.fixado }), 'Aviso atualizado.');
 
   const excluirAviso = (aviso) => {
     if (!window.confirm(`Excluir o aviso "${aviso.titulo}"?`)) return;
@@ -311,7 +315,7 @@ function AdminSalaDeAula() {
             </>
           )}
 
-          {aba === 'mural' && <MuralDaTurma avisos={avisos} onPublicar={publicarAviso} onExcluir={excluirAviso} />}
+          {aba === 'mural' && <MuralDaTurma avisos={avisos} onPublicar={publicarAviso} onEditar={editarAviso} onExcluir={excluirAviso} />}
 
           {aba === 'andamento' && <AndamentoDaTurma idTurma={idTurma} />}
         </>

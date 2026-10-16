@@ -55,3 +55,8 @@ test('outros erros mostram mensagem genérica', async () => {
 
   expect(await screen.findByText('Não foi possível fazer login. Tente novamente.')).toBeInTheDocument();
 });
+
+test('tem o link para criar uma nova senha', () => {
+  renderizar(<AdminLogin />, { rota: '/admin/login' });
+  expect(screen.getByRole('link', { name: 'Criar uma nova senha' })).toHaveAttribute('href', '/admin/esqueci-senha');
+});

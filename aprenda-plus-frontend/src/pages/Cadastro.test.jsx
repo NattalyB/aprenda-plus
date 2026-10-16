@@ -27,6 +27,7 @@ const dados = {
   Cidade: 'Canoas',
   UF: 'RS',
   Senha: 'senha123',
+  'Confirmar senha': 'senha123',
 };
 
 const pdf = () => new File(['%PDF-1.4'], 'certificado.pdf', { type: 'application/pdf' });
@@ -162,5 +163,63 @@ describe('certificado de conclusão', () => {
     anexar(pdf());
     fireEvent.change(screen.getByLabelText(/Certificado de conclusão/), { target: { files: [] } });
     expect(screen.getByText(/certificado\.pdf/)).toBeInTheDocument();
+  });
+});
+
+describe('senha', () => {
+  const preencher = (senha, confirmar) => {
+    Object.entries({ ...dados, Senha: senha, 'Confirmar senha': confirmar }).forEach(([campo, valor]) => {
+      fireEvent.change(screen.getByLabelText(campo), { target: { value: valor } });
+    });
+    anexar(pdf());
+  };
+
+  test('as duas senhas precisam ser iguais', async () => {
+    renderizar(<Cadastro />);
+    preencher('senha123', 'senha124');
+
+    expect(screen.getByText('As senhas ainda não são iguais')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'CRIAR CONTA' }));
+    expect(screen.getByText('As senhas digitadas não são iguais.')).toBeInTheDocument();
+    expect(cadastrarAlunoComDocumento).not.toHaveBeenCalled();
+
+    fireEvent.change(screen.getByLabelText('Confirmar senha'), { target: { value: 'senha123' } });
+    expect(screen.getByText('✓ As senhas são iguais')).toBeInTheDocument();
+    await act(async () => {});
+  });
+
+  test('senha curta é recusada antes de enviar', async () => {
+    renderizar(<Cadastro />);
+    preencher('123', '123');
+    fireEvent.click(screen.getByRole('button', { name: 'CRIAR CONTA' }));
+    expect(screen.getByText('A senha deve ter pelo menos 6 caracteres.')).toBeInTheDocument();
+    expect(cadastrarAlunoComDocumento).not.toHaveBeenCalled();
+    await act(async () => {});
+  });
+
+  test('o olho mostra e esconde a senha', () => {
+    renderizar(<Cadastro />);
+    const senha = screen.getByLabelText('Senha');
+    expect(senha).toHaveAttribute('type', 'password');
+
+    const [olho] = screen.getAllByRole('button', { name: 'Mostrar senha' });
+    fireEvent.click(olho);
+    expect(senha).toHaveAttribute('type', 'text');
+    expect(screen.getByRole('button', { name: 'Ocultar senha' })).toHaveAttribute('aria-pressed', 'true');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ocultar senha' }));
+    expect(senha).toHaveAttribute('type', 'password');
+  });
+
+  test('CPF e telefone com máscara vão só com o que o servidor espera', async () => {
+    cadastrarAlunoComDocumento.mockResolvedValue({ data: { idAluno: 1 } });
+    renderizar(<Cadastro />, { rota: '/cadastro' });
+    preencherEEnviar();
+
+    await waitFor(() => expect(cadastrarAlunoComDocumento).toHaveBeenCalled());
+    expect(screen.getByLabelText('CPF')).toHaveValue('123.456.789-00');
+    const [enviado] = cadastrarAlunoComDocumento.mock.calls[0];
+    expect(enviado.cpf).toBe('12345678900');
+    expect(enviado.telefone).toBe('(51) 99999-9999');
   });
 });

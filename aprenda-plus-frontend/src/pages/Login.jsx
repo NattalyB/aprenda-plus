@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import CampoSenha from '../components/CampoSenha';
 import { useNavigate, Link } from 'react-router-dom';
 import { login, salvarSessao } from '../services/authService';
 
@@ -52,7 +53,8 @@ function Login() {
 
             <div className="form-field">
               <label htmlFor="senha">Senha</label>
-              <input id="senha" name="senha" type="password" placeholder="Digite sua senha" value={form.senha} onChange={handleChange} required />
+              <CampoSenha id="senha" placeholder="Digite sua senha" value={form.senha} onChange={handleChange} required />
+              <Link to="/esqueci-senha" className="form-link-senha">Esqueci minha senha</Link>
             </div>
           </div>
 

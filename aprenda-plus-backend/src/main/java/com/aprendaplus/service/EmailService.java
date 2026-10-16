@@ -90,9 +90,32 @@ public class EmailService {
                 "Abrir a sala de aula");
     }
 
+    public void redefinirSenha(String email, String nome, String link) {
+        enviarComLink(email, nome, "Crie uma nova senha no AprendaPlus",
+                "Esqueceu a senha? Sem problema",
+                "<p>Olá, <strong>" + html(primeiroNome(nome)) + "</strong>!</p>"
+                        + "<p>Recebemos um pedido para criar uma nova senha para a sua conta. Clique no botão abaixo"
+                        + " para escolher a nova senha. O link vale por <strong>1 hora</strong> e só pode ser usado uma vez.</p>"
+                        + "<p>Se não foi você que pediu, é só ignorar este e-mail: a sua senha continua a mesma.</p>",
+                "Criar nova senha", link);
+    }
+
+    // Endereço completo de uma tela do site (ex.: "#/redefinir-senha?token=...")
+    public String linkDoSite(String caminho) {
+        String base = site == null ? "" : site;
+        if (!base.isEmpty() && !base.endsWith("/")) {
+            base = base + "/";
+        }
+        return base + caminho;
+    }
+
     // ===== Envio =====
 
     void enviar(String email, String nome, String assunto, String titulo, String corpo, String botao) {
+        enviarComLink(email, nome, assunto, titulo, corpo, botao, site);
+    }
+
+    void enviarComLink(String email, String nome, String assunto, String titulo, String corpo, String botao, String link) {
         if (email == null || email.isBlank()) {
             return;
         }
@@ -103,7 +126,7 @@ public class EmailService {
         String json = "{\"sender\":{\"name\":\"AprendaPlus\",\"email\":\"" + json(remetente) + "\"},"
                 + "\"to\":[{\"email\":\"" + json(email) + "\",\"name\":\"" + json(nome == null ? email : nome) + "\"}],"
                 + "\"subject\":\"" + json(assunto) + "\","
-                + "\"htmlContent\":\"" + json(modelo(titulo, corpo, botao)) + "\"}";
+                + "\"htmlContent\":\"" + json(modelo(titulo, corpo, botao, link)) + "\"}";
         HttpRequest requisicao = HttpRequest.newBuilder(URI.create(URL_BREVO))
                 .timeout(Duration.ofSeconds(15))
                 .header("api-key", chave)
@@ -136,6 +159,10 @@ public class EmailService {
 
     // Layout simples com a cor da marca
     String modelo(String titulo, String corpo, String botao) {
+        return modelo(titulo, corpo, botao, site);
+    }
+
+    String modelo(String titulo, String corpo, String botao, String link) {
         return "<div style=\"font-family:Arial,sans-serif;background:#f3f4f6;padding:24px\">"
                 + "<div style=\"max-width:560px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden\">"
                 + "<div style=\"background:#001e42;color:#ffffff;padding:18px 24px;font-size:20px;font-weight:bold\">"
@@ -143,7 +170,7 @@ public class EmailService {
                 + "<div style=\"padding:24px;color:#1f2937;font-size:15px;line-height:1.6\">"
                 + "<h1 style=\"font-size:20px;color:#0b2239;margin:0 0 12px\">" + html(titulo) + "</h1>"
                 + corpo
-                + "<p style=\"margin:24px 0 8px\"><a href=\"" + html(site) + "\" style=\"background:#00b4d8;color:#001e42;"
+                + "<p style=\"margin:24px 0 8px\"><a href=\"" + html(link) + "\" style=\"background:#00b4d8;color:#001e42;"
                 + "padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:bold\">" + html(botao) + "</a></p>"
                 + "</div><div style=\"padding:14px 24px;font-size:12px;color:#6b7280;border-top:1px solid #e5e7eb\">"
                 + "E-mail automático do AprendaPlus. Projeto acadêmico +PraTi / Codifica.</div></div></div>";

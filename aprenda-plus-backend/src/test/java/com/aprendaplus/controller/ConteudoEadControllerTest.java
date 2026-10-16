@@ -123,6 +123,18 @@ class ConteudoEadControllerTest {
     }
 
     @Test
+    void editaAviso() throws Exception {
+        when(conteudoEadService.editarAviso(eq(3), any(AvisoForm.class))).thenReturn(plano());
+
+        mockMvc.perform(put("/planos-de-aula/avisos/3").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"titulo\":\"Prova\",\"mensagem\":\"Dia 12\",\"fixado\":false}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.idTurma").value(5));
+
+        verify(conteudoEadService).editarAviso(3, new AvisoForm("Prova", "Dia 12", false, null));
+    }
+
+    @Test
     void erroDeRegraViraMensagem() throws Exception {
         when(conteudoEadService.adicionarAula(eq(5), any(AulaForm.class)))
                 .thenThrow(new RegraDeNegocioException("Informe o título da aula."));

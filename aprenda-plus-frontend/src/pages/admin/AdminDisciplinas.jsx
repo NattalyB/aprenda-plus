@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import ColunaOrdenavel from '../../components/admin/ColunaOrdenavel';
 import { useOrdenacao } from '../../utils/ordenacao';
+import { usePaginacao } from '../../utils/paginacao';
+import Paginacao from '../../components/admin/Paginacao';
 import { Link } from 'react-router-dom';
 import { listarDisciplinas, deletarDisciplina } from '../../services/disciplinaService';
 
@@ -80,6 +82,7 @@ function AdminDisciplinas() {
   });
 
   const { ordenados, ordem, alternar } = useOrdenacao(disciplinasFiltradas, CAMPOS_ORDENACAO);
+  const pagina = usePaginacao(ordenados);
 
   if (carregando) return <p>Carregando disciplinas...</p>;
 
@@ -145,7 +148,7 @@ function AdminDisciplinas() {
                   </td>
                 </tr>
               ) : (
-                ordenados.map((disciplina) => (
+                pagina.itens.map((disciplina) => (
                   <tr key={disciplina.idDisciplina}>
                     <td>{disciplina.idDisciplina}</td>
                     <td>{disciplina.nome}</td>
@@ -178,6 +181,7 @@ function AdminDisciplinas() {
             </tbody>
           </table>
         </div>
+        <Paginacao {...pagina} nome="disciplinas" />
       </div>
     </div>
   );

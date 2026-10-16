@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { CampoCpf, CampoTelefone } from '../../components/CamposFormatados';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import {
   buscarProfessorPorId,
@@ -171,7 +172,7 @@ function AdminProfessorForm() {
             <div className="form-row">
               <div className="form-field">
                 <label htmlFor="telefone">Telefone</label>
-                <input id="telefone" name="telefone" placeholder="(51) 99999-9999" value={form.telefone || ''} onChange={handleChange} required />
+                <CampoTelefone value={form.telefone} onChange={handleChange} required />
               </div>
               <div className="form-field">
                 <label htmlFor="dataNascimento">Data de nascimento</label>
@@ -181,7 +182,7 @@ function AdminProfessorForm() {
 
             <div className="form-field">
               <label htmlFor="cpf">CPF</label>
-              <input id="cpf" name="cpf" placeholder="Apenas números" value={form.cpf || ''} onChange={handleChange} maxLength={11} required />
+              <CampoCpf value={form.cpf} onChange={handleChange} required />
             </div>
           </div>
 

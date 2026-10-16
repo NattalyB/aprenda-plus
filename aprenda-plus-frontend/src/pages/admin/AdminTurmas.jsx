@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import ColunaOrdenavel from '../../components/admin/ColunaOrdenavel';
 import { useOrdenacao } from '../../utils/ordenacao';
+import { usePaginacao } from '../../utils/paginacao';
+import Paginacao from '../../components/admin/Paginacao';
 import { Link } from 'react-router-dom';
 import { listarTurmas, deletarTurma } from '../../services/turmaService';
 import { listarMatriculas } from '../../services/matriculaService';
@@ -127,6 +129,7 @@ function AdminTurmas() {
   });
 
   const { ordenados, ordem, alternar } = useOrdenacao(turmasFiltradas, camposOrdenacao);
+  const pagina = usePaginacao(ordenados);
 
   if (carregando) return <p>Carregando turmas...</p>;
 
@@ -206,7 +209,7 @@ function AdminTurmas() {
                   </td>
                 </tr>
               ) : (
-                ordenados.map((turma) => (
+                pagina.itens.map((turma) => (
                   <tr key={turma.idTurma}>
                     <td>{turma.idTurma}</td>
                     <td>{turma.nome}</td>
@@ -255,6 +258,7 @@ function AdminTurmas() {
             </tbody>
           </table>
         </div>
+        <Paginacao {...pagina} nome="turmas" />
       </div>
 
       {turmaAberta && (

@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import CampoSenha from '../../components/CampoSenha';
+import { CampoCpf, CampoTelefone } from '../../components/CamposFormatados';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { buscarFuncionarioPorId, criarFuncionario, atualizarFuncionario, listarNiveis } from '../../services/funcionarioService';
 import { getAcessoAdmin } from '../../services/authAdminService';
@@ -105,7 +107,7 @@ function AdminFuncionarioForm() {
             <div className="form-row">
               <div className="form-field">
                 <label htmlFor="telefone">Telefone</label>
-                <input id="telefone" name="telefone" placeholder="(51) 99999-9999" value={form.telefone || ''} onChange={handleChange} required />
+                <CampoTelefone value={form.telefone} onChange={handleChange} required />
               </div>
               <div className="form-field">
                 <label htmlFor="dataNascimento">Data de nascimento</label>
@@ -115,7 +117,7 @@ function AdminFuncionarioForm() {
 
             <div className="form-field">
               <label htmlFor="cpf">CPF</label>
-              <input id="cpf" name="cpf" placeholder="Apenas números" inputMode="numeric" value={form.cpf || ''} onChange={handleChange} minLength={11} maxLength={11} required />
+              <CampoCpf value={form.cpf} onChange={handleChange} required />
             </div>
           </div>
 
@@ -155,10 +157,8 @@ function AdminFuncionarioForm() {
             <div className="form-row">
               <div className="form-field">
                 <label htmlFor="senhaHash">{modoEdicao ? 'Nova senha (opcional)' : 'Senha'}</label>
-                <input
+                <CampoSenha
                   id="senhaHash"
-                  name="senhaHash"
-                  type="password"
                   autoComplete="new-password"
                   placeholder={modoEdicao ? 'Deixe em branco para manter' : 'Mínimo de 6 caracteres'}
                   value={form.senhaHash || ''}

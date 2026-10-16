@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import CampoSenha from '../../components/CampoSenha';
+import { useNavigate, Link } from 'react-router-dom';
 import logo from '../../assets/logo-aprenda-plus-branco.png';
 import { loginFuncionario, salvarSessaoAdmin } from '../../services/authAdminService';
 
@@ -56,7 +57,7 @@ function AdminLogin() {
 
             <div className="form-field">
               <label htmlFor="senha">Senha</label>
-              <input id="senha" name="senha" type="password" placeholder="Digite sua senha" value={form.senha} onChange={handleChange} required />
+              <CampoSenha id="senha" placeholder="Digite sua senha" value={form.senha} onChange={handleChange} required />
             </div>
           </div>
 
@@ -66,7 +67,7 @@ function AdminLogin() {
         </form>
 
         <p className="form-rodape">
-          Esqueceu a senha? <a href="mailto:suporte@aprendaplus.com">Fale com o suporte</a>
+          Esqueceu a senha? <Link to="/admin/esqueci-senha">Criar uma nova senha</Link>
         </p>
       </div>
     </div>

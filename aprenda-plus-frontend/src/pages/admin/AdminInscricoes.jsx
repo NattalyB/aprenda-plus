@@ -4,6 +4,8 @@ import ColunaOrdenavel from '../../components/admin/ColunaOrdenavel';
 import DocumentosDoAluno from '../../components/admin/DocumentosDoAluno';
 import { situacaoDosDocumentos, STATUS_DOCUMENTO } from '../../services/documentoService';
 import { useOrdenacao } from '../../utils/ordenacao';
+import { usePaginacao } from '../../utils/paginacao';
+import Paginacao from '../../components/admin/Paginacao';
 import { listarInscricoes, atualizarInscricao, deletarInscricao } from '../../services/inscricaoService';
 import { formatarValor } from '../../utils/precoCurso';
 
@@ -132,6 +134,7 @@ function AdminInscricoes() {
   });
 
   const { ordenados, ordem, alternar } = useOrdenacao(inscricoesFiltradas, CAMPOS_ORDENACAO);
+  const pagina = usePaginacao(ordenados);
 
   if (carregando) return <p>Carregando inscrições...</p>;
 
@@ -213,7 +216,7 @@ function AdminInscricoes() {
                   </td>
                 </tr>
               ) : (
-                ordenados.map((inscricao) => (
+                pagina.itens.map((inscricao) => (
                   <tr key={inscricao.idInscricao}>
                     <td>{inscricao.idInscricao}</td>
                     <td>{inscricao.aluno?.nomeCompleto || '-'}</td>
@@ -253,6 +256,7 @@ function AdminInscricoes() {
             </tbody>
           </table>
         </div>
+        <Paginacao {...pagina} nome="inscrições" />
       </div>
 
       {revisando && (

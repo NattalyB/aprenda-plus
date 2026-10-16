@@ -51,6 +51,8 @@ class AuthInterceptorTest {
         assertTrue(requisicao("POST", "/alunos", null));
         assertTrue(requisicao("POST", "/auth/login", null));
         assertTrue(requisicao("POST", "/auth/login-funcionario", null));
+        assertTrue(requisicao("POST", "/auth/esqueci-senha", null));
+        assertTrue(requisicao("POST", "/auth/redefinir-senha", null));
     }
 
     @Test

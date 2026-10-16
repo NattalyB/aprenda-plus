@@ -17,3 +17,4 @@ export const copiarAulasDaTurma = (idTurma, idTurmaOrigem) =>
   api.post(`/planos-de-aula/turma/${idTurma}/copiar`, null, { params: { origem: idTurmaOrigem } }).then(dados);
 export const publicarAvisoEad = (idTurma, aviso) => api.post(`/planos-de-aula/turma/${idTurma}/avisos`, aviso).then(dados);
 export const excluirAvisoEad = (idAviso) => api.delete(`/planos-de-aula/avisos/${idAviso}`).then(dados);
+export const editarAvisoEad = (idAviso, aviso) => api.put(`/planos-de-aula/avisos/${idAviso}`, aviso).then(dados);
