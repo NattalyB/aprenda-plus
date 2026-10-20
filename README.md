@@ -22,6 +22,7 @@ Projeto final do curso **Desenvolvimento Full Stack** do programa **+PraTi / Cod
 - [Documento de escolaridade e e-mails](#-documento-de-escolaridade-e-e-mails)
 - [Sala de aula EAD](#-sala-de-aula-ead)
 - [Recuperação de senha](#-recuperação-de-senha)
+- [Importação por planilha](#-importação-por-planilha)
 - [Tecnologias](#-tecnologias)
 - [Arquitetura](#-arquitetura)
 - [Estrutura de pastas](#-estrutura-de-pastas)
@@ -159,6 +160,10 @@ Projeto final do curso **Desenvolvimento Full Stack** do programa **+PraTi / Cod
 
 - Painel com indicadores e gráficos de receita.
 - Lista de todas as parcelas, com baixa dos boletos, estorno, exportação para planilha e impressão. Pix e cartão de crédito são **cobrança automática**: não precisam de baixa.
+
+**Importação por planilha** (detalhes na seção [Importação por planilha](#-importação-por-planilha))
+
+- Botão **📥 Importar planilha** em alunos, professores, cursos, disciplinas e nas aulas da Sala de aula (EAD): cadastra dezenas de registros de uma vez, com prévia linha a linha antes de gravar.
 
 **Listas e mensagens**
 
@@ -335,6 +340,31 @@ Alunos e funcionários do painel podem criar uma nova senha sozinhos, pelo link 
 - Pode ser usado **uma vez só**. Pedir um novo link cancela os anteriores.
 - No banco fica só o **hash SHA-256** do código (tabela `redefinicao_senha`, script `database/recuperacao-de-senha.sql`): mesmo quem visse a tabela não conseguiria usar os links.
 - A nova senha é gravada com BCrypt, como no cadastro.
+
+---
+
+## 📥 Importação por planilha
+
+Para cadastrar muita coisa de uma vez (uma turma inteira de alunos, os professores do semestre, as aulas de um curso), o painel importa planilhas **CSV**, que o Excel e o Google Planilhas salvam direto.
+
+**Onde fica:** botão **📥 Importar planilha** em Alunos, Professores, Cursos, Disciplinas e na aba Aulas da Sala de aula (EAD).
+
+**Como funciona (3 passos)**
+
+1. **Escolher o arquivo.** A janela mostra as colunas (as obrigatórias com *) e tem o botão **Baixar modelo**, já com uma linha de exemplo. A ordem das colunas não importa, e os nomes são comparados sem acento e sem maiúsculas ("Data de Nascimento" e "data_nascimento" valem igual).
+2. **Conferir.** Antes de gravar qualquer coisa, o servidor confere **todas** as linhas e mostra, linha a linha, o que está pronto (✓) e o que tem problema, com o motivo (ex.: *"Linha 7: CPF já cadastrado"*, *"Data de nascimento inválida"*). Uma linha pode ter vários problemas, e todos aparecem de uma vez.
+3. **Importar.** Só as linhas certas são gravadas. As com erro ficam de fora e podem ser baixadas numa planilha com uma coluna **Erro** a mais, para corrigir e importar de novo.
+
+**Regras**
+
+- Cada linha passa pelas **mesmas regras do cadastro normal**: campos obrigatórios, tamanhos, CPF com 11 números, CEP, UF, e-mail e CPF que não podem se repetir (nem no banco, nem dentro da própria planilha), valor e carga horária válidos etc.
+- Os dados chegam arrumados: CPF só com números, telefone e CEP no formato padrão, UF em maiúsculas, e-mail em minúsculas, valores como `R$ 12.000,00` ou `12000.00`.
+- **Alunos:** a senha é criptografada com BCrypt, como no cadastro. Se a coluna Senha ficar vazia, o sistema sorteia uma e o aluno cria a dele em **"Esqueci minha senha"**.
+- **Disciplinas:** os cursos são indicados pelo nome (vários separados por `;`).
+- **Aulas:** a disciplina tem que ser do curso da turma; o tipo aceita *videoaula, leitura, ao vivo ou atividade*; o link do vídeo tem que ser do YouTube; a sala precisa ter professor responsável antes.
+- Até **500 linhas** por arquivo. Cada linha é gravada separadamente: se uma falhar, as outras continuam.
+- O Excel às vezes salva o CSV no formato antigo do Windows; o sistema percebe e mantém os acentos certos.
+- A importação usa as rotas de cada módulo (`POST /alunos/importacao`, `/cursos/importacao`...), então só quem pode **criar** naquele módulo consegue importar.
 
 ---
 
@@ -548,8 +578,8 @@ A meta do projeto era **cobertura mínima de 70%**. Os dois lados ficaram bem ac
 
 | | Testes | Cobertura | Ferramentas |
 |---|---|---|---|
-| **Back-end** | **570** | **99%** das instruções, 94% dos desvios (*branches*), 100% dos métodos e das classes | JUnit 5, Mockito, MockMvc, JaCoCo |
-| **Front-end** | **640** | **99,6%** das instruções, 96,5% dos desvios (*branches*), 99,9% das funções | Jest, Testing Library |
+| **Back-end** | **590** | **99%** das instruções, 94% dos desvios (*branches*), 100% dos métodos e das classes | JUnit 5, Mockito, MockMvc, JaCoCo |
+| **Front-end** | **660** | **99,6%** das instruções, 96,5% dos desvios (*branches*), 99,9% das funções | Jest, Testing Library |
 
 ### Back-end
 
@@ -573,6 +603,7 @@ O que é testado:
   - **documento de escolaridade:** tipo conferido pelo conteúdo, limite de 5 MB, nome do arquivo limpo, aprovação e recusa (com motivo obrigatório e e-mail para o aluno), e a trava que impede confirmar o pagamento sem documento aprovado;
   - **e-mails:** conteúdo de cada mensagem, envio só depois de gravar no banco e nenhum envio quando o Brevo não está configurado;
   - **sala de aula:** professor responsável, aulas (validação do link do YouTube, disciplina do curso certo, rascunho), ordem, exclusão com renumeração, cópia entre turmas, mural com e-mail para os alunos e andamento da turma;
+  - **importação por planilha:** prévia sem gravar, todas as regras do cadastro em cada linha, repetidos no banco e na própria planilha, dados normalizados, senha sorteada, cursos e disciplinas pelo nome, aulas da turma certa, limite de linhas e falha de uma linha sem atrapalhar as outras;
   - **recuperação de senha:** link só para contas ativas, código guardado como hash, validade de 1 hora, uso único, links antigos cancelados e senha mínima;
   - **área do aluno na sala:** acesso só com matrícula ativa, aulas bloqueadas até a data de liberação, progresso, certificado só com 100% (e emitido uma vez só) e validação pública pelo código;
   - **financeiro:** geração das parcelas (Pix, cartão e boleto, com os centavos na última), parcelas atrasadas, cobrança automática do cartão no vencimento (decidida pela forma da inscrição), avisos só de boleto, baixa, estorno, cancelamento e reabertura, "gerar as que faltam" e todos os indicadores do resumo.
@@ -620,6 +651,7 @@ O que é testado:
   - painel por nível de acesso: menu e atalhos de cada nível, tela de acesso restrito, menu recolhível com o nome ao passar o mouse e o módulo Sistema.
 - **Navegação do site:** ordem do topo, "Voltar ao início" e a logo limpando a pesquisa.
 - **Financeiro:** indicadores, gráficos (dica ao passar o mouse e tabela), filtros (com as parcelas automáticas separadas), baixa e estorno de boletos, exportação da planilha, avisos no sininho e, na área do aluno, as parcelas e o recibo.
+- **Importação por planilha:** leitura do CSV (separador `;` ou `,`, aspas, acentos do Excel antigo), colunas obrigatórias, modelo para baixar, prévia, importação, linhas com erro para baixar e o botão em cada lista e na Sala de aula.
 
 ![Cobertura do front-end](docs/cobertura-frontend.jpeg)
 
@@ -682,6 +714,7 @@ O que é testado:
 - **Interceptor em vez do Spring Security completo.** O controle de acesso foi feito com um `HandlerInterceptor`: uma solução enxuta, fácil de entender e que não conflita com a configuração de CORS.
 - **Notificações por consulta periódica.** O sininho do painel consulta a API a cada minuto. É mais simples de hospedar no plano gratuito do que uma conexão em tempo real (WebSocket) e atende bem ao volume do projeto.
 - **"Lido" guardado no navegador.** A marcação do que cada funcionário já leu fica no navegador dele (por funcionário), sem tabela nova no banco. Para o tamanho do projeto é suficiente; a contrapartida é que, em outro computador, os avisos aparecem de novo como não lidos.
+- **Importação por planilha em vez de rodar SQL pelo site.** Uma tela que executa comandos no banco seria uma porta aberta: um `DELETE` errado apaga tudo, e o SQL pula as regras do sistema (validação de CPF, e-mail repetido, senha criptografada). A importação por planilha resolve o mesmo problema (cadastrar muito de uma vez) passando por todas as regras, com prévia antes de gravar e respeitando o nível de acesso.
 - **Cobrança automática para Pix e cartão.** Na vida real, Pix e cartão são creditados pela operadora sem a faculdade precisar conferir. Por isso o sistema marca essas parcelas como pagas no vencimento e deixa o trabalho manual (baixa e cobrança) só para o boleto.
 
 **Front-end**
@@ -740,6 +773,7 @@ O comando gera a versão de produção e publica a pasta `dist` na branch `gh-pa
 - Guardar no banco o que cada funcionário já leu no sininho, para valer em qualquer computador.
 - Cadastrar a imagem do curso pelo painel admin, em vez de deixá-la no código.
 - QR Code no certificado, levando direto para a página de validação.
+- Importar também arquivos do Excel (.xlsx) direto, sem precisar salvar como CSV.
 
 ---
 

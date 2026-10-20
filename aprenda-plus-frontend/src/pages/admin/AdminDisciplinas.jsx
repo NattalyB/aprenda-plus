@@ -5,6 +5,7 @@ import { usePaginacao } from '../../utils/paginacao';
 import Paginacao from '../../components/admin/Paginacao';
 import { Link } from 'react-router-dom';
 import { listarDisciplinas, deletarDisciplina } from '../../services/disciplinaService';
+import ImportarPlanilha from '../../components/admin/ImportarPlanilha';
 
 const normalizar = (texto) =>
   (texto || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -95,9 +96,12 @@ function AdminDisciplinas() {
             {disciplinasFiltradas.length} de {disciplinas.length} disciplina(s)
           </p>
         </div>
-        <Link to="/admin/disciplinas/novo" className="admin-btn admin-btn-primary">
-          + Nova disciplina
-        </Link>
+        <div className="admin-header-acoes">
+          <ImportarPlanilha tipo="disciplinas" onConcluido={carregar} />
+          <Link to="/admin/disciplinas/novo" className="admin-btn admin-btn-primary">
+            + Nova disciplina
+          </Link>
+        </div>
       </div>
 
       {erro && <div className="form-erro">{erro}</div>}

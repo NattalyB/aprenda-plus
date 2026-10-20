@@ -210,6 +210,19 @@ class AuthInterceptorTest {
     }
 
     @Test
+    void importacaoPorPlanilhaSegueOModuloDoCadastro() throws Exception {
+        assertTrue(doFuncionario(2, "POST", "/alunos/importacao"));
+        assertTrue(doFuncionario(2, "POST", "/cursos/importacao"));
+        assertTrue(doFuncionario(5, "POST", "/planos-de-aula/turma/3/aulas/importacao"));
+
+        assertFalse(doFuncionario(3, "POST", "/alunos/importacao"));
+        assertEquals(403, response.getStatus());
+        assertFalse(doFuncionario(2, "POST", "/disciplinas/importacao"));
+        assertFalse(requisicao("POST", "/alunos/importacao", null));
+        assertFalse(requisicao("POST", "/professores/importacao", tokenAluno));
+    }
+
+    @Test
     void consultaEhLivreParaAEquipeMenosFuncionariosESistema() throws Exception {
         assertTrue(doFuncionario(3, "GET", "/alunos"));
         assertTrue(doFuncionario(3, "GET", "/professores/2"));

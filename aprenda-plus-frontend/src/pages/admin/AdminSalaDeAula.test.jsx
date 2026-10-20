@@ -19,11 +19,13 @@ import {
   excluirAvisoEad,
   editarAvisoEad,
 } from '../../services/conteudoEadService';
+import { importarPlanilha } from '../../services/importacaoService';
 
 jest.mock('../../services/turmaService');
 jest.mock('../../services/professorService');
 jest.mock('../../services/disciplinaService');
 jest.mock('../../services/conteudoEadService');
+jest.mock('../../services/importacaoService');
 
 const turmas = [
   { idTurma: 3, nome: 'Turma ADM-B', curso: { idCurso: 1, nome: 'Administração' } },
@@ -140,7 +142,7 @@ test('sala nova: sugere o professor e cria a sala', async () => {
   fireEvent.click(screen.getByRole('button', { name: 'Criar sala de aula' }));
   expect(await screen.findByText('Sala de aula criada! Agora cadastre as aulas.')).toBeInTheDocument();
   expect(definirProfessorDaSala).toHaveBeenCalledWith('3', 2);
-  expect(screen.getByText('Nenhuma aula ainda. Clique em "+ Nova aula" ou copie as aulas de outra turma.')).toBeInTheDocument();
+  expect(screen.getByText('Nenhuma aula ainda. Clique em "+ Nova aula", importe uma planilha ou copie as aulas de outra turma.')).toBeInTheDocument();
 });
 
 test('sala nova sem professor ligado à turma', async () => {
@@ -474,4 +476,41 @@ test('mural: edita um aviso já publicado', async () => {
   expect(editarAvisoEad).toHaveBeenLastCalledWith(7, { titulo: 'Prova adiada', mensagem: 'Dia 10', fixado: false });
   expect(screen.queryByRole('form', { name: /Editar aviso/ })).not.toBeInTheDocument();
   expect(screen.getByText('Prova adiada')).toBeInTheDocument();
+});
+
+test('importar aulas por planilha: só com a sala criada, e a lista atualiza depois', async () => {
+  buscarSalaDaTurma.mockResolvedValueOnce(sala({ idPlano: null, aulas: [] }));
+  const { unmount } = abrir();
+  await screen.findByText('Escolha o professor responsável para começar a montar as aulas.');
+  expect(screen.getByRole('button', { name: '📥 Importar planilha' })).toBeDisabled();
+  unmount();
+
+  const resultado = { confirmado: true, total: 2, validas: 2, comErro: 0, importadas: 2, linhas: [] };
+  importarPlanilha.mockResolvedValueOnce({ ...resultado, confirmado: false, importadas: 0 })
+    .mockResolvedValueOnce(resultado)
+    .mockResolvedValueOnce({ ...resultado, confirmado: false, importadas: 0 })
+    .mockResolvedValueOnce({ ...resultado, importadas: 0 });
+  buscarSalaDaTurma.mockResolvedValueOnce(sala()).mockResolvedValueOnce(sala({ aulas: [...sala().aulas, aula(3), aula(4)] }));
+  abrir();
+  await screen.findByText('Aula 1');
+
+  const importar = (nome) => {
+    fireEvent.click(screen.getByRole('button', { name: '📥 Importar planilha' }));
+    fireEvent.change(screen.getByLabelText('Arquivo da planilha (CSV)'), {
+      target: { files: [new File(['Título\nAula nova\nOutra'], nome)] },
+    });
+  };
+  importar('aulas.csv');
+  fireEvent.click(await screen.findByRole('button', { name: 'Importar 2 linhas' }));
+  expect(await screen.findByText('2 aulas importadas da planilha.')).toBeInTheDocument();
+  expect(await screen.findByText('Aula 4')).toBeInTheDocument();
+  expect(importarPlanilha).toHaveBeenCalledWith('aulas', expect.any(Array), { confirmar: false, idTurma: '3' });
+  fireEvent.click(screen.getByRole('button', { name: 'Concluir' }));
+
+  // Nada importado: não mostra mensagem de sucesso nova; falha ao recarregar não quebra a tela
+  buscarSalaDaTurma.mockRejectedValueOnce(new Error('rede'));
+  importar('de-novo.csv');
+  fireEvent.click(await screen.findByRole('button', { name: 'Importar 2 linhas' }));
+  await screen.findByText('✓ 0 aulas importadas');
+  expect(screen.getByText('2 aulas importadas da planilha.')).toBeInTheDocument();
 });

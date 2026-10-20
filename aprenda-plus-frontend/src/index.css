@@ -5355,3 +5355,238 @@ img {
     justify-content: center;
   }
 }
+
+/* ===== Importação por planilha ===== */
+
+.admin-header-acoes,
+.ead-barra-botoes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.doc-painel.importar {
+  width: min(820px, 100%);
+}
+
+.importar-passos {
+  display: flex;
+  gap: 0.5rem;
+  list-style: none;
+  counter-reset: passo;
+  margin: 0 0 1rem;
+  padding: 0;
+  font-size: 0.82rem;
+  color: #6b7280;
+}
+
+.importar-passos li {
+  counter-increment: passo;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.importar-passos li::before {
+  content: counter(passo);
+  display: inline-grid;
+  place-items: center;
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 50%;
+  background: #e5e7eb;
+  color: #374151;
+  font-weight: 700;
+  font-size: 0.75rem;
+}
+
+.importar-passos li:not(:last-child)::after {
+  content: '›';
+  margin-left: 0.3rem;
+  color: #9ca3af;
+}
+
+.importar-passos li.atual {
+  color: #001e42;
+  font-weight: 700;
+}
+
+.importar-passos li.atual::before {
+  background: #001e42;
+  color: #fff;
+}
+
+.importar-passos li.feito::before {
+  content: '✓';
+  background: #dcfce7;
+  color: #166534;
+}
+
+.importar-como {
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: #374151;
+}
+
+.importar-como p {
+  margin: 0;
+}
+
+.importar-colunas {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0 0.35rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.importar-colunas li {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 0.3rem 0.55rem;
+  font-size: 0.8rem;
+  background: #fff;
+}
+
+.importar-colunas li.obrigatoria {
+  border-color: #93c5fd;
+  background: #eff6ff;
+}
+
+.importar-colunas small {
+  color: #6b7280;
+  font-size: 0.72rem;
+}
+
+.importar-arquivo {
+  margin-top: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  border: 2px dashed #93c5fd;
+  border-radius: 12px;
+  padding: 1.25rem;
+  color: #0369a1;
+  font-weight: 700;
+  cursor: pointer;
+  background: #f0f9ff;
+  position: relative;
+}
+
+.importar-arquivo:hover,
+.importar-arquivo:focus-within {
+  background: #e0f2fe;
+  border-color: #0284c7;
+}
+
+.importar-arquivo.carregando {
+  cursor: progress;
+  opacity: 0.8;
+}
+
+.importar-arquivo input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.importar-resumo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 1rem;
+  align-items: center;
+  font-size: 0.95rem;
+  margin-bottom: 0.5rem;
+}
+
+.importar-ok {
+  color: #15803d;
+  font-weight: 700;
+}
+
+.importar-falha {
+  color: #b91c1c;
+  font-weight: 700;
+}
+
+.importar-tabela {
+  max-height: 46vh;
+  overflow: auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  margin: 0.5rem 0 1rem;
+}
+
+.importar-tabela .admin-table th {
+  position: sticky;
+  top: 0;
+  background: #f8fafc;
+  z-index: 1;
+}
+
+.importar-linha-erro {
+  background: #fef2f2;
+}
+
+.importar-erros {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: #b91c1c;
+  font-size: 0.85rem;
+}
+
+.importar-acoes {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+@media (max-width: 600px) {
+  .importar-passos {
+    flex-wrap: wrap;
+  }
+
+  /* No celular a tabela da prévia cabe na tela: sem rolagem para o lado */
+  .importar-tabela .admin-table {
+    min-width: 0;
+    table-layout: fixed;
+  }
+
+  .importar-tabela .admin-table th,
+  .importar-tabela .admin-table td {
+    padding-left: 0.6rem;
+    padding-right: 0.6rem;
+  }
+
+  .importar-tabela .admin-table th:first-child,
+  .importar-tabela .admin-table td:first-child {
+    width: 4.2rem;
+  }
+
+  .importar-tabela .admin-table th:nth-child(2),
+  .importar-tabela .admin-table td:nth-child(2) {
+    width: 30%;
+  }
+
+  .importar-tabela td {
+    overflow-wrap: anywhere;
+  }
+
+  .importar-acoes .admin-btn {
+    flex: 1 1 100%;
+  }
+}

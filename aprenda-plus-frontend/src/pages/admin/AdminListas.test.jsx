@@ -23,8 +23,10 @@ import { listarInscricoes, atualizarInscricao, deletarInscricao } from '../../se
 import { listarMatriculas, deletarMatricula } from '../../services/matriculaService';
 import { listarFuncionarios, deletarFuncionario } from '../../services/funcionarioService';
 import { situacaoDosDocumentos } from '../../services/documentoService';
+import { importarPlanilha } from '../../services/importacaoService';
 
 jest.mock('../../services/alunoService');
+jest.mock('../../services/importacaoService');
 jest.mock('../../services/professorService');
 jest.mock('../../services/cursoService');
 jest.mock('../../services/disciplinaService');
@@ -728,5 +730,31 @@ describe('Funcionários: conta própria e busca', () => {
 
     expect(linhas()[0].cells[4]).toHaveTextContent('-');
     expect(screen.getAllByText('Excluir')).toHaveLength(1);
+  });
+});
+
+describe('importação por planilha nas listas', () => {
+  test.each([
+    ['alunos', AdminAlunos, listarAlunos, 'Nome completo;E-mail;CPF;Telefone;Data de nascimento;CEP;Rua;Número;Bairro;Cidade;UF'],
+    ['professores', AdminProfessores, listarProfessores, 'Nome completo;E-mail;CPF;Telefone;Data de nascimento;CEP;Rua;Número;Bairro;Cidade;UF'],
+    ['cursos', AdminCursos, listarCursos, 'Nome;Categoria;Carga horária;Modalidade;Valor'],
+    ['disciplinas', AdminDisciplinas, listarDisciplinas, 'Nome;Cursos;Carga horária'],
+  ])('%s: importar recarrega a lista', async (tipo, Tela, listar, cabecalho) => {
+    listar.mockResolvedValue({ data: [] });
+    listarCursos.mockResolvedValue({ data: [] });
+    const resultado = { confirmado: true, total: 1, validas: 1, comErro: 0, importadas: 1, linhas: [{ linha: 2, descricao: 'X', erros: [], importada: true }] };
+    importarPlanilha.mockResolvedValueOnce({ ...resultado, confirmado: false, importadas: 0 }).mockResolvedValueOnce(resultado);
+    renderizar(<Tela />);
+
+    fireEvent.click(await screen.findByRole('button', { name: '📥 Importar planilha' }));
+    const valores = cabecalho.split(';').map(() => 'x').join(';');
+    fireEvent.change(screen.getByLabelText('Arquivo da planilha (CSV)'), {
+      target: { files: [new File([`${cabecalho}\n${valores}`], `${tipo}.csv`)] },
+    });
+    const chamadasAntes = listar.mock.calls.length;
+    fireEvent.click(await screen.findByRole('button', { name: 'Importar 1 linha' }));
+
+    await waitFor(() => expect(listar.mock.calls.length).toBeGreaterThan(chamadasAntes));
+    expect(importarPlanilha).toHaveBeenLastCalledWith(tipo, expect.any(Array), { confirmar: true, idTurma: undefined });
   });
 });

@@ -5,6 +5,7 @@ import { usePaginacao } from '../../utils/paginacao';
 import Paginacao from '../../components/admin/Paginacao';
 import { Link } from 'react-router-dom';
 import { listarAlunos, deletarAluno } from '../../services/alunoService';
+import ImportarPlanilha from '../../components/admin/ImportarPlanilha';
 
 // Remove acentos e deixa minúsculo, pra busca "joao" encontrar "João"
 const normalizar = (texto) =>
@@ -83,9 +84,12 @@ function AdminAlunos() {
             {alunosFiltrados.length} de {alunos.length} aluno(s)
           </p>
         </div>
-        <Link to="/admin/alunos/novo" className="admin-btn admin-btn-primary">
-          + Novo aluno
-        </Link>
+        <div className="admin-header-acoes">
+          <ImportarPlanilha tipo="alunos" onConcluido={carregar} />
+          <Link to="/admin/alunos/novo" className="admin-btn admin-btn-primary">
+            + Novo aluno
+          </Link>
+        </div>
       </div>
 
       {erro && <div className="form-erro">{erro}</div>}

@@ -131,6 +131,16 @@ public class ConteudoEadService {
         return montar(turma, plano);
     }
 
+    // Confere uma aula sem gravar nada (prévia da importação por planilha): mesmas regras do cadastro
+    @Transactional(readOnly = true)
+    public void conferirAula(Integer idTurma, AulaForm form) {
+        Turma turma = turma(idTurma);
+        if (planoRepository.findFirstByTurma_IdTurma(idTurma).isEmpty()) {
+            throw new RegraDeNegocioException("Escolha o professor responsável antes de cadastrar as aulas.");
+        }
+        preencher(new Aula(), form, turma);
+    }
+
     @Transactional
     public PlanoDaTurma atualizarAula(Integer idAula, AulaForm form) {
         Aula aula = aula(idAula);

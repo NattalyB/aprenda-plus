@@ -20,6 +20,7 @@ import FormAula from '../../components/admin/sala/FormAula';
 import MuralDaTurma from '../../components/admin/sala/MuralDaTurma';
 import AndamentoDaTurma from '../../components/admin/sala/AndamentoDaTurma';
 import { formatarDataCurta, tipoDaAula } from '../../utils/salaDeAula';
+import ImportarPlanilha from '../../components/admin/ImportarPlanilha';
 
 const hoje = () => new Date().toISOString().slice(0, 10);
 
@@ -247,6 +248,7 @@ function AdminSalaDeAula() {
           {aba === 'aulas' && (
             <>
               <div className="ead-barra">
+                <div className="ead-barra-botoes">
                 <button
                   type="button"
                   className="admin-btn admin-btn-primary"
@@ -256,6 +258,22 @@ function AdminSalaDeAula() {
                 >
                   + Nova aula
                 </button>
+                <ImportarPlanilha
+                  tipo="aulas"
+                  idTurma={idTurma}
+                  disabled={!sala.idPlano}
+                  title={sala.idPlano ? undefined : 'Escolha o professor primeiro'}
+                  onConcluido={(resultado) => {
+                    buscarSalaDaTurma(idTurma).then(aplicarSala).catch(() => {});
+                    if (resultado.importadas > 0) {
+                      setErro(null);
+                      setSucesso(
+                        `${resultado.importadas} ${resultado.importadas === 1 ? 'aula importada' : 'aulas importadas'} da planilha.`
+                      );
+                    }
+                  }}
+                />
+                </div>
                 <div className="ead-copiar">
                   <label htmlFor="origem" className="ead-rotulo">Copiar aulas de</label>
                   <select id="origem" value={origemCopia} onChange={(e) => setOrigemCopia(e.target.value)} disabled={outrasTurmas.length === 0}>
@@ -277,7 +295,7 @@ function AdminSalaDeAula() {
                   <span aria-hidden="true">📭</span>
                   <p>
                     {sala.idPlano
-                      ? 'Nenhuma aula ainda. Clique em "+ Nova aula" ou copie as aulas de outra turma.'
+                      ? 'Nenhuma aula ainda. Clique em "+ Nova aula", importe uma planilha ou copie as aulas de outra turma.'
                       : 'Escolha o professor responsável para começar a montar as aulas.'}
                   </p>
                 </div>

@@ -287,6 +287,27 @@ class ConteudoEadServiceTest {
     }
 
     @Test
+    void conferirAulaUsaAsMesmasRegrasSemGravar() {
+        Turma t = turma(5);
+        when(turmaRepository.findById(5)).thenReturn(Optional.of(t));
+        when(planoRepository.findFirstByTurma_IdTurma(5)).thenReturn(Optional.of(plano(9, t, professor(3, "Carla"))));
+
+        service.conferirAula(5, form("Introdução"));
+        assertEquals("Informe o título da aula.",
+                assertThrows(RegraDeNegocioException.class, () -> service.conferirAula(5, form(" "))).getMessage());
+        verify(aulaRepository, never()).save(any());
+    }
+
+    @Test
+    void conferirAulaSemSalaPedeOProfessor() {
+        when(turmaRepository.findById(5)).thenReturn(Optional.of(turma(5)));
+        when(planoRepository.findFirstByTurma_IdTurma(5)).thenReturn(Optional.empty());
+
+        assertEquals("Escolha o professor responsável antes de cadastrar as aulas.",
+                assertThrows(RegraDeNegocioException.class, () -> service.conferirAula(5, form("Aula"))).getMessage());
+    }
+
+    @Test
     void novaAulaEntraNoFimComOVideoNormalizado() {
         Turma t = turma(5);
         PlanoDeAula p = plano(9, t, professor(3, "Carla"));

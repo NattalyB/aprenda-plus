@@ -5,6 +5,7 @@ import { usePaginacao } from '../../utils/paginacao';
 import Paginacao from '../../components/admin/Paginacao';
 import { Link } from 'react-router-dom';
 import { listarProfessores, deletarProfessor } from '../../services/professorService';
+import ImportarPlanilha from '../../components/admin/ImportarPlanilha';
 
 // Remove acentos e deixa minúsculo, pra busca "joao" encontrar "João"
 const normalizar = (texto) =>
@@ -83,9 +84,12 @@ function AdminProfessores() {
             {professoresFiltrados.length} de {professores.length} professor(es)
           </p>
         </div>
-        <Link to="/admin/professores/novo" className="admin-btn admin-btn-primary">
-          + Novo professor
-        </Link>
+        <div className="admin-header-acoes">
+          <ImportarPlanilha tipo="professores" onConcluido={carregar} />
+          <Link to="/admin/professores/novo" className="admin-btn admin-btn-primary">
+            + Novo professor
+          </Link>
+        </div>
       </div>
 
       {erro && <div className="form-erro">{erro}</div>}

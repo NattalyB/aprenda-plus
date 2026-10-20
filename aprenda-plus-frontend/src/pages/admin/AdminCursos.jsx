@@ -5,6 +5,7 @@ import { usePaginacao } from '../../utils/paginacao';
 import Paginacao from '../../components/admin/Paginacao';
 import { Link } from 'react-router-dom';
 import { listarCursos, deletarCurso } from '../../services/cursoService';
+import ImportarPlanilha from '../../components/admin/ImportarPlanilha';
 
 const normalizar = (texto) =>
   (texto || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -86,9 +87,12 @@ function AdminCursos() {
             {cursosFiltrados.length} de {cursos.length} curso(s)
           </p>
         </div>
-        <Link to="/admin/cursos/novo" className="admin-btn admin-btn-primary">
-          + Novo curso
-        </Link>
+        <div className="admin-header-acoes">
+          <ImportarPlanilha tipo="cursos" onConcluido={carregar} />
+          <Link to="/admin/cursos/novo" className="admin-btn admin-btn-primary">
+            + Novo curso
+          </Link>
+        </div>
       </div>
 
       {erro && <div className="form-erro">{erro}</div>}
