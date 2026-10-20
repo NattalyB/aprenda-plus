@@ -6,6 +6,7 @@ import Paginacao from '../../components/admin/Paginacao';
 import { Link } from 'react-router-dom';
 import { listarFuncionarios, deletarFuncionario } from '../../services/funcionarioService';
 import { getAcessoAdmin } from '../../services/authAdminService';
+import EtiquetaNivel from '../../components/admin/EtiquetaNivel';
 
 // Remove acentos e deixa minúsculo, pra busca "joao" encontrar "João"
 const normalizar = (texto) =>
@@ -137,9 +138,7 @@ function AdminFuncionarios() {
                     <td style={{ textTransform: 'capitalize' }}>{funcionario.cargo || '-'}</td>
                     <td>
                       {funcionario.nivel ? (
-                        <span className={funcionario.nivel.master ? 'nivel-badge nivel-master' : 'nivel-badge'}>
-                          {funcionario.nivel.nome}
-                        </span>
+                        <EtiquetaNivel nivel={funcionario.nivel} />
                       ) : (
                         '-'
                       )}

@@ -77,11 +77,40 @@ test('só com o financeiro, o sininho aparece para os avisos de parcelas', () =>
   expect(screen.getByText('Financeiro')).toBeInTheDocument();
 });
 
-test('sem o módulo de inscrições, o sininho não aparece', () => {
-  logarAdmin('Davi', { nivel: 'Secretaria', master: false, modulos: ['alunos'] });
+test('sem inscrições, alunos nem financeiro, o sininho não aparece', () => {
+  logarAdmin('Davi', { nivel: 'Cursos', master: false, modulos: ['cursos', 'turmas'] });
   montar('/admin');
 
   expect(screen.queryByRole('button', { name: /Notificações/ })).not.toBeInTheDocument();
+});
+
+test('cada nível só é avisado do que é dele: documentos para quem cuida de alunos', async () => {
+  jest.clearAllMocks();
+  logarAdmin('Sil', { nivel: 'Secretaria', master: false, modulos: ['alunos'] });
+  montar('/admin');
+
+  expect(screen.getByRole('button', { name: /Notificações/ })).toBeInTheDocument();
+  await waitFor(() => expect(situacaoDosDocumentos).toHaveBeenCalled());
+  expect(listarInscricoes).not.toHaveBeenCalled();
+  expect(buscarAlertasFinanceiros).not.toHaveBeenCalled();
+});
+
+test('o Financeiro (inscrições + financeiro) não recebe aviso de documentos', async () => {
+  jest.clearAllMocks();
+  logarAdmin('Fabi', { nivel: 'Financeiro', master: false, modulos: ['inscricoes', 'financeiro'] });
+  montar('/admin');
+
+  await waitFor(() => expect(buscarAlertasFinanceiros).toHaveBeenCalled());
+  expect(listarInscricoes).toHaveBeenCalled();
+  expect(situacaoDosDocumentos).not.toHaveBeenCalled();
+});
+
+test('a etiqueta do nível no menu usa a cor escolhida pelo Master', () => {
+  logarAdmin('Fabi', { nivel: 'Financeiro', master: false, modulos: ['financeiro'], cor: '#16a34a' });
+  montar('/admin');
+
+  const etiqueta = within(screen.getByText('Olá, Fabi').closest('.admin-usuario')).getByText('Financeiro');
+  expect(etiqueta).toHaveStyle({ background: '#16a34a', color: '#ffffff' });
 });
 
 test('abrir uma tela sem permissão mostra acesso restrito', () => {

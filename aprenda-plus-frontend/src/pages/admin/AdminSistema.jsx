@@ -1,12 +1,16 @@
 import { useEffect, useState } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import { listarNiveis, criarNivel, atualizarNivel, deletarNivel } from '../../services/funcionarioService';
 import { MODULOS_LIBERAVEIS } from '../../utils/modulosAdmin';
+import EtiquetaNivel, { CORES_SUGERIDAS, corDoNivel } from '../../components/admin/EtiquetaNivel';
 
 // Módulo "Sistema" (só o Master): níveis de acesso e o que cada um pode usar.
 // Cada linha é um nível; cada coluna, um módulo do painel.
 function AdminSistema() {
+  // Para a etiqueta do menu lateral já mudar de cor se o Master mexer no próprio nível
+  const { recarregarAcesso } = useOutletContext() || {};
   const [niveis, setNiveis] = useState(null);
-  // Alterações ainda não salvas, por nível: { [idNivel]: { nome, modulos } }
+  // Alterações ainda não salvas, por nível: { [idNivel]: { nome, modulos, cor } }
   const [rascunhos, setRascunhos] = useState({});
   const [novoNome, setNovoNome] = useState('');
   const [erro, setErro] = useState(null);
@@ -27,7 +31,8 @@ function AdminSistema() {
 
   const mensagemDoErro = (error, padrao) => error.response?.data?.mensagem || padrao;
 
-  const valorAtual = (nivel) => rascunhos[nivel.idNivel] || { nome: nivel.nome, modulos: nivel.modulos || [] };
+  const valorAtual = (nivel) =>
+    rascunhos[nivel.idNivel] || { nome: nivel.nome, modulos: nivel.modulos || [], cor: corDoNivel(nivel) };
 
   const alterado = (nivel) => Boolean(rascunhos[nivel.idNivel]);
 
@@ -46,7 +51,10 @@ function AdminSistema() {
     setSalvando(nivel.idNivel);
     atualizarNivel(nivel.idNivel, valorAtual(nivel))
       .then(() => {
-        setSucesso(`Permissões do nível "${valorAtual(nivel).nome}" salvas.`);
+        setSucesso(
+          nivel.master ? `Cor do nível "${nivel.nome}" salva.` : `Permissões do nível "${valorAtual(nivel).nome}" salvas.`
+        );
+        if (recarregarAcesso) recarregarAcesso();
         return carregar();
       })
       .catch((error) => setErro(mensagemDoErro(error, 'Não foi possível salvar o nível.')))
@@ -92,7 +100,8 @@ function AdminSistema() {
         <div>
           <h1 className="admin-titulo">Sistema</h1>
           <p className="admin-subtitulo">
-            Níveis de acesso do painel: marque os módulos que cada nível pode usar. O Master sempre tem acesso a tudo.
+            Níveis de acesso do painel: marque os módulos que cada nível pode usar e escolha a cor da etiqueta de cada um.
+            O Master sempre tem acesso a tudo.
           </p>
         </div>
       </div>
@@ -144,19 +153,32 @@ function AdminSistema() {
                   return (
                     <tr key={nivel.idNivel} className={nivel.master ? 'sistema-master' : undefined}>
                       <td>
-                        {nivel.master ? (
-                          <strong>
-                            {nivel.nome} <span className="status-badge status-ativo">Acesso total</span>
-                          </strong>
-                        ) : (
+                        <div className="sistema-nivel">
                           <input
-                            className="sistema-nome"
-                            aria-label={`Nome do nível ${nivel.nome}`}
-                            value={atual.nome}
-                            maxLength={50}
-                            onChange={(e) => editar(nivel, { nome: e.target.value })}
+                            type="color"
+                            className="sistema-cor"
+                            list="cores-dos-niveis"
+                            aria-label={`Cor do nível ${nivel.nome}`}
+                            title="Escolher a cor do nível"
+                            value={atual.cor}
+                            onChange={(e) => editar(nivel, { cor: e.target.value })}
                           />
-                        )}
+                          {nivel.master ? (
+                            <strong>
+                              <EtiquetaNivel nivel={{ nome: nivel.nome, cor: atual.cor }} />{' '}
+                              <span className="status-badge status-ativo">Acesso total</span>
+                            </strong>
+                          ) : (
+                            <input
+                              className="sistema-nome"
+                              aria-label={`Nome do nível ${nivel.nome}`}
+                              value={atual.nome}
+                              maxLength={50}
+                              style={{ borderLeftColor: atual.cor }}
+                              onChange={(e) => editar(nivel, { nome: e.target.value })}
+                            />
+                          )}
+                        </div>
                       </td>
                       {MODULOS_LIBERAVEIS.map((modulo) => (
                         <td key={modulo.chave} className="sistema-celula">
@@ -170,7 +192,7 @@ function AdminSistema() {
                         </td>
                       ))}
                       <td>
-                        {nivel.master ? (
+                        {nivel.master && !alterado(nivel) ? (
                           <span className="sistema-dica">Inclui o módulo Sistema</span>
                         ) : (
                           <div className="admin-acoes">
@@ -182,7 +204,7 @@ function AdminSistema() {
                             >
                               {salvando === nivel.idNivel ? 'Salvando...' : 'Salvar'}
                             </button>
-                            {alterado(nivel) ? (
+                            {alterado(nivel) || nivel.master ? (
                               <button
                                 type="button"
                                 className="admin-btn admin-btn-sm admin-btn-secundario"
@@ -211,7 +233,15 @@ function AdminSistema() {
         </div>
       )}
 
+      <datalist id="cores-dos-niveis">
+        {CORES_SUGERIDAS.map((cor) => (
+          <option key={cor} value={cor} />
+        ))}
+      </datalist>
+
       <p className="sistema-rodape">
+        A cor escolhida aparece na etiqueta do nível na lista de funcionários e no menu de quem é daquele nível.
+        <br />
         Sem um módulo liberado, ele some do menu e dos atalhos, e o servidor recusa criar, editar ou excluir nele.
         Consultas continuam liberadas para as outras telas funcionarem (exceto Funcionários e Sistema).
       </p>

@@ -6,5 +6,10 @@ import java.util.List;
 public record MeuAcesso(
         String nivel,
         boolean master,
-        List<String> modulos) {
+        List<String> modulos,
+        String cor) {
+
+    public MeuAcesso(String nivel, boolean master, List<String> modulos) {
+        this(nivel, master, modulos, null);
+    }
 }

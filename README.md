@@ -102,6 +102,7 @@ Projeto final do curso **Desenvolvimento Full Stack** do programa **+PraTi / Cod
 - **Níveis de acesso:** cada funcionário tem um nível (ex.: Master, Administrativo, Secretaria, Financeiro) que define os **módulos** do painel que ele pode usar.
   - O **Master** tem acesso a tudo e é o único que entra no módulo **Sistema**.
   - No **Sistema**, o Master cria níveis novos com nome livre (ex.: Contabilidade) e marca, numa tabela, os módulos de cada nível.
+  - **Cor de cada nível:** o Master escolhe a cor da etiqueta de cada nível (inclusive do Master). Todo mundo do mesmo nível aparece com a mesma cor na lista de funcionários, no menu lateral e no início do painel. O texto da etiqueta fica branco ou escuro sozinho, para sempre dar para ler (script `database/cores-dos-niveis.sql`).
   - Sem um módulo liberado, ele some do menu e dos atalhos, e o servidor recusa criar, editar ou excluir nele.
   - As mudanças valem na hora, sem precisar sair e entrar de novo.
 - **Início do painel:** ao entrar, o funcionário vê só quadrados de atalho para os módulos do nível dele.
@@ -140,9 +141,12 @@ Projeto final do curso **Desenvolvimento Full Stack** do programa **+PraTi / Cod
 - **Alunos da turma:** a lista de turmas mostra quantos alunos estão matriculados em cada uma (ex.: *👥 28 / 40*). Um clique abre a lista com o nome, o e-mail, a data e a situação de cada matrícula, e cada nome leva ao cadastro do aluno.
 - **Inscrições:** listagem com a forma de pagamento escolhida pelo aluno e troca de status direto na tabela. Ao **confirmar o pagamento**, a matrícula é criada automaticamente.
 - **Revisão do documento:** a coluna *Documento* mostra a situação do certificado de cada aluno. Um clique abre o arquivo (PDF ou foto) na própria tela, com os botões **Aprovar** e **Recusar** (a recusa pede o motivo). O pagamento só pode ser confirmado depois que o documento for aprovado. O certificado também aparece na edição do aluno.
-- **Notificações 🔔:** um sininho no topo do painel, que confere tudo a cada minuto:
-  - para quem tem o módulo Inscrições, mostra quantas inscrições novas chegaram desde a última vez que o funcionário olhou (cada funcionário tem a sua própria marcação de "vistas") e quantos **documentos aguardam análise**, com um atalho para a lista já filtrada;
-  - para quem tem o módulo Financeiro, mostra as parcelas em atraso e as que vencem nos próximos 7 dias.
+- **Notificações 🔔:** um sininho no topo do painel, que confere tudo a cada minuto. **Cada nível só é avisado do que pode resolver:**
+  - módulo **Inscrições:** inscrições novas desde a última vez que o funcionário olhou;
+  - módulo **Alunos:** **documentos aguardando análise**, com um atalho para a lista já filtrada (o Financeiro não recebe esse aviso);
+  - módulo **Financeiro:** **boletos** em atraso e os que vencem nos próximos 7 dias (Pix e cartão caem sozinhos e não geram aviso).
+  - O número no sininho conta só o que ainda **não foi lido**. Abrir uma área ("Ver financeiro", "Analisar documentos", "Ver inscrições") ou clicar em **"Marcar todas como lidas"** zera o número; ele só volta quando chega algo novo (ou quando um boleto que estava "vencendo" passa a estar atrasado). Cada funcionário tem as suas próprias marcações.
+  - O painel fecha com Esc, clicando fora ou mudando de tela.
 
 **Sala de aula (EAD)**
 
@@ -154,7 +158,7 @@ Projeto final do curso **Desenvolvimento Full Stack** do programa **+PraTi / Cod
 **Financeiro** (detalhes na seção [Financeiro](#-financeiro))
 
 - Painel com indicadores e gráficos de receita.
-- Lista de todas as parcelas, com baixa de pagamento, estorno, exportação para planilha e impressão.
+- Lista de todas as parcelas, com baixa dos boletos, estorno, exportação para planilha e impressão. Pix e cartão de crédito são **cobrança automática**: não precisam de baixa.
 
 **Listas e mensagens**
 
@@ -214,7 +218,9 @@ O módulo Financeiro usa a tabela `pagamento`, que já estava no modelo do banco
 - Quando o pagamento de uma inscrição é confirmado e a matrícula é criada, as parcelas são geradas sozinhas:
   - **Pix:** uma parcela única, já paga;
   - **cartão ou boleto em Nx:** N parcelas mensais, a primeira vencendo uma semana depois da confirmação. Os centavos que sobram da divisão entram na última parcela.
-- Parcela que passa do vencimento sem pagamento vira **atrasada** automaticamente.
+- **Cobrança automática (Pix e cartão):** com Pix ou cartão de crédito, o dinheiro cai sozinho para a faculdade, então ninguém precisa acompanhar essas parcelas. O Pix já nasce pago e cada parcela do cartão vira **paga sozinha no dia do vencimento**. Elas nunca ficam atrasadas, não entram nos avisos do sininho e o pagamento delas não pode ser desfeito.
+- Quem decide se a parcela é automática é a **forma escolhida na compra** (a da inscrição), e não a forma gravada numa baixa. Assim, um boleto que foi pago por Pix no balcão continua sendo boleto se a baixa for desfeita.
+- **Boleto** que passa do vencimento sem pagamento vira **atrasado** automaticamente.
 - Cancelar a inscrição cancela as parcelas em aberto (as pagas continuam no histórico). Se a inscrição for confirmada de novo, elas são reabertas.
 - Para matrículas que já existiam antes do módulo, o botão **"Gerar parcelas que faltam"** cria as parcelas a partir da inscrição confirmada.
 
@@ -233,8 +239,11 @@ O módulo Financeiro usa a tabela `pagamento`, que já estava no modelo do banco
 
 **Parcelas**
 
-- Filtros por situação (a vencer, atrasadas, pagas, canceladas) e busca por aluno ou curso, com o total do que está filtrado.
-- **Registrar pagamento:** informa a data (não pode ser no futuro) e a forma. Uma baixa feita por engano pode ser **desfeita**.
+- Filtros por situação e busca por aluno ou curso, com o total do que está filtrado:
+  - **A vencer** e **Atrasadas:** só boletos, que são o que o financeiro precisa acompanhar;
+  - **Automáticas:** parcelas do cartão que ainda vão cair (aparecem com a etiqueta roxa *Automática* e o aviso "Cai sozinha no vencimento", sem botão de baixa);
+  - **Pagas** e **Canceladas**.
+- **Registrar pagamento** (boletos): informa a data (não pode ser no futuro) e a forma. Uma baixa feita por engano pode ser **desfeita**.
 - **Exportar planilha** (CSV que o Excel abre direto) e **imprimir** a lista.
 
 **Para o aluno:** em "Minhas inscrições", cada curso mostra as parcelas e o recibo das que foram pagas.
@@ -539,8 +548,8 @@ A meta do projeto era **cobertura mínima de 70%**. Os dois lados ficaram bem ac
 
 | | Testes | Cobertura | Ferramentas |
 |---|---|---|---|
-| **Back-end** | **558** | **99%** das instruções, 94% dos desvios (*branches*), 100% dos métodos e das classes | JUnit 5, Mockito, MockMvc, JaCoCo |
-| **Front-end** | **626** | **99,6%** das instruções, 96,5% dos desvios (*branches*), 99,9% das funções | Jest, Testing Library |
+| **Back-end** | **570** | **99%** das instruções, 94% dos desvios (*branches*), 100% dos métodos e das classes | JUnit 5, Mockito, MockMvc, JaCoCo |
+| **Front-end** | **640** | **99,6%** das instruções, 96,5% dos desvios (*branches*), 99,9% das funções | Jest, Testing Library |
 
 ### Back-end
 
@@ -560,13 +569,13 @@ O que é testado:
   - **matrícula automática:** criada ao confirmar o pagamento, sem duplicar, e acompanhando a inscrição ao cancelar, concluir ou trocar de turma;
   - **disciplinas em vários cursos** e total de horas dos professores;
   - **funcionários do painel:** senha obrigatória e mínima, senha mantida na edição, nível obrigatório e as travas de contas Master;
-  - **níveis de acesso:** criar, renomear e excluir níveis, Master intocável e nível em uso protegido;
+  - **níveis de acesso:** criar, renomear e excluir níveis, Master intocável (só a cor muda), nível em uso protegido e validação da cor;
   - **documento de escolaridade:** tipo conferido pelo conteúdo, limite de 5 MB, nome do arquivo limpo, aprovação e recusa (com motivo obrigatório e e-mail para o aluno), e a trava que impede confirmar o pagamento sem documento aprovado;
   - **e-mails:** conteúdo de cada mensagem, envio só depois de gravar no banco e nenhum envio quando o Brevo não está configurado;
   - **sala de aula:** professor responsável, aulas (validação do link do YouTube, disciplina do curso certo, rascunho), ordem, exclusão com renumeração, cópia entre turmas, mural com e-mail para os alunos e andamento da turma;
   - **recuperação de senha:** link só para contas ativas, código guardado como hash, validade de 1 hora, uso único, links antigos cancelados e senha mínima;
   - **área do aluno na sala:** acesso só com matrícula ativa, aulas bloqueadas até a data de liberação, progresso, certificado só com 100% (e emitido uma vez só) e validação pública pelo código;
-  - **financeiro:** geração das parcelas (Pix, cartão e boleto, com os centavos na última), parcelas atrasadas, baixa, estorno, cancelamento e reabertura, "gerar as que faltam" e todos os indicadores do resumo.
+  - **financeiro:** geração das parcelas (Pix, cartão e boleto, com os centavos na última), parcelas atrasadas, cobrança automática do cartão no vencimento (decidida pela forma da inscrição), avisos só de boleto, baixa, estorno, cancelamento e reabertura, "gerar as que faltam" e todos os indicadores do resumo.
 - **Controllers:** todas as rotas (listar, buscar, criar, editar e excluir), a validação dos dados recebidos e as mensagens de erro.
 - **Segurança:**
   - geração e validação do JWT, inclusive tokens adulterados ou assinados com outra chave;
@@ -597,7 +606,7 @@ O que é testado:
 - **Componentes:**
   - cabeçalho (busca, sugestões, teclado e contador do carrinho);
   - modal do curso, campo de CEP e avisos;
-  - sininho de notificações e rota protegida do admin.
+  - sininho de notificações (avisos por nível e "marcar como lidas") e rota protegida do admin.
 - **Páginas:**
   - Home, login e cadastro;
   - carrinho: Pix com desconto, cartão, boleto, limite de parcelas, lista de espera e mensagem de erro vinda do servidor;
@@ -610,7 +619,7 @@ O que é testado:
   - todas as listas e formulários do painel admin, incluindo ordenação por coluna, erro ao excluir um registro em uso, funcionários e aviso de matrícula criada;
   - painel por nível de acesso: menu e atalhos de cada nível, tela de acesso restrito, menu recolhível com o nome ao passar o mouse e o módulo Sistema.
 - **Navegação do site:** ordem do topo, "Voltar ao início" e a logo limpando a pesquisa.
-- **Financeiro:** indicadores, gráficos (dica ao passar o mouse e tabela), filtros, baixa e estorno de parcelas, exportação da planilha, avisos no sininho e, na área do aluno, as parcelas e o recibo.
+- **Financeiro:** indicadores, gráficos (dica ao passar o mouse e tabela), filtros (com as parcelas automáticas separadas), baixa e estorno de boletos, exportação da planilha, avisos no sininho e, na área do aluno, as parcelas e o recibo.
 
 ![Cobertura do front-end](docs/cobertura-frontend.jpeg)
 
@@ -672,6 +681,8 @@ O que é testado:
 - **Consulta livre, alteração controlada.** Uma tela usa dados de outras (por exemplo, Matrículas precisa listar os alunos). Por isso consultar é livre para a equipe, e o que o nível controla é criar, editar e excluir. As exceções são Funcionários e Sistema, que são sensíveis e ficam bloqueados até para consulta.
 - **Interceptor em vez do Spring Security completo.** O controle de acesso foi feito com um `HandlerInterceptor`: uma solução enxuta, fácil de entender e que não conflita com a configuração de CORS.
 - **Notificações por consulta periódica.** O sininho do painel consulta a API a cada minuto. É mais simples de hospedar no plano gratuito do que uma conexão em tempo real (WebSocket) e atende bem ao volume do projeto.
+- **"Lido" guardado no navegador.** A marcação do que cada funcionário já leu fica no navegador dele (por funcionário), sem tabela nova no banco. Para o tamanho do projeto é suficiente; a contrapartida é que, em outro computador, os avisos aparecem de novo como não lidos.
+- **Cobrança automática para Pix e cartão.** Na vida real, Pix e cartão são creditados pela operadora sem a faculdade precisar conferir. Por isso o sistema marca essas parcelas como pagas no vencimento e deixa o trabalho manual (baixa e cobrança) só para o boleto.
 
 **Front-end**
 
@@ -726,6 +737,7 @@ O comando gera a versão de produção e publica a pasta `dist` na branch `gh-pa
 - Permitir que o próprio aluno cancele uma inscrição em "Minhas inscrições".
 - Mostrar também as matrículas na área do aluno.
 - Notificações do painel em tempo real (WebSocket), sem precisar consultar a API a cada minuto.
+- Guardar no banco o que cada funcionário já leu no sininho, para valer em qualquer computador.
 - Cadastrar a imagem do curso pelo painel admin, em vez de deixá-la no código.
 - QR Code no certificado, levando direto para a página de validação.
 

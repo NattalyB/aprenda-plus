@@ -228,4 +228,62 @@ class NivelAcessoServiceTest {
         assertNull(nivelAcessoService.modulosLiberados(9));
         assertNull(nivelAcessoService.modulosLiberados(null));
     }
+
+    // ===== Cor dos níveis =====
+
+    @Test
+    void nivelNovoSemCorFicaCinzaEComCorGuardaEmMinusculas() {
+        saveDevolveOProprio();
+        NivelAcesso semCor = nivel(null, "Contabilidade", "", false);
+        NivelAcesso comCor = nivel(null, "Estágio", "", false);
+        comCor.setCor(" #16A34A ");
+
+        assertEquals(NivelAcessoService.COR_PADRAO, nivelAcessoService.salvar(semCor).getCor());
+        assertEquals("#16a34a", nivelAcessoService.salvar(comCor).getCor());
+    }
+
+    @Test
+    void corInvalidaEhRecusada() {
+        NivelAcesso nivel = nivel(null, "Contabilidade", "", false);
+        nivel.setCor("verde");
+
+        salvarRecusado(nivel, "Escolha uma cor válida para o nível (ex.: #16a34a).");
+    }
+
+    @Test
+    void editarSemMandarCorMantemACorQueJaTinha() {
+        NivelAcesso guardado = nivel(3, "Financeiro", "inscricoes", false);
+        guardado.setCor("#16a34a");
+        when(nivelAcessoRepository.findById(3)).thenReturn(Optional.of(guardado));
+        saveDevolveOProprio();
+
+        assertEquals("#16a34a", nivelAcessoService.salvar(nivel(3, "Financeiro", "matriculas", false)).getCor());
+    }
+
+    @Test
+    void doMasterSoDaParaTrocarACor() {
+        NivelAcesso master = nivel(1, "Master", "", true);
+        master.setCor("#001e42");
+        when(nivelAcessoRepository.findById(1)).thenReturn(Optional.of(master));
+        saveDevolveOProprio();
+        NivelAcesso pedido = nivel(1, "Chefe", "alunos", false);
+        pedido.setCor("#B91C1C");
+
+        NivelAcesso salvo = nivelAcessoService.salvar(pedido);
+
+        assertSame(master, salvo);
+        assertEquals("#b91c1c", salvo.getCor());
+        assertEquals("Master", salvo.getNome());
+        assertTrue(salvo.isMaster());
+    }
+
+    @Test
+    void meuAcessoTrazACorDoNivel() {
+        NivelAcesso financeiro = nivel(3, "Financeiro", "financeiro", false);
+        financeiro.setCor("#16a34a");
+        when(funcionarioRepository.findById(2)).thenReturn(Optional.of(funcionario(2, "ativo", financeiro)));
+
+        assertEquals("#16a34a", nivelAcessoService.doFuncionario(2).cor());
+        assertNull(new MeuAcesso("X", false, List.of()).cor());
+    }
 }

@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 // Níveis de acesso do painel (módulo "Sistema", só para o Master)
 // e a consulta de permissões usada pela proteção da API.
@@ -26,11 +27,16 @@ public class NivelAcessoService implements PermissoesDoFuncionario {
     @Autowired
     private FuncionarioRepository funcionarioRepository;
 
+    // Cor usada quando o nível ainda não tem uma (cinza neutro)
+    public static final String COR_PADRAO = "#64748b";
+    private static final Pattern COR = Pattern.compile("^#[0-9a-fA-F]{6}$");
+
     public List<NivelAcesso> listar() {
         return nivelAcessoRepository.findAllByOrderByMasterDescNomeAsc();
     }
 
     public NivelAcesso salvar(NivelAcesso nivel) {
+        String cor = validarCor(nivel.getCor());
         String nome = nivel.getNome() == null ? "" : nivel.getNome().trim();
         if (nome.isEmpty()) {
             throw new RegraDeNegocioException("Informe o nome do nível.");
@@ -43,7 +49,16 @@ public class NivelAcessoService implements PermissoesDoFuncionario {
             NivelAcesso atual = nivelAcessoRepository.findById(nivel.getIdNivel())
                     .orElseThrow(() -> new RegraDeNegocioException("Nível de acesso não encontrado."));
             if (atual.isMaster()) {
-                throw new RegraDeNegocioException("O nível Master tem acesso a tudo e não pode ser alterado.");
+                // Do Master só dá para trocar a cor: nome e acesso total ficam como estão
+                if (cor == null || cor.equalsIgnoreCase(atual.getCor())) {
+                    throw new RegraDeNegocioException("O nível Master tem acesso a tudo e não pode ser alterado.");
+                }
+                atual.setCor(cor);
+                return nivelAcessoRepository.save(atual);
+            }
+            if (cor == null) {
+                // Sem cor no pedido: mantém a que já estava
+                cor = atual.getCor();
             }
         }
 
@@ -54,6 +69,7 @@ public class NivelAcessoService implements PermissoesDoFuncionario {
                 });
 
         nivel.setNome(nome);
+        nivel.setCor(cor == null ? COR_PADRAO : cor);
         // Só existe um Master, criado pelo script do banco
         nivel.setMaster(false);
         return nivelAcessoRepository.save(nivel);
@@ -82,7 +98,19 @@ public class NivelAcessoService implements PermissoesDoFuncionario {
         if (nivel == null) {
             return new MeuAcesso(null, false, List.of());
         }
-        return new MeuAcesso(nivel.getNome(), nivel.isMaster(), nivel.getModulos());
+        return new MeuAcesso(nivel.getNome(), nivel.isMaster(), nivel.getModulos(), nivel.getCor());
+    }
+
+    // null = sem cor escolhida. Aceita só "#rrggbb" e guarda em minúsculas.
+    static String validarCor(String cor) {
+        if (cor == null || cor.isBlank()) {
+            return null;
+        }
+        String limpa = cor.trim();
+        if (!COR.matcher(limpa).matches()) {
+            throw new RegraDeNegocioException("Escolha uma cor válida para o nível (ex.: #16a34a).");
+        }
+        return limpa.toLowerCase();
     }
 
     // Usado pelo AuthInterceptor a cada requisição do painel.

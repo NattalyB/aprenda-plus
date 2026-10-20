@@ -7,7 +7,14 @@ import {
   gerarParcelasQueFaltam,
 } from '../../services/financeiroService';
 import { formatarValor } from '../../utils/precoCurso';
-import { STATUS_PARCELA, formatarData, hojeISO, gerarCsvDeParcelas, baixarArquivo } from '../../utils/financeiro';
+import {
+  situacaoDaParcela,
+  rotuloDaSituacao,
+  formatarData,
+  hojeISO,
+  gerarCsvDeParcelas,
+  baixarArquivo,
+} from '../../utils/financeiro';
 import { GraficoMensal, BarrasHorizontais } from '../../components/admin/GraficosFinanceiro';
 
 const normalizar = (texto) =>
@@ -17,6 +24,7 @@ const FILTROS = [
   { valor: 'todas', rotulo: 'Todas' },
   { valor: 'pendente', rotulo: 'A vencer' },
   { valor: 'atrasado', rotulo: 'Atrasadas' },
+  { valor: 'automatica', rotulo: 'Automáticas' },
   { valor: 'pago', rotulo: 'Pagas' },
   { valor: 'cancelado', rotulo: 'Canceladas' },
 ];
@@ -104,11 +112,13 @@ function AdminFinanceiro() {
   const termo = normalizar(busca.trim());
   const filtradas = parcelas.filter(
     (p) =>
-      (filtro === 'todas' || p.status === filtro) &&
+      (filtro === 'todas' || situacaoDaParcela(p) === filtro) &&
       (!termo || normalizar(p.aluno).includes(termo) || normalizar(p.curso).includes(termo))
   );
   const totalFiltrado = filtradas.reduce((soma, p) => soma + Number(p.valor), 0);
-  const contagem = (status) => parcelas.filter((p) => p.status === status).length;
+  const contagem = (situacao) => parcelas.filter((p) => situacaoDaParcela(p) === situacao).length;
+  // Pix/cartão que já chegou no vencimento caiu sozinho: não tem o que desfazer
+  const podeDesfazer = (p) => p.status === 'pago' && !(p.cobrancaAutomatica && p.vencimento <= hojeISO());
   const percentualRecebido =
     Number(resumo.previstoNoMes) > 0
       ? Math.round((Number(resumo.recebidoNoMes) / Number(resumo.previstoNoMes)) * 100)
@@ -121,7 +131,10 @@ function AdminFinanceiro() {
       <div className="admin-header">
         <div>
           <h1 className="admin-titulo">Financeiro</h1>
-          <p className="admin-subtitulo">Parcelas das matrículas, recebimentos e indicadores. Pagamentos simulados.</p>
+          <p className="admin-subtitulo">
+            Parcelas das matrículas, recebimentos e indicadores. Pix e cartão de crédito caem sozinhos no vencimento;
+            só os boletos precisam de baixa aqui. Pagamentos simulados.
+          </p>
         </div>
         <button type="button" className="admin-btn admin-btn-secundario financeiro-sem-impressao" onClick={gerarFaltantes}>
           Gerar parcelas que faltam
@@ -268,7 +281,7 @@ function AdminFinanceiro() {
                         <td>{formatarData(p.vencimento)}</td>
                         <td>{formatarValor(p.valor)}</td>
                         <td>
-                          <span className={`status-badge parcela-${p.status}`}>{STATUS_PARCELA[p.status] || p.status}</span>
+                          <span className={`status-badge parcela-${situacaoDaParcela(p)}`}>{rotuloDaSituacao(p)}</span>
                         </td>
                         <td>
                           {p.dataPagamento ? (
@@ -316,12 +329,15 @@ function AdminFinanceiro() {
                             </div>
                           ) : (
                             <>
-                              {(p.status === 'pendente' || p.status === 'atrasado') && (
+                              {situacaoDaParcela(p) === 'automatica' && (
+                                <span className="financeiro-automatica">Cai sozinha no vencimento</span>
+                              )}
+                              {(situacaoDaParcela(p) === 'pendente' || situacaoDaParcela(p) === 'atrasado') && (
                                 <button type="button" className="admin-btn admin-btn-sm admin-btn-primary" onClick={() => abrirBaixa(p)}>
                                   Registrar pagamento
                                 </button>
                               )}
-                              {p.status === 'pago' && (
+                              {podeDesfazer(p) && (
                                 <button type="button" className="admin-btn admin-btn-sm admin-btn-secundario" onClick={() => estornar(p)}>
                                   Desfazer
                                 </button>

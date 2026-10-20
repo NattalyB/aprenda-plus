@@ -35,6 +35,10 @@ public class NivelAcesso {
     @Column(name = "master", nullable = false)
     private boolean master = false;
 
+    // Cor da etiqueta do nível no painel, em hexadecimal: "#16a34a"
+    @Column(name = "cor", length = 7)
+    private String cor;
+
     public Integer getIdNivel() { return idNivel; }
     public void setIdNivel(Integer idNivel) { this.idNivel = idNivel; }
 
@@ -46,6 +50,9 @@ public class NivelAcesso {
 
     public boolean isMaster() { return master; }
     public void setMaster(boolean master) { this.master = master; }
+
+    public String getCor() { return cor; }
+    public void setCor(String cor) { this.cor = cor; }
 
     // Na API os módulos aparecem como lista: ["alunos", "cursos"]
     @JsonProperty("modulos")

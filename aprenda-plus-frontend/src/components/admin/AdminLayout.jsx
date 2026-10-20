@@ -10,6 +10,7 @@ import {
 } from '../../services/authAdminService';
 import { modulosLiberados, podeUsar } from '../../utils/modulosAdmin';
 import NotificacoesInscricoes from './NotificacoesInscricoes';
+import EtiquetaNivel from './EtiquetaNivel';
 
 const CHAVE_RECOLHIDO = 'menuAdminRecolhido';
 
@@ -28,8 +29,8 @@ function AdminLayout() {
   // Nome do item quando o menu está recolhido e o mouse passa por cima
   const [dica, setDica] = useState(null);
 
-  // Confere no servidor o nível atual (o Master pode ter mudado as permissões)
-  useEffect(() => {
+  // Confere no servidor o nível atual (o Master pode ter mudado as permissões ou a cor)
+  const recarregarAcesso = () =>
     buscarMeuAcesso()
       .then((atual) => {
         salvarAcessoAdmin(atual);
@@ -38,6 +39,9 @@ function AdminLayout() {
       .catch(() => {
         // Sem conexão agora: continua com o que foi salvo no login
       });
+
+  useEffect(() => {
+    recarregarAcesso();
   }, []);
 
   const alternarMenu = () => {
@@ -99,9 +103,12 @@ function AdminLayout() {
           </button>
         </div>
 
-        {(podeUsar(acesso, 'inscricoes') || podeUsar(acesso, 'financeiro')) && (
+        {/* Cada um só é avisado do que o seu nível pode resolver */}
+        {['inscricoes', 'alunos', 'financeiro'].some((modulo) => podeUsar(acesso, modulo)) && (
           <NotificacoesInscricoes
+            key={acesso?.nivel || 'sem-nivel'}
             inscricoes={podeUsar(acesso, 'inscricoes')}
+            documentos={podeUsar(acesso, 'alunos')}
             financeiro={podeUsar(acesso, 'financeiro')}
           />
         )}
@@ -126,7 +133,12 @@ function AdminLayout() {
             <span aria-hidden="true">👤</span>
             <span className="admin-usuario-texto">
               Olá, {getNomeFuncionario()}
-              {acesso?.nivel && <small className="admin-nivel">{acesso.nivel}</small>}
+              {acesso?.nivel && (
+                <EtiquetaNivel
+                  className="admin-nivel"
+                  nivel={{ nome: acesso.nivel, cor: acesso.cor, master: acesso.master }}
+                />
+              )}
             </span>
           </span>
           <button className="admin-btn-sair" onClick={handleLogout} {...propsDoItem('Sair')}>
@@ -143,7 +155,7 @@ function AdminLayout() {
       )}
 
       <main className="admin-main">
-        <Outlet context={{ acesso }} />
+        <Outlet context={{ acesso, recarregarAcesso }} />
       </main>
     </div>
   );

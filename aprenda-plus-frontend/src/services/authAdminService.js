@@ -4,7 +4,7 @@ export const loginFuncionario = (email, senha) => api.post('/auth/login-funciona
 
 const CHAVE_ACESSO = 'acessoAdmin';
 
-// Nível e módulos do funcionário: { nivel, master, modulos }
+// Nível, módulos e cor do nível do funcionário: { nivel, master, modulos, cor }
 export const salvarAcessoAdmin = (acesso) => {
   localStorage.setItem(
     CHAVE_ACESSO,
@@ -12,6 +12,7 @@ export const salvarAcessoAdmin = (acesso) => {
       nivel: acesso?.nivel || null,
       master: Boolean(acesso?.master),
       modulos: acesso?.modulos || [],
+      cor: acesso?.cor || null,
     })
   );
 };

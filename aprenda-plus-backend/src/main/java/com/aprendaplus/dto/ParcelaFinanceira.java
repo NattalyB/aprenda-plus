@@ -3,7 +3,8 @@ package com.aprendaplus.dto;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-// Uma parcela, já com o nome do aluno, do curso e da turma (telas do financeiro e do aluno)
+// Uma parcela, já com o nome do aluno, do curso e da turma (telas do financeiro e do aluno).
+// cobrancaAutomatica = Pix ou cartão: o dinheiro cai sozinho, ninguém precisa dar baixa.
 public record ParcelaFinanceira(
         Integer idPagamento,
         Integer idMatricula,
@@ -17,5 +18,6 @@ public record ParcelaFinanceira(
         LocalDate vencimento,
         LocalDate dataPagamento,
         String formaPagamento,
-        String status) {
+        String status,
+        boolean cobrancaAutomatica) {
 }

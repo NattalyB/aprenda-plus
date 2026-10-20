@@ -4,6 +4,7 @@ import com.aprendaplus.entity.Pagamento;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 
 public interface PagamentoRepository extends JpaRepository<Pagamento, Integer> {
@@ -16,4 +17,7 @@ public interface PagamentoRepository extends JpaRepository<Pagamento, Integer> {
 
     // Parcelas com um status e vencimento antes de uma data (para marcar as atrasadas)
     List<Pagamento> findByStatusAndDataVencimentoBefore(String status, LocalDate data);
+
+    // Parcelas em aberto que já chegaram no vencimento (para dar baixa automática no cartão)
+    List<Pagamento> findByStatusInAndDataVencimentoLessThanEqual(Collection<String> status, LocalDate data);
 }

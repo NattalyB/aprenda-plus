@@ -5,6 +5,19 @@ export const STATUS_PARCELA = {
   atrasado: 'Atrasada',
   pago: 'Paga',
   cancelado: 'Cancelada',
+  automatica: 'Automática',
+};
+
+// Pix e cartão caem sozinhos: parcela em aberto deles não é "a vencer" nem "atrasada",
+// é cobrança automática (ninguém precisa dar baixa). Devolve a chave usada nos filtros e nas cores.
+export const situacaoDaParcela = (parcela) =>
+  parcela.cobrancaAutomatica && (parcela.status === 'pendente' || parcela.status === 'atrasado')
+    ? 'automatica'
+    : parcela.status;
+
+export const rotuloDaSituacao = (parcela) => {
+  const situacao = situacaoDaParcela(parcela);
+  return STATUS_PARCELA[situacao] || situacao;
 };
 
 const MESES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
@@ -45,7 +58,7 @@ export const gerarCsvDeParcelas = (parcelas) => {
       `${p.numeroParcela}/${p.totalParcelas}`,
       formatarData(p.vencimento),
       valorParaPlanilha(p.valor),
-      STATUS_PARCELA[p.status] || p.status,
+      rotuloDaSituacao(p),
       p.dataPagamento ? formatarData(p.dataPagamento) : '',
       p.formaPagamento,
     ]

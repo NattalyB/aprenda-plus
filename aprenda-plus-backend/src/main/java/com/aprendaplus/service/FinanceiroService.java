@@ -39,7 +39,8 @@ import java.util.regex.Pattern;
 
 // Financeiro: parcelas das matrículas (tabela pagamento), baixa de pagamentos,
 // indicadores do painel e as parcelas que o aluno vê na área dele.
-// O pagamento é simulado: quem confirma é a secretaria/financeiro, no painel.
+// O pagamento é simulado. Pix e cartão de crédito são cobrança automática: o dinheiro cai sozinho
+// (o Pix na hora, o cartão no vencimento de cada parcela). Só o boleto precisa de baixa no painel.
 @Service
 public class FinanceiroService {
 
@@ -209,6 +210,13 @@ public class FinanceiroService {
         if (!PAGO.equals(parcela.getStatus())) {
             throw new RegraDeNegocioException("Só dá para estornar uma parcela que está paga.");
         }
+        // Volta a forma combinada na inscrição (a baixa pode ter gravado outra)
+        String formaCombinada = formaCombinada(parcela, formasDasInscricoes());
+        if (cobrancaAutomatica(formaCombinada) && !parcela.getDataVencimento().isAfter(hoje)) {
+            throw new RegraDeNegocioException("Esta parcela é de " + formaCombinada
+                    + ": o valor é recebido automaticamente e o pagamento não pode ser desfeito.");
+        }
+        parcela.setFormaPagamento(formaCombinada);
         parcela.setDataPagamento(null);
         parcela.setStatus(parcela.getDataVencimento().isBefore(hoje) ? ATRASADO : PENDENTE);
         Pagamento salva = pagamentoRepository.save(parcela);
@@ -237,14 +245,22 @@ public class FinanceiroService {
 
     AlertasFinanceiros alertas(LocalDate hoje) {
         atualizarAtrasadas(hoje);
-        List<Pagamento> todas = pagamentoRepository.findAll();
+        Map<String, Inscricao> formas = formasDasInscricoes();
+        // Só boleto gera aviso: Pix e cartão o financeiro não precisa acompanhar
+        List<Pagamento> boletos = pagamentoRepository.findAll().stream()
+                .filter(p -> !cobrancaAutomatica(formaCombinada(p, formas)))
+                .toList();
         LocalDate limite = hoje.plusDays(7);
-        long vencendo = todas.stream()
+        List<Integer> vencendo = boletos.stream()
                 .filter(p -> PENDENTE.equals(p.getStatus()))
                 .filter(p -> !p.getDataVencimento().isBefore(hoje) && !p.getDataVencimento().isAfter(limite))
-                .count();
-        long atrasadas = todas.stream().filter(p -> ATRASADO.equals(p.getStatus())).count();
-        return new AlertasFinanceiros(vencendo, atrasadas);
+                .map(Pagamento::getIdPagamento)
+                .toList();
+        List<Integer> atrasadas = boletos.stream()
+                .filter(p -> ATRASADO.equals(p.getStatus()))
+                .map(Pagamento::getIdPagamento)
+                .toList();
+        return new AlertasFinanceiros(vencendo.size(), atrasadas.size(), vencendo, atrasadas);
     }
 
     @Transactional
@@ -287,9 +303,27 @@ public class FinanceiroService {
                 inadimplencia, porMes, agrupar(validas, this::nomeDoCurso), agrupar(validas, p -> familia(p.getFormaPagamento())));
     }
 
-    // Parcela pendente com vencimento já passado vira "atrasado"
+    // Cartão/Pix que chegou no vencimento: o valor caiu sozinho, a parcela vira "pago".
+    // Boleto pendente com vencimento já passado vira "atrasado".
     void atualizarAtrasadas(LocalDate hoje) {
-        List<Pagamento> vencidas = pagamentoRepository.findByStatusAndDataVencimentoBefore(PENDENTE, hoje);
+        List<Pagamento> chegaram = pagamentoRepository.findByStatusInAndDataVencimentoLessThanEqual(EM_ABERTO, hoje);
+        if (!chegaram.isEmpty()) {
+            Map<String, Inscricao> formas = formasDasInscricoes();
+            List<Pagamento> automaticas = chegaram.stream()
+                    .filter(p -> cobrancaAutomatica(formaCombinada(p, formas)))
+                    .toList();
+            automaticas.forEach(p -> {
+                p.setStatus(PAGO);
+                p.setDataPagamento(p.getDataVencimento());
+                p.setFormaPagamento(formaCombinada(p, formas));
+            });
+            if (!automaticas.isEmpty()) {
+                pagamentoRepository.saveAll(automaticas);
+            }
+        }
+        List<Pagamento> vencidas = pagamentoRepository.findByStatusAndDataVencimentoBefore(PENDENTE, hoje).stream()
+                .filter(p -> PENDENTE.equals(p.getStatus()))
+                .toList();
         vencidas.forEach(p -> p.setStatus(ATRASADO));
         if (!vencidas.isEmpty()) {
             pagamentoRepository.saveAll(vencidas);
@@ -312,6 +346,7 @@ public class FinanceiroService {
     }
 
     private List<ParcelaFinanceira> paraParcelas(List<Pagamento> parcelas) {
+        Map<String, Inscricao> formas = parcelas.isEmpty() ? Map.of() : formasDasInscricoes();
         Map<Integer, Integer> totalPorMatricula = new HashMap<>();
         for (Pagamento p : parcelas) {
             Integer id = p.getMatricula() == null ? null : p.getMatricula().getIdMatricula();
@@ -321,11 +356,16 @@ public class FinanceiroService {
                 .sorted(Comparator.comparing(Pagamento::getDataVencimento)
                         .thenComparing(Pagamento::getNumeroParcela))
                 .map(p -> paraParcela(p, totalPorMatricula.getOrDefault(
-                        p.getMatricula() == null ? null : p.getMatricula().getIdMatricula(), 1)))
+                        p.getMatricula() == null ? null : p.getMatricula().getIdMatricula(), 1),
+                        cobrancaAutomatica(formaCombinada(p, formas))))
                 .toList();
     }
 
     private ParcelaFinanceira paraParcela(Pagamento p, int total) {
+        return paraParcela(p, total, cobrancaAutomatica(formaCombinada(p, formasDasInscricoes())));
+    }
+
+    private ParcelaFinanceira paraParcela(Pagamento p, int total, boolean automatica) {
         Matricula matricula = p.getMatricula();
         Aluno aluno = matricula == null ? null : matricula.getAluno();
         Turma turma = matricula == null ? null : matricula.getTurma();
@@ -342,7 +382,48 @@ public class FinanceiroService {
                 p.getDataVencimento(),
                 p.getDataPagamento(),
                 p.getFormaPagamento(),
-                p.getStatus());
+                p.getStatus(),
+                automatica);
+    }
+
+    // Pix e cartão: o dinheiro cai sozinho. Boleto (e o resto): alguém confere e dá baixa.
+    static boolean cobrancaAutomatica(String forma) {
+        String familia = familia(forma);
+        return "Pix".equals(familia) || "Cartão de crédito".equals(familia);
+    }
+
+    // Inscrição confirmada mais recente de cada aluno+turma (é ela que diz como o aluno escolheu pagar)
+    private Map<String, Inscricao> formasDasInscricoes() {
+        Map<String, Inscricao> formas = new HashMap<>();
+        for (Inscricao i : inscricaoRepository.findAll()) {
+            if (!"confirmada".equals(i.getStatus()) || i.getAluno() == null || i.getTurma() == null
+                    || i.getFormaPagamento() == null || i.getFormaPagamento().isBlank()) {
+                continue;
+            }
+            formas.merge(chave(i.getAluno().getIdAluno(), i.getTurma().getIdTurma()), i,
+                    (a, b) -> idOuZero(b) > idOuZero(a) ? b : a);
+        }
+        return formas;
+    }
+
+    // Forma de pagamento escolhida na compra; sem inscrição, vale a que está na parcela
+    private String formaCombinada(Pagamento p, Map<String, Inscricao> formas) {
+        Matricula m = p.getMatricula();
+        if (m != null && m.getAluno() != null && m.getTurma() != null) {
+            Inscricao inscricao = formas.get(chave(m.getAluno().getIdAluno(), m.getTurma().getIdTurma()));
+            if (inscricao != null) {
+                return familia(inscricao.getFormaPagamento());
+            }
+        }
+        return familia(p.getFormaPagamento());
+    }
+
+    private static String chave(Integer idAluno, Integer idTurma) {
+        return idAluno + ":" + idTurma;
+    }
+
+    private static int idOuZero(Inscricao i) {
+        return i.getIdInscricao() == null ? 0 : i.getIdInscricao();
     }
 
     private String nomeDoCurso(Pagamento p) {

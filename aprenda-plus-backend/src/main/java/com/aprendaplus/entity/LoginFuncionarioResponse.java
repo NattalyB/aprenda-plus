@@ -9,6 +9,7 @@ public class LoginFuncionarioResponse {
     private String nivel;
     private boolean master;
     private java.util.List<String> modulos = java.util.List.of();
+    private String cor;
 
     public LoginFuncionarioResponse(String token, Integer idFuncionario, String nome, String cargo) {
         this.token = token;
@@ -24,6 +25,7 @@ public class LoginFuncionarioResponse {
             this.nivel = nivelAcesso.getNome();
             this.master = nivelAcesso.isMaster();
             this.modulos = nivelAcesso.getModulos();
+            this.cor = nivelAcesso.getCor();
         }
     }
 
@@ -34,4 +36,5 @@ public class LoginFuncionarioResponse {
     public String getNivel() { return nivel; }
     public boolean isMaster() { return master; }
     public java.util.List<String> getModulos() { return modulos; }
+    public String getCor() { return cor; }
 }

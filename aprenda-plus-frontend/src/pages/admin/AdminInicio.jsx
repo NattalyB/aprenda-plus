@@ -1,6 +1,7 @@
 import { Link, useOutletContext } from 'react-router-dom';
 import { getNomeFuncionario } from '../../services/authAdminService';
 import { modulosLiberados } from '../../utils/modulosAdmin';
+import EtiquetaNivel from '../../components/admin/EtiquetaNivel';
 
 // Tela inicial do painel: só os atalhos dos módulos que o nível do funcionário libera
 function AdminInicio() {
@@ -16,7 +17,9 @@ function AdminInicio() {
           <p className="admin-subtitulo">
             {acesso?.nivel ? (
               <>
-                Nível de acesso: <strong>{acesso.nivel}</strong>. Escolha por onde começar.
+                Nível de acesso:{' '}
+                <EtiquetaNivel nivel={{ nome: acesso.nivel, cor: acesso.cor, master: acesso.master }} />. Escolha por onde
+                começar.
               </>
             ) : (
               'Escolha por onde começar.'

@@ -33,7 +33,7 @@ class FinanceiroControllerTest {
 
     private static ParcelaFinanceira parcela(String status) {
         return new ParcelaFinanceira(5, 10, 3, "Lucas", "Redes", "Turma A", 2, 12, new BigDecimal("400.00"),
-                LocalDate.of(2026, 10, 19), null, "Boleto bancário", status);
+                LocalDate.of(2026, 10, 19), null, "Boleto bancário", status, false);
     }
 
     @Test
@@ -44,14 +44,15 @@ class FinanceiroControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].aluno").value("Lucas"))
                 .andExpect(jsonPath("$[0].vencimento").value("2026-10-19"))
-                .andExpect(jsonPath("$[0].totalParcelas").value(12));
+                .andExpect(jsonPath("$[0].totalParcelas").value(12))
+                .andExpect(jsonPath("$[0].cobrancaAutomatica").value(false));
     }
 
     @Test
     void resumoEAlertas() throws Exception {
         when(financeiroService.resumo()).thenReturn(new ResumoFinanceiro(BigDecimal.TEN, BigDecimal.ONE, BigDecimal.ZERO, 0,
                 BigDecimal.TEN, new BigDecimal("0.0"), List.of(), List.of(), List.of()));
-        when(financeiroService.alertas()).thenReturn(new AlertasFinanceiros(3, 1));
+        when(financeiroService.alertas()).thenReturn(new AlertasFinanceiros(3, 1, List.of(4, 5, 6), List.of(9)));
 
         mockMvc.perform(get("/financeiro/resumo"))
                 .andExpect(status().isOk())
@@ -59,6 +60,7 @@ class FinanceiroControllerTest {
         mockMvc.perform(get("/financeiro/alertas"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.vencendoEmBreve").value(3))
+                .andExpect(jsonPath("$.idsAtrasadas[0]").value(9))
                 .andExpect(jsonPath("$.atrasadas").value(1));
     }
 

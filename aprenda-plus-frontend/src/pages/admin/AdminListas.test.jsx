@@ -698,13 +698,17 @@ describe('Funcionários: conta própria e busca', () => {
       data: [
         { idFuncionario: 1, nomeCompleto: 'Admin Teste', status: 'ativo', nivel: { idNivel: 2, nome: 'Administrativo', master: false } },
         { idFuncionario: 2, nomeCompleto: 'Chefe', status: 'ativo', nivel: { idNivel: 1, nome: 'Master', master: true } },
-        { idFuncionario: 3, nomeCompleto: 'Caio', status: 'ativo', nivel: { idNivel: 3, nome: 'Financeiro', master: false } },
+        { idFuncionario: 3, nomeCompleto: 'Caio', status: 'ativo', nivel: { idNivel: 3, nome: 'Financeiro', master: false, cor: '#bef264' } },
       ],
     });
     renderizar(<AdminFuncionarios />);
     await screen.findByText('Chefe');
 
-    expect(screen.getByText('Master')).toHaveClass('nivel-master');
+    // Cada nível com a sua cor (sem cor salva: Master azul-marinho, os outros cinza)
+    expect(screen.getByText('Master')).toHaveStyle({ background: '#001e42', color: '#ffffff' });
+    expect(screen.getByText('Administrativo')).toHaveStyle({ background: '#64748b' });
+    // Cor clara ganha texto escuro para dar para ler
+    expect(screen.getByText('Financeiro')).toHaveStyle({ background: '#bef264', color: '#111827' });
     expect(screen.getByText('Financeiro')).toHaveClass('nivel-badge');
     // Só o Caio pode ser excluído (o Admin é a própria conta e o Chefe é Master)
     expect(screen.getAllByText('Excluir')).toHaveLength(1);

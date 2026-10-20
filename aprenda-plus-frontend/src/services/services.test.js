@@ -172,12 +172,12 @@ describe('authAdminService (funcionário)', () => {
       nivel: 'Financeiro', master: false, modulos: ['matriculas'],
     });
 
-    expect(authAdminService.getAcessoAdmin()).toEqual({ nivel: 'Financeiro', master: false, modulos: ['matriculas'] });
+    expect(authAdminService.getAcessoAdmin()).toEqual({ nivel: 'Financeiro', master: false, modulos: ['matriculas'], cor: null });
   });
 
   test('acesso vazio, sem lista ou quebrado', () => {
     authAdminService.salvarAcessoAdmin(null);
-    expect(authAdminService.getAcessoAdmin()).toEqual({ nivel: null, master: false, modulos: [] });
+    expect(authAdminService.getAcessoAdmin()).toEqual({ nivel: null, master: false, modulos: [], cor: null });
 
     localStorage.setItem('acessoAdmin', JSON.stringify({ nivel: 'X' }));
     expect(authAdminService.getAcessoAdmin()).toBeNull();

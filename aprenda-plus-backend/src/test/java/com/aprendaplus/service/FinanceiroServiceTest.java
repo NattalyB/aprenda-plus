@@ -427,4 +427,144 @@ class FinanceiroServiceTest {
         assertEquals("Outros", FinanceiroService.familia("  "));
         assertEquals("Dinheiro", FinanceiroService.familia(" Dinheiro "));
     }
+
+    // ===== Cobrança automática (Pix e cartão) =====
+
+    private void inscricaoConfirmada(String forma) {
+        Matricula m = matricula(99, "Redes");
+        Inscricao antiga = new Inscricao();
+        antiga.setIdInscricao(1);
+        antiga.setAluno(m.getAluno());
+        antiga.setTurma(m.getTurma());
+        antiga.setStatus("confirmada");
+        antiga.setFormaPagamento("Pix");
+        Inscricao atual = new Inscricao();
+        atual.setIdInscricao(2);
+        atual.setAluno(m.getAluno());
+        atual.setTurma(m.getTurma());
+        atual.setStatus("confirmada");
+        atual.setFormaPagamento(forma);
+        Inscricao cancelada = new Inscricao();
+        cancelada.setStatus("cancelada");
+        Inscricao semAluno = new Inscricao();
+        semAluno.setStatus("confirmada");
+        semAluno.setFormaPagamento("Pix");
+        when(inscricaoRepository.findAll()).thenReturn(List.of(atual, cancelada, semAluno, antiga));
+    }
+
+    @Test
+    void sabeQuaisFormasCaemSozinhas() {
+        assertTrue(FinanceiroService.cobrancaAutomatica("Pix"));
+        assertTrue(FinanceiroService.cobrancaAutomatica("Cartão de crédito · 10x"));
+        assertFalse(FinanceiroService.cobrancaAutomatica("Boleto bancário · 3x"));
+        assertFalse(FinanceiroService.cobrancaAutomatica("Dinheiro"));
+        assertFalse(FinanceiroService.cobrancaAutomatica(null));
+    }
+
+    @Test
+    void parcelaDoCartaoQueChegouNoVencimentoEhPagaSozinha() {
+        Matricula m = matricula(10, "Redes");
+        Pagamento cartao = parcela(1, m, 1, "100", HOJE, "pendente");
+        cartao.setFormaPagamento("Cartão de crédito");
+        Pagamento cartaoAtrasado = parcela(2, m, 2, "100", HOJE.minusDays(3), "atrasado");
+        cartaoAtrasado.setFormaPagamento("Cartão de crédito");
+        Pagamento boleto = parcela(3, null, 1, "100", HOJE, "pendente");
+        when(pagamentoRepository.findByStatusInAndDataVencimentoLessThanEqual(any(), eq(HOJE)))
+                .thenReturn(List.of(cartao, cartaoAtrasado, boleto));
+
+        financeiroService.atualizarAtrasadas(HOJE);
+
+        assertEquals("pago", cartao.getStatus());
+        assertEquals(HOJE, cartao.getDataPagamento());
+        assertEquals("pago", cartaoAtrasado.getStatus());
+        assertEquals(HOJE.minusDays(3), cartaoAtrasado.getDataPagamento());
+        assertEquals("pendente", boleto.getStatus());
+        assertEquals(2, parcelasSalvas().size());
+    }
+
+    @Test
+    void quemDecideEhAFormaEscolhidaNaInscricao() {
+        inscricaoConfirmada("Boleto bancário · 6x");
+        Matricula m = matricula(10, "Redes");
+        // A baixa anterior gravou "Pix", mas o aluno comprou no boleto: não pode cair sozinha
+        Pagamento boletoComOutraForma = parcela(1, m, 1, "100", HOJE.minusDays(1), "atrasado");
+        boletoComOutraForma.setFormaPagamento("Pix");
+        when(pagamentoRepository.findByStatusInAndDataVencimentoLessThanEqual(any(), eq(HOJE)))
+                .thenReturn(List.of(boletoComOutraForma));
+
+        financeiroService.atualizarAtrasadas(HOJE);
+
+        assertEquals("atrasado", boletoComOutraForma.getStatus());
+        verify(pagamentoRepository, never()).saveAll(anyList());
+    }
+
+    @Test
+    void listaMarcaAsParcelasDeCobrancaAutomatica() {
+        inscricaoConfirmada("Cartão de crédito · 12x");
+        Matricula cartao = matricula(10, "Redes");
+        Matricula boleto = matricula(11, "Redes");
+        boleto.getAluno().setIdAluno(8);
+        when(pagamentoRepository.findAll()).thenReturn(List.of(
+                parcela(1, cartao, 2, "100", HOJE.plusDays(30), "pendente"),
+                parcela(2, boleto, 2, "100", HOJE.plusDays(30), "pendente")));
+
+        List<ParcelaFinanceira> lista = financeiroService.listarParcelas();
+
+        assertTrue(lista.get(0).cobrancaAutomatica());
+        assertFalse(lista.get(1).cobrancaAutomatica());
+    }
+
+    @Test
+    void alertasSoContamBoletosETrazemOsIds() {
+        inscricaoConfirmada("Cartão de crédito · 12x");
+        Matricula cartao = matricula(10, "Redes");
+        Matricula boleto = matricula(11, "Redes");
+        boleto.getAluno().setIdAluno(8);
+        when(pagamentoRepository.findAll()).thenReturn(List.of(
+                parcela(1, cartao, 2, "100", HOJE.plusDays(3), "pendente"),
+                parcela(2, boleto, 2, "100", HOJE.plusDays(3), "pendente"),
+                parcela(3, boleto, 1, "100", HOJE.minusDays(5), "atrasado")));
+
+        AlertasFinanceiros alertas = financeiroService.alertas(HOJE);
+
+        assertEquals(1, alertas.vencendoEmBreve());
+        assertEquals(List.of(2), alertas.idsVencendo());
+        assertEquals(1, alertas.atrasadas());
+        assertEquals(List.of(3), alertas.idsAtrasadas());
+        assertEquals(List.of(), new AlertasFinanceiros(0, 0).idsVencendo());
+    }
+
+    @Test
+    void naoDesfazPagamentoQueCaiuSozinho() {
+        Pagamento pix = parcela(1, null, 1, "100", HOJE, "pago");
+        pix.setFormaPagamento("Pix");
+        when(pagamentoRepository.findById(1)).thenReturn(Optional.of(pix));
+
+        assertEquals("Esta parcela é de Pix: o valor é recebido automaticamente e o pagamento não pode ser desfeito.",
+                assertThrows(RegraDeNegocioException.class, () -> financeiroService.estornar(1, HOJE)).getMessage());
+        assertEquals("pago", pix.getStatus());
+        verify(pagamentoRepository, never()).save(any());
+    }
+
+    @Test
+    void estornoVoltaAFormaDaInscricao() {
+        inscricaoConfirmada("Boleto bancário · 6x");
+        Matricula m = matricula(10, "Redes");
+        Pagamento boletoPagoNoPix = parcela(1, m, 1, "100", HOJE.minusDays(2), "pago");
+        boletoPagoNoPix.setFormaPagamento("Pix");
+        Pagamento cartaoFuturo = parcela(2, null, 2, "100", HOJE.plusDays(20), "pago");
+        cartaoFuturo.setFormaPagamento("Cartão de crédito");
+        when(pagamentoRepository.findById(1)).thenReturn(Optional.of(boletoPagoNoPix));
+        when(pagamentoRepository.findById(2)).thenReturn(Optional.of(cartaoFuturo));
+
+        ParcelaFinanceira boleto = financeiroService.estornar(1, HOJE);
+        ParcelaFinanceira cartao = financeiroService.estornar(2, HOJE);
+
+        assertEquals("atrasado", boleto.status());
+        assertEquals("Boleto bancário", boleto.formaPagamento());
+        assertFalse(boleto.cobrancaAutomatica());
+        // Cartão pago adiantado por engano: volta a esperar o vencimento
+        assertEquals("pendente", cartao.status());
+        assertTrue(cartao.cobrancaAutomatica());
+    }
 }

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { formatarValor } from '../utils/precoCurso';
-import { STATUS_PARCELA, formatarData } from '../utils/financeiro';
+import { formatarData, situacaoDaParcela, rotuloDaSituacao } from '../utils/financeiro';
 import logo from '../assets/logo-aprenda-plus.png';
 
 // Recibo de uma parcela paga, pronto para imprimir ou salvar em PDF
@@ -57,7 +57,7 @@ function PagamentosDaInscricao({ parcelas, aluno }) {
 
   const validas = parcelas.filter((p) => p.status !== 'cancelado');
   const pagas = validas.filter((p) => p.status === 'pago').length;
-  const atrasadas = validas.filter((p) => p.status === 'atrasado');
+  const atrasadas = validas.filter((p) => situacaoDaParcela(p) === 'atrasado');
   const proxima = validas.find((p) => p.status === 'pendente' || p.status === 'atrasado');
 
   return (
@@ -88,7 +88,12 @@ function PagamentosDaInscricao({ parcelas, aluno }) {
               <span>Parcela {p.numeroParcela}/{p.totalParcelas}</span>
               <span>{formatarValor(p.valor)}</span>
               <span>Vence {formatarData(p.vencimento)}</span>
-              <span className={`status-badge parcela-${p.status}`}>{STATUS_PARCELA[p.status] || p.status}</span>
+              <span
+                className={`status-badge parcela-${situacaoDaParcela(p)}`}
+                title={situacaoDaParcela(p) === 'automatica' ? 'Cobrada sozinha no vencimento, no seu cartão' : undefined}
+              >
+                {rotuloDaSituacao(p)}
+              </span>
               {p.status === 'pago' ? (
                 <button type="button" className="meus-pagamentos-recibo" onClick={() => setRecibo(p)}>
                   Recibo

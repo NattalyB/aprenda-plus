@@ -230,6 +230,47 @@ describe('parcelas', () => {
   });
 });
 
+describe('cobrança automática (Pix e cartão)', () => {
+  const comCartao = () => [
+    parcela(1, 'Lucas Almeida', 'pago', { formaPagamento: 'Cartão de crédito', cobrancaAutomatica: true, vencimento: '2026-01-10' }),
+    parcela(2, 'Lucas Almeida', 'pendente', { formaPagamento: 'Cartão de crédito', cobrancaAutomatica: true, vencimento: '2999-01-10' }),
+    parcela(3, 'Mariana Costa', 'pendente'),
+    parcela(4, 'Mariana Costa', 'atrasado'),
+    parcela(5, 'Gabriel Souza', 'pago', { formaPagamento: 'Cartão de crédito', cobrancaAutomatica: true, vencimento: '2999-02-10' }),
+  ];
+
+  test('"A vencer" e "Atrasadas" mostram só boletos; o cartão fica em "Automáticas" sem botão de baixa', async () => {
+    listarParcelas.mockResolvedValue(comCartao());
+    renderizar(<AdminFinanceiro />);
+    await abrirParcelas();
+
+    expect(screen.getByText(/só os boletos precisam de baixa/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /A vencer/ })).toHaveTextContent('1');
+    expect(screen.getByRole('button', { name: /Automáticas/ })).toHaveTextContent('1');
+
+    fireEvent.click(screen.getByRole('button', { name: /A vencer/ }));
+    expect(linhas()).toHaveLength(1);
+    expect(linhas()[0]).toHaveTextContent('Mariana Costa');
+
+    fireEvent.click(screen.getByRole('button', { name: /Automáticas/ }));
+    expect(linhas()).toHaveLength(1);
+    expect(within(linhas()[0]).getByText('Automática')).toHaveClass('parcela-automatica');
+    expect(within(linhas()[0]).getByText('Cai sozinha no vencimento')).toBeInTheDocument();
+    expect(within(linhas()[0]).queryByRole('button')).not.toBeInTheDocument();
+  });
+
+  test('pagamento no cartão que já caiu não tem "Desfazer"; pago adiantado ainda tem', async () => {
+    listarParcelas.mockResolvedValue(comCartao());
+    renderizar(<AdminFinanceiro />);
+    await abrirParcelas();
+    fireEvent.click(screen.getByRole('button', { name: /Pagas/ }));
+
+    const [caiu, adiantado] = linhas();
+    expect(within(caiu).queryByRole('button', { name: 'Desfazer' })).not.toBeInTheDocument();
+    expect(within(adiantado).getByRole('button', { name: 'Desfazer' })).toBeInTheDocument();
+  });
+});
+
 describe('gerar parcelas que faltam', () => {
   test('avisa quantas matrículas receberam parcelas', async () => {
     gerarParcelasQueFaltam.mockResolvedValueOnce({ matriculas: 3 });

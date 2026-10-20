@@ -48,7 +48,11 @@ test('marca um módulo, renomeia e salva', async () => {
   fireEvent.click(within(linha('Contabilidade')).getByRole('button', { name: 'Salvar' }));
 
   await waitFor(() =>
-    expect(atualizarNivel).toHaveBeenCalledWith(3, { nome: 'Contabilidade', modulos: ['matriculas', 'alunos'] })
+    expect(atualizarNivel).toHaveBeenCalledWith(3, {
+      nome: 'Contabilidade',
+      modulos: ['matriculas', 'alunos'],
+      cor: '#64748b',
+    })
   );
   expect(await screen.findByText('Permissões do nível "Contabilidade" salvas.')).toBeInTheDocument();
   expect(listarNiveis).toHaveBeenCalledTimes(2);
@@ -159,4 +163,66 @@ test('erro ao carregar', async () => {
 
   expect(await screen.findByText('Não foi possível carregar os níveis de acesso.')).toBeInTheDocument();
   expect(screen.queryByText('Carregando níveis...')).not.toBeInTheDocument();
+});
+
+describe('cor de cada nível', () => {
+  test('troca a cor de um nível e salva junto com as permissões', async () => {
+    atualizarNivel.mockResolvedValue({});
+    renderizar(<AdminSistema />);
+    await screen.findByDisplayValue('Financeiro');
+
+    const cor = screen.getByLabelText('Cor do nível Financeiro');
+    expect(cor).toHaveValue('#64748b');
+    fireEvent.input(cor, { target: { value: '#16a34a' } });
+    expect(screen.getByLabelText('Nome do nível Financeiro')).toHaveStyle({ borderLeftColor: '#16a34a' });
+    fireEvent.click(within(linha('Financeiro')).getByRole('button', { name: 'Salvar' }));
+
+    await waitFor(() =>
+      expect(atualizarNivel).toHaveBeenCalledWith(3, {
+        nome: 'Financeiro',
+        modulos: ['inscricoes', 'matriculas'],
+        cor: '#16a34a',
+      })
+    );
+  });
+
+  test('do Master só a cor muda; salvar atualiza a etiqueta do menu', async () => {
+    const { MemoryRouter, Routes, Route, Outlet } = jest.requireActual('react-router-dom');
+    const { render } = jest.requireActual('@testing-library/react');
+    const recarregarAcesso = jest.fn();
+    atualizarNivel.mockResolvedValue({});
+    listarNiveis.mockResolvedValue({
+      data: [{ idNivel: 1, nome: 'Master', master: true, modulos: [], cor: '#001e42' }],
+    });
+    render(
+      <MemoryRouter>
+        <Routes>
+          <Route element={<Outlet context={{ recarregarAcesso }} />}>
+            <Route path="*" element={<AdminSistema />} />
+          </Route>
+        </Routes>
+      </MemoryRouter>
+    );
+    await screen.findByText('Acesso total');
+    expect(screen.getByText('Inclui o módulo Sistema')).toBeInTheDocument();
+
+    fireEvent.input(screen.getByLabelText('Cor do nível Master'), { target: { value: '#b91c1c' } });
+    expect(screen.getByText('Master')).toHaveStyle({ background: '#b91c1c' });
+    fireEvent.click(within(linhaMaster()).getByRole('button', { name: 'Salvar' }));
+
+    await waitFor(() => expect(atualizarNivel).toHaveBeenCalledWith(1, { nome: 'Master', modulos: [], cor: '#b91c1c' }));
+    expect(await screen.findByText('Cor do nível "Master" salva.')).toBeInTheDocument();
+    expect(recarregarAcesso).toHaveBeenCalled();
+  });
+
+  test('desfazer a cor do Master volta à cor salva', async () => {
+    listarNiveis.mockResolvedValue({ data: [{ idNivel: 1, nome: 'Master', master: true, modulos: [] }] });
+    renderizar(<AdminSistema />);
+    await screen.findByText('Acesso total');
+
+    fireEvent.input(screen.getByLabelText('Cor do nível Master'), { target: { value: '#b91c1c' } });
+    fireEvent.click(within(linhaMaster()).getByRole('button', { name: 'Desfazer' }));
+    expect(screen.getByLabelText('Cor do nível Master')).toHaveValue('#001e42');
+    expect(screen.getByText('Inclui o módulo Sistema')).toBeInTheDocument();
+  });
 });

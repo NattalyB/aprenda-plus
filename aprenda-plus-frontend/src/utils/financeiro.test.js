@@ -1,4 +1,13 @@
-import { formatarData, nomeDoMes, hojeISO, gerarCsvDeParcelas, baixarArquivo, STATUS_PARCELA } from './financeiro';
+import {
+  formatarData,
+  nomeDoMes,
+  hojeISO,
+  gerarCsvDeParcelas,
+  baixarArquivo,
+  STATUS_PARCELA,
+  situacaoDaParcela,
+  rotuloDaSituacao,
+} from './financeiro';
 
 test('formata datas e meses', () => {
   expect(formatarData('2026-10-19')).toBe('19/10/2026');
@@ -35,4 +44,19 @@ test('baixa o arquivo pelo navegador', () => {
   expect(clique).toHaveBeenCalled();
   expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:teste');
   clique.mockRestore();
+});
+
+test('Pix e cartão em aberto são cobrança automática; boleto continua a vencer ou atrasado', () => {
+  expect(situacaoDaParcela({ status: 'pendente', cobrancaAutomatica: true })).toBe('automatica');
+  expect(situacaoDaParcela({ status: 'atrasado', cobrancaAutomatica: true })).toBe('automatica');
+  expect(situacaoDaParcela({ status: 'pago', cobrancaAutomatica: true })).toBe('pago');
+  expect(situacaoDaParcela({ status: 'pendente', cobrancaAutomatica: false })).toBe('pendente');
+  expect(situacaoDaParcela({ status: 'atrasado' })).toBe('atrasado');
+  expect(rotuloDaSituacao({ status: 'pendente', cobrancaAutomatica: true })).toBe('Automática');
+  expect(rotuloDaSituacao({ status: 'outro' })).toBe('outro');
+
+  const csv = gerarCsvDeParcelas([
+    { aluno: 'Ana', curso: 'Redes', numeroParcela: 2, totalParcelas: 3, vencimento: '2026-11-19', valor: 10, status: 'pendente', cobrancaAutomatica: true, formaPagamento: 'Cartão de crédito' },
+  ]);
+  expect(csv).toContain('"Automática"');
 });
