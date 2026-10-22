@@ -95,6 +95,16 @@ class ConteudoEadControllerTest {
     }
 
     @Test
+    void excluiVariasAulasDeUmaVez() throws Exception {
+        when(conteudoEadService.excluirAulas(5, List.of(11, 12))).thenReturn(plano());
+
+        mockMvc.perform(post("/planos-de-aula/turma/5/aulas/excluir")
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"ids\":[11,12]}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.idPlano").value(9));
+    }
+
+    @Test
     void copiaAsAulasDeOutraTurma() throws Exception {
         when(conteudoEadService.copiarAulas(5, 2)).thenReturn(8);
         when(conteudoEadService.planoDaTurma(5)).thenReturn(plano());

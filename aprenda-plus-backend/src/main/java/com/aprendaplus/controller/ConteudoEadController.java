@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 // Painel: sala de aula EAD de cada turma (módulo "Sala de aula").
@@ -53,6 +54,12 @@ public class ConteudoEadController {
     @DeleteMapping("/aulas/{idAula}")
     public ResponseEntity<?> excluirAula(@PathVariable Integer idAula) {
         return ResponseEntity.ok(conteudoEadService.excluirAula(idAula));
+    }
+
+    // Exclusão em lote. Corpo: { "ids": [10, 11, 12] }
+    @PostMapping("/turma/{idTurma}/aulas/excluir")
+    public ResponseEntity<?> excluirAulas(@PathVariable Integer idTurma, @RequestBody Map<String, List<Integer>> corpo) {
+        return ResponseEntity.ok(conteudoEadService.excluirAulas(idTurma, corpo == null ? null : corpo.get("ids")));
     }
 
     @PutMapping("/aulas/{idAula}/mover")

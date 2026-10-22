@@ -13,6 +13,7 @@ import {
   criarAulaEad,
   atualizarAulaEad,
   excluirAulaEad,
+  excluirAulasEad,
   moverAulaEad,
   copiarAulasDaTurma,
   publicarAvisoEad,
@@ -282,6 +283,63 @@ test('mudar a ordem e excluir aulas', async () => {
 
   fireEvent.click(within(linhaDaAula('Aula 1')).getByRole('button', { name: 'Excluir' }));
   expect(await screen.findByText('Não foi possível excluir a aula.')).toBeInTheDocument();
+});
+
+test('selecionar várias aulas e excluir de uma vez', async () => {
+  const quatro = sala({
+    aulas: [
+      aula(1, { titulo: 'Boas-vindas' }),
+      aula(2, { titulo: 'Introdução', disciplina: 'Marketing' }),
+      aula(3, { titulo: 'Boas-vindas' }),
+      aula(4, { titulo: 'Introdução', disciplina: 'Marketing' }),
+    ],
+  });
+  buscarSalaDaTurma.mockResolvedValue(quatro);
+  excluirAulasEad
+    .mockResolvedValueOnce(sala({ aulas: [aula(1, { titulo: 'Boas-vindas' }), aula(2, { titulo: 'Introdução', disciplina: 'Marketing' })] }))
+    .mockRejectedValueOnce(new Error('x'));
+  abrir();
+  await screen.findAllByText('Boas-vindas');
+
+  // sem nada marcado, o botão de excluir em lote não aparece
+  expect(screen.queryByRole('button', { name: /Excluir selecionadas/ })).not.toBeInTheDocument();
+
+  // marcar e desmarcar uma aula
+  const caixas = screen.getAllByRole('checkbox', { name: /Selecionar a aula/ });
+  fireEvent.click(caixas[0]);
+  expect(screen.getByText('1 de 4 selecionadas')).toBeInTheDocument();
+  fireEvent.click(caixas[0]);
+  expect(screen.getByText('Selecionar todas')).toBeInTheDocument();
+
+  // selecionar todas e limpar
+  fireEvent.click(screen.getByRole('checkbox', { name: 'Selecionar todas' }));
+  expect(screen.getByText('4 de 4 selecionadas')).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('checkbox', { name: '4 de 4 selecionadas' }));
+  expect(screen.getByText('Selecionar todas')).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('checkbox', { name: 'Selecionar todas' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Limpar seleção' }));
+  expect(screen.getByText('Selecionar todas')).toBeInTheDocument();
+
+  // marcar só as repetidas (fica a primeira de cada)
+  fireEvent.click(screen.getByRole('button', { name: 'Selecionar repetidas' }));
+  expect(screen.getByText(/2 aulas repetidas marcadas/)).toBeInTheDocument();
+
+  // cancelar a confirmação não exclui
+  window.confirm.mockReturnValueOnce(false);
+  fireEvent.click(screen.getByRole('button', { name: 'Excluir selecionadas (2)' }));
+  expect(excluirAulasEad).not.toHaveBeenCalled();
+
+  fireEvent.click(screen.getByRole('button', { name: 'Excluir selecionadas (2)' }));
+  expect(await screen.findByText('2 aulas excluídas.')).toBeInTheDocument();
+  expect(excluirAulasEad).toHaveBeenCalledWith('3', [3, 4]);
+  expect(screen.getAllByRole('checkbox', { name: /Selecionar a aula/ })).toHaveLength(2);
+
+  // sem repetidas agora; erro do servidor ao excluir uma
+  fireEvent.click(screen.getByRole('button', { name: 'Selecionar repetidas' }));
+  expect(screen.getByText('Nenhuma aula repetida nesta turma.')).toBeInTheDocument();
+  fireEvent.click(screen.getAllByRole('checkbox', { name: /Selecionar a aula/ })[0]);
+  fireEvent.click(screen.getByRole('button', { name: 'Excluir selecionadas (1)' }));
+  expect(await screen.findByText('Não foi possível excluir as aulas selecionadas.')).toBeInTheDocument();
 });
 
 test('copiar as aulas de outra turma', async () => {

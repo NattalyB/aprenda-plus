@@ -162,6 +162,33 @@ public class ConteudoEadService {
         return montar(plano.getTurma(), plano);
     }
 
+    // Exclui várias aulas da mesma turma de uma vez (seleção na tela) e renumera as que sobraram
+    @Transactional
+    public PlanoDaTurma excluirAulas(Integer idTurma, List<Integer> idsAulas) {
+        Turma turma = turma(idTurma);
+        PlanoDeAula plano = planoRepository.findFirstByTurma_IdTurma(idTurma)
+                .orElseThrow(() -> new RegraDeNegocioException("Esta turma ainda não tem aulas."));
+        Set<Integer> ids = new HashSet<>();
+        if (idsAulas != null) {
+            idsAulas.stream().filter(Objects::nonNull).forEach(ids::add);
+        }
+        if (ids.isEmpty()) {
+            throw new RegraDeNegocioException("Selecione pelo menos uma aula para excluir.");
+        }
+
+        List<Aula> aulas = new ArrayList<>(aulaRepository.findByPlano_IdPlanoOrderByNumeroAulaAsc(plano.getIdPlano()));
+        List<Aula> excluir = aulas.stream().filter(a -> ids.contains(a.getIdAula())).toList();
+        // Só exclui se todas as aulas escolhidas forem desta turma (nada pela metade)
+        if (excluir.size() != ids.size()) {
+            throw new RegraDeNegocioException("Alguma aula selecionada não pertence a esta turma. Atualize a página e tente de novo.");
+        }
+
+        aulaRepository.deleteAll(excluir);
+        aulas.removeIf(a -> ids.contains(a.getIdAula()));
+        renumerar(aulas);
+        return montar(turma, plano);
+    }
+
     // direcao: "cima" ou "baixo"
     @Transactional
     public PlanoDaTurma moverAula(Integer idAula, String direcao) {

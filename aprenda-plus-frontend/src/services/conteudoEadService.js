@@ -11,7 +11,9 @@ export const definirProfessorDaSala = (idTurma, idProfessor) =>
 export const criarAulaEad = (idTurma, aula) => api.post(`/planos-de-aula/turma/${idTurma}/aulas`, aula).then(dados);
 export const atualizarAulaEad = (idAula, aula) => api.put(`/planos-de-aula/aulas/${idAula}`, aula).then(dados);
 export const excluirAulaEad = (idAula) => api.delete(`/planos-de-aula/aulas/${idAula}`).then(dados);
-export const moverAulaEad = (idAula, direcao) =>
+export const excluirAulasEad = (idTurma, ids) =>
+  api.post(`/planos-de-aula/turma/${idTurma}/aulas/excluir`, { ids }).then(dados);
+export const moverAulaEad =(idAula, direcao) =>
   api.put(`/planos-de-aula/aulas/${idAula}/mover`, null, { params: { direcao } }).then(dados);
 export const copiarAulasDaTurma = (idTurma, idTurmaOrigem) =>
   api.post(`/planos-de-aula/turma/${idTurma}/copiar`, null, { params: { origem: idTurmaOrigem } }).then(dados);

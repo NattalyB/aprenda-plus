@@ -61,3 +61,15 @@ export const agruparPorDisciplina = (aulas) => {
   });
   return grupos;
 };
+
+// Aulas repetidas (mesmo título e mesma disciplina): mantém a primeira e devolve os ids das cópias
+export const idsDasAulasDuplicadas = (aulas) => {
+  const vistas = new Set();
+  const repetidas = [];
+  (aulas || []).forEach((aula) => {
+    const chave = `${(aula.titulo || '').trim().toLowerCase()}|${(aula.disciplina || '').trim().toLowerCase()}`;
+    if (vistas.has(chave)) repetidas.push(aula.idAula);
+    else vistas.add(chave);
+  });
+  return repetidas;
+};

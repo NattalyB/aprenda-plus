@@ -1,4 +1,5 @@
 import {
+  idsDasAulasDuplicadas,
   idDoYoutube,
   urlDoPlayer,
   tipoDaAula,
@@ -55,4 +56,16 @@ test('agrupa as aulas por disciplina na ordem em que aparecem', () => {
   expect(grupos.map((g) => g.nome)).toEqual(['Marketing', 'Aulas gerais']);
   expect(grupos[0].aulas.map((a) => a.idAula)).toEqual([1, 3]);
   expect(agruparPorDisciplina(undefined)).toEqual([]);
+});
+
+test('idsDasAulasDuplicadas marca só as cópias, mantendo a primeira', () => {
+  const aulas = [
+    { idAula: 1, titulo: 'Boas-vindas', disciplina: null },
+    { idAula: 2, titulo: 'Introdução', disciplina: 'Banco de Dados' },
+    { idAula: 3, titulo: ' boas-vindas ', disciplina: null },
+    { idAula: 4, titulo: 'Introdução', disciplina: 'Big Data' },
+    { idAula: 5, titulo: 'Introdução', disciplina: 'Banco de Dados' },
+  ];
+  expect(idsDasAulasDuplicadas(aulas)).toEqual([3, 5]);
+  expect(idsDasAulasDuplicadas(undefined)).toEqual([]);
 });

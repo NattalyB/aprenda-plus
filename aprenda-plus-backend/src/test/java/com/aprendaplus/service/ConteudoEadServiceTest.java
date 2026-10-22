@@ -467,6 +467,41 @@ class ConteudoEadServiceTest {
     }
 
     @Test
+    void excluirVariasAulasDeUmaVezRenumeraAsQueSobram() {
+        Turma t = turma(5);
+        PlanoDeAula p = plano(9, t, professor(3, "Carla"));
+        Aula a1 = aula(10, p, 1);
+        Aula a2 = aula(11, p, 2);
+        Aula a3 = aula(12, p, 3);
+        Aula a4 = aula(13, p, 4);
+        when(turmaRepository.findById(5)).thenReturn(Optional.of(t));
+        when(planoRepository.findFirstByTurma_IdTurma(5)).thenReturn(Optional.of(p));
+        when(aulaRepository.findByPlano_IdPlanoOrderByNumeroAulaAsc(9)).thenReturn(List.of(a1, a2, a3, a4), List.of(a1, a4));
+
+        PlanoDaTurma resultado = service.excluirAulas(5, List.of(11, 12));
+
+        verify(aulaRepository).deleteAll(List.of(a2, a3));
+        assertEquals(2, a4.getNumeroAula());
+        verify(aulaRepository, never()).save(a1);
+        assertEquals(2, resultado.aulas().size());
+    }
+
+    @Test
+    void excluirVariasAulasRecusaListaVaziaOuAulaDeOutraTurma() {
+        Turma t = turma(5);
+        PlanoDeAula p = plano(9, t, professor(3, "Carla"));
+        Aula a1 = aula(10, p, 1);
+        when(turmaRepository.findById(5)).thenReturn(Optional.of(t));
+        when(planoRepository.findFirstByTurma_IdTurma(5)).thenReturn(Optional.of(p));
+        when(aulaRepository.findByPlano_IdPlanoOrderByNumeroAulaAsc(9)).thenReturn(List.of(a1));
+
+        assertEquals("Selecione pelo menos uma aula para excluir.",
+                assertThrows(RegraDeNegocioException.class, () -> service.excluirAulas(5, List.of())).getMessage());
+        assertThrows(RegraDeNegocioException.class, () -> service.excluirAulas(5, List.of(10, 99)));
+        verify(aulaRepository, never()).deleteAll(any());
+    }
+
+    @Test
     void moverAulaTrocaDeLugarComAVizinha() {
         Turma t = turma(5);
         PlanoDeAula p = plano(9, t, professor(3, "Carla"));

@@ -10,6 +10,7 @@ import {
   criarAulaEad,
   atualizarAulaEad,
   excluirAulaEad,
+  excluirAulasEad,
   moverAulaEad,
   copiarAulasDaTurma,
   publicarAvisoEad,
@@ -19,7 +20,7 @@ import {
 import FormAula from '../../components/admin/sala/FormAula';
 import MuralDaTurma from '../../components/admin/sala/MuralDaTurma';
 import AndamentoDaTurma from '../../components/admin/sala/AndamentoDaTurma';
-import { formatarDataCurta, tipoDaAula } from '../../utils/salaDeAula';
+import { formatarDataCurta, tipoDaAula, idsDasAulasDuplicadas } from '../../utils/salaDeAula';
 import ImportarPlanilha from '../../components/admin/ImportarPlanilha';
 
 const hoje = () => new Date().toISOString().slice(0, 10);
@@ -41,6 +42,8 @@ function AdminSalaDeAula() {
   const [professorEscolhido, setProfessorEscolhido] = useState('');
   const [editando, setEditando] = useState(null); // null = fechado; {} = nova; aula = editar
   const [origemCopia, setOrigemCopia] = useState('');
+  const [selecionadas, setSelecionadas] = useState(() => new Set()); // ids das aulas marcadas
+  const [excluindoVarias, setExcluindoVarias] = useState(false);
 
   // Dados de apoio (cada um é opcional: se falhar, a tela continua)
   useEffect(() => {
@@ -59,6 +62,9 @@ function AdminSalaDeAula() {
 
   const aplicarSala = useCallback((dados) => {
     setSala(dados);
+    // Mantém marcadas só as aulas que ainda existem
+    const existentes = new Set((dados?.aulas || []).map((a) => a.idAula));
+    setSelecionadas((atual) => new Set([...atual].filter((id) => existentes.has(id))));
     setProfessorEscolhido(dados?.idProfessor ? String(dados.idProfessor) : '');
     setResumo((atual) => ({ ...atual, [dados.idTurma]: dados.aulas.length }));
   }, []);
@@ -68,6 +74,7 @@ function AdminSalaDeAula() {
     setSucesso(null);
     setErro(null);
     setAba('aulas');
+    setSelecionadas(new Set());
     if (!idTurma) return;
     setCarregandoSala(true);
     buscarSalaDaTurma(idTurma)
@@ -115,6 +122,43 @@ function AdminSalaDeAula() {
   const excluirAula = (aula) => {
     if (!window.confirm(`Excluir a aula "${aula.titulo}"? O progresso dos alunos nela também será apagado.`)) return;
     executar(excluirAulaEad(aula.idAula), 'Aula excluída.').catch(comErro('Não foi possível excluir a aula.'));
+  };
+
+  const alternarSelecao = (idAula) => {
+    setSelecionadas((atual) => {
+      const nova = new Set(atual);
+      if (nova.has(idAula)) nova.delete(idAula);
+      else nova.add(idAula);
+      return nova;
+    });
+  };
+
+  const alternarTodas = () => {
+    const todas = (sala?.aulas || []).map((a) => a.idAula);
+    setSelecionadas((atual) => (atual.size === todas.length ? new Set() : new Set(todas)));
+  };
+
+  const selecionarDuplicadas = () => {
+    const repetidas = idsDasAulasDuplicadas(sala?.aulas || []);
+    setSelecionadas(new Set(repetidas));
+    setErro(null);
+    setSucesso(
+      repetidas.length === 0
+        ? 'Nenhuma aula repetida nesta turma.'
+        : `${repetidas.length} ${repetidas.length === 1 ? 'aula repetida marcada' : 'aulas repetidas marcadas'} (a primeira de cada fica). Confira e clique em "Excluir selecionadas".`
+    );
+  };
+
+  const excluirSelecionadas = () => {
+    const ids = [...selecionadas];
+    if (ids.length === 0) return;
+    const texto = ids.length === 1 ? '1 aula' : `${ids.length} aulas`;
+    if (!window.confirm(`Excluir ${texto}? O progresso dos alunos nelas também será apagado.`)) return;
+    setExcluindoVarias(true);
+    executar(excluirAulasEad(idTurma, ids), `${ids.length === 1 ? '1 aula excluída' : `${ids.length} aulas excluídas`}.`)
+      .then(() => setSelecionadas(new Set()))
+      .catch(comErro('Não foi possível excluir as aulas selecionadas.'))
+      .finally(() => setExcluindoVarias(false));
   };
 
   const mover = (aula, direcao) => {
@@ -300,12 +344,57 @@ function AdminSalaDeAula() {
                   </p>
                 </div>
               ) : (
+                <>
+                <div className={selecionadas.size > 0 ? 'ead-selecao ativa' : 'ead-selecao'}>
+                  <label className="ead-selecao-todas">
+                    <input
+                      type="checkbox"
+                      checked={selecionadas.size === aulas.length}
+                      ref={(el) => {
+                        if (el) el.indeterminate = selecionadas.size > 0 && selecionadas.size < aulas.length;
+                      }}
+                      onChange={alternarTodas}
+                    />
+                    {selecionadas.size > 0
+                      ? `${selecionadas.size} de ${aulas.length} ${aulas.length === 1 ? 'selecionada' : 'selecionadas'}`
+                      : 'Selecionar todas'}
+                  </label>
+                  <div className="ead-selecao-acoes">
+                    <button type="button" className="admin-btn admin-btn-sm admin-btn-secundario" onClick={selecionarDuplicadas}>
+                      Selecionar repetidas
+                    </button>
+                    {selecionadas.size > 0 && (
+                      <>
+                        <button type="button" className="admin-btn admin-btn-sm admin-btn-secundario" onClick={() => setSelecionadas(new Set())}>
+                          Limpar seleção
+                        </button>
+                        <button
+                          type="button"
+                          className="admin-btn admin-btn-sm admin-btn-excluir"
+                          onClick={excluirSelecionadas}
+                          disabled={excluindoVarias}
+                        >
+                          {excluindoVarias ? 'Excluindo...' : `Excluir selecionadas (${selecionadas.size})`}
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
                 <ol className="ead-aulas">
                   {aulas.map((aula, i) => {
                     const tipo = tipoDaAula(aula.tipo);
                     const futura = aula.dataLiberacao && aula.dataLiberacao > hoje();
+                    const marcada = selecionadas.has(aula.idAula);
+                    const classes = ['ead-aula', !aula.publicada && 'rascunho', marcada && 'selecionada'].filter(Boolean).join(' ');
                     return (
-                      <li key={aula.idAula} className={aula.publicada ? 'ead-aula' : 'ead-aula rascunho'}>
+                      <li key={aula.idAula} className={classes}>
+                        <input
+                          type="checkbox"
+                          className="ead-aula-check"
+                          checked={marcada}
+                          onChange={() => alternarSelecao(aula.idAula)}
+                          aria-label={`Selecionar a aula ${aula.titulo}`}
+                        />
                         <span className="ead-aula-numero">{aula.numero}</span>
                         <div className="ead-aula-info">
                           <strong>{aula.titulo}</strong>
@@ -329,6 +418,7 @@ function AdminSalaDeAula() {
                     );
                   })}
                 </ol>
+                </>
               )}
             </>
           )}

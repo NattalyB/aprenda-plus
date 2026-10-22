@@ -5038,6 +5038,57 @@ img {
   border: 1px dashed #cbd5e1;
 }
 
+/* Seleção de várias aulas (excluir em lote) */
+.ead-selecao {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  background: #fff;
+  border-radius: 12px;
+  padding: 0.6rem 1rem;
+  margin-bottom: 0.6rem;
+  box-shadow: 0 1px 6px rgba(0, 30, 66, 0.06);
+  position: sticky;
+  top: 0.5rem;
+  z-index: 5;
+}
+
+.ead-selecao.ativa {
+  background: #fef2f2;
+  box-shadow: 0 0 0 1px #fecaca, 0 4px 12px rgba(0, 30, 66, 0.08);
+}
+
+.ead-selecao-todas {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-weight: 700;
+  color: #0f172a;
+  cursor: pointer;
+}
+
+.ead-selecao-acoes {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.ead-selecao input[type='checkbox'],
+.ead-aula-check {
+  width: 1.1rem;
+  height: 1.1rem;
+  accent-color: #0c4a6e;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.ead-aula.selecionada {
+  box-shadow: 0 0 0 2px #0ea5e9;
+  background: #f0f9ff;
+}
+
 .ead-aula-numero {
   width: 2rem;
   height: 2rem;
