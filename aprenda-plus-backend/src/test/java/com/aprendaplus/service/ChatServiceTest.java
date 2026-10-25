@@ -77,6 +77,7 @@ class ChatServiceTest {
         assertEquals("Recomendo **Ciência de Dados** e.", resposta.resposta());
         assertEquals(List.of(2), resposta.cursos());
         assertEquals("ia", resposta.origem());
+        assertFalse(resposta.atendente());
         assertTrue(servico.iaConfigurada());
 
         ArgumentCaptor<HttpRequest> requisicao = ArgumentCaptor.forClass(HttpRequest.class);
@@ -84,6 +85,30 @@ class ChatServiceTest {
         assertEquals("https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent",
                 requisicao.getValue().uri().toString());
         assertEquals("chave-teste", requisicao.getValue().headers().firstValue("x-goog-api-key").orElse(null));
+    }
+
+    @Test
+    void pedidoDeAtendenteMostraOsContatosSemChamarAIa() throws Exception {
+        ChatService servico = servico("chave");
+
+        ChatResposta resposta = servico.responder(pergunta("quero falar com um atendente"));
+
+        assertTrue(resposta.atendente());
+        assertEquals(ChatTexto.RESPOSTA_ATENDENTE, resposta.resposta());
+        assertEquals(List.of(), resposta.cursos());
+        verify(cliente, never()).send(any(), any());
+        verify(cursoService, never()).listarTodos();
+    }
+
+    @Test
+    void aIaTambemPodeChamarOAtendente() throws Exception {
+        geminiResponde(200, "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"Não sei informar a data. Fale com a equipe [[atendente]]\"}]}}]}");
+
+        ChatResposta resposta = servico("chave").responder(pergunta("quando começa a turma?"));
+
+        assertTrue(resposta.atendente());
+        assertEquals("Não sei informar a data. Fale com a equipe", resposta.resposta());
+        assertEquals("ia", resposta.origem());
     }
 
     @Test

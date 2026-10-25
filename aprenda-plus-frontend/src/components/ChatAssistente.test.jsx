@@ -152,6 +152,44 @@ test('conversa salva vazia volta para as boas-vindas', () => {
   expect(screen.getByText(/Sou o assistente virtual/)).toBeInTheDocument();
 });
 
+test('quando a pessoa pede atendente, mostra os contatos (só e-mail sem WhatsApp configurado)', async () => {
+  enviarPergunta.mockResolvedValueOnce({ resposta: 'Claro! Fale com a equipe.', cursos: [], atendente: true });
+  renderizar(<ChatAssistente />);
+  abrir();
+
+  escrever('quero falar com atendente');
+  expect(await screen.findByText('Claro! Fale com a equipe.')).toBeInTheDocument();
+  const email = screen.getByRole('link', { name: '✉️ Enviar e-mail' });
+  expect(email.getAttribute('href')).toMatch(/^mailto:aprendaplus@gmail\.com/);
+  expect(decodeURIComponent(email.getAttribute('href'))).toContain('Eu: quero falar com atendente');
+  expect(screen.queryByRole('link', { name: /WhatsApp/ })).not.toBeInTheDocument();
+});
+
+test('botão fixo "Falar com atendente" responde na hora, com WhatsApp quando configurado', async () => {
+  process.env.VITE_WHATSAPP_ATENDIMENTO = '+55 (51) 99999-0000';
+  let responder;
+  enviarPergunta.mockReturnValueOnce(new Promise((r) => (responder = r)));
+  try {
+    renderizar(<ChatAssistente />);
+    abrir();
+
+    escrever('oi');
+    expect(screen.getByRole('button', { name: '👤 Falar com atendente' })).toBeDisabled();
+    responder({ resposta: 'Olá!', cursos: [] });
+    await screen.findByText('Olá!');
+
+    fireEvent.click(screen.getByRole('button', { name: '👤 Falar com atendente' }));
+    expect(screen.getByText('Quero falar com um atendente')).toBeInTheDocument();
+    const whats = screen.getByRole('link', { name: '💬 Chamar no WhatsApp' });
+    expect(whats.getAttribute('href')).toMatch(/^https:\/\/wa\.me\/5551999990000\?text=/);
+    expect(whats).toHaveAttribute('target', '_blank');
+    expect(screen.getByRole('link', { name: '✉️ Enviar e-mail' })).toBeInTheDocument();
+    expect(enviarPergunta).toHaveBeenCalledTimes(1);
+  } finally {
+    delete process.env.VITE_WHATSAPP_ATENDIMENTO;
+  }
+});
+
 test('não aparece na sala de aula', () => {
   renderizar(<ChatAssistente />, { rota: '/sala/3' });
   expect(screen.queryByRole('button', { name: 'Abrir o assistente virtual' })).not.toBeInTheDocument();

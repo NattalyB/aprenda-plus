@@ -33,14 +33,15 @@ class ChatControllerTest {
 
     @Test
     void respondeAPergunta() throws Exception {
-        when(chatService.responder(any())).thenReturn(new ChatResposta("Recomendo Ciência de Dados.", List.of(2), "ia"));
+        when(chatService.responder(any())).thenReturn(new ChatResposta("Recomendo Ciência de Dados.", List.of(2), "ia", false));
 
         mockMvc.perform(post("/chat").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"mensagem\":\"gosto de dados\",\"historico\":[{\"autor\":\"aluno\",\"texto\":\"oi\"}]}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.resposta").value("Recomendo Ciência de Dados."))
                 .andExpect(jsonPath("$.cursos[0]").value(2))
-                .andExpect(jsonPath("$.origem").value("ia"));
+                .andExpect(jsonPath("$.origem").value("ia"))
+                .andExpect(jsonPath("$.atendente").value(false));
 
         ArgumentCaptor<ChatPergunta> pergunta = ArgumentCaptor.forClass(ChatPergunta.class);
         verify(chatService).responder(pergunta.capture());
@@ -59,7 +60,7 @@ class ChatControllerTest {
 
     @Test
     void limitaAsMensagensPorMinuto() throws Exception {
-        when(chatService.responder(any())).thenReturn(new ChatResposta("ok", List.of(), "basico"));
+        when(chatService.responder(any())).thenReturn(new ChatResposta("ok", List.of(), "basico", true));
         for (int i = 0; i < ChatController.LIMITE_POR_MINUTO; i++) {
             mockMvc.perform(post("/chat").header("X-Forwarded-For", "9.9.9.9, 10.0.0.1")
                     .contentType(MediaType.APPLICATION_JSON).content("{\"mensagem\":\"oi\"}")).andExpect(status().isOk());

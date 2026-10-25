@@ -70,6 +70,30 @@ class ChatTextoTest {
     }
 
     @Test
+    void reconheceQuemQuerFalarComAtendente() {
+        assertTrue(ChatTexto.pedeAtendente("quero falar com atendente"));
+        assertTrue(ChatTexto.pedeAtendente("Tem WhatsApp?"));
+        assertTrue(ChatTexto.pedeAtendente("posso falar com alguém?"));
+        assertTrue(ChatTexto.pedeAtendente("qual o telefone de vocês"));
+        assertTrue(ChatTexto.pedeAtendente("me passa no zap"));
+        assertFalse(ChatTexto.pedeAtendente("quanto custa Gestão de Recursos Humanos?"));
+        assertFalse(ChatTexto.pedeAtendente("como é o curso Técnico em Suporte e Manutenção?"));
+        assertFalse(ChatTexto.pedeAtendente("zapear"));
+        assertFalse(ChatTexto.pedeAtendente(null));
+    }
+
+    @Test
+    void marcacaoDeAtendenteSaiDoTexto() {
+        String resposta = "Não tenho essa informação. Fale com a nossa equipe [[atendente]].";
+        assertTrue(ChatTexto.citaAtendente(resposta));
+        assertTrue(ChatTexto.citaAtendente("[[ Atendente ]]"));
+        assertFalse(ChatTexto.citaAtendente("sem marcação"));
+        assertFalse(ChatTexto.citaAtendente(null));
+        assertEquals("Não tenho essa informação. Fale com a nossa equipe.", ChatTexto.semMarcacoes(resposta));
+        assertTrue(ChatTexto.instrucoes(CURSOS).contains("[[atendente]]"));
+    }
+
+    @Test
     void modoBasicoRespondePorAssunto() {
         assertTrue(ChatTexto.respostaOffline("quanto custa engenharia de software?", CURSOS)
                 .contains("**Engenharia de Software** [[curso:1]]: R$ 48.000,00 no total ou 71x de R$ 676,06 (Cartão; Boleto)"));

@@ -79,6 +79,10 @@ public class ChatService {
             throw new RegraDeNegocioException("A pergunta pode ter no máximo " + MAX_CARACTERES_PERGUNTA + " caracteres.");
         }
 
+        if (ChatTexto.pedeAtendente(texto)) {
+            return new ChatResposta(ChatTexto.RESPOSTA_ATENDENTE, List.of(), "basico", true);
+        }
+
         List<CursoResumo> cursos = catalogo();
         Set<Integer> ids = new HashSet<>();
         cursos.forEach(c -> ids.add(c.id()));
@@ -86,7 +90,7 @@ public class ChatService {
         String daIa = iaConfigurada() ? perguntarAoGemini(cursos, historico(pergunta), texto) : null;
         String bruta = daIa != null ? daIa : ChatTexto.respostaOffline(texto, cursos);
         return new ChatResposta(ChatTexto.semMarcacoes(bruta), ChatTexto.cursosCitados(bruta, ids),
-                daIa != null ? "ia" : "basico");
+                daIa != null ? "ia" : "basico", ChatTexto.citaAtendente(bruta));
     }
 
     // Últimas mensagens da conversa, cada uma cortada no limite de tamanho

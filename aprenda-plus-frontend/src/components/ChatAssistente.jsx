@@ -3,12 +3,16 @@ import { useLocation } from 'react-router-dom';
 import { enviarPergunta } from '../services/chatService';
 import { listarCursos } from '../services/cursoService';
 import CursoModal from './CursoModal';
+import { linkEmail, linkWhatsapp, numeroWhatsapp } from '../utils/contato';
 
 // Assistente virtual do site (balão no canto da tela), com IA.
 // A conversa fica guardada na aba do navegador enquanto a pessoa navega pelo site.
 
 const CHAVE_CONVERSA = 'conversaAssistente';
 const MAX_HISTORICO = 10;
+
+const RESPOSTA_ATENDENTE =
+  'Claro! Você pode falar com a nossa equipe pelos botões abaixo. Se quiser, conte rapidinho a sua dúvida na mensagem que a gente já responde com tudo. 😊';
 
 const SUGESTOES = [
   'Me ajuda a escolher um curso',
@@ -131,7 +135,7 @@ function ChatAssistente() {
       .then((resposta) => {
         setMensagens((atual) => [
           ...atual,
-          { autor: 'assistente', texto: resposta.resposta, cursos: resposta.cursos || [] },
+          { autor: 'assistente', texto: resposta.resposta, cursos: resposta.cursos || [], atendente: Boolean(resposta.atendente) },
         ]);
       })
       .catch((error) => {
@@ -152,12 +156,23 @@ function ChatAssistente() {
       });
   };
 
+  // Botão fixo "Falar com atendente": responde na hora, sem passar pela IA
+  const falarComAtendente = () => {
+    if (enviando) return;
+    setMensagens((atual) => [
+      ...atual,
+      { autor: 'aluno', texto: 'Quero falar com um atendente' },
+      { autor: 'assistente', texto: RESPOSTA_ATENDENTE, atendente: true },
+    ]);
+  };
+
   const recomecar = () => {
     setMensagens([BOAS_VINDAS]);
     setDigitado('');
   };
 
   const cursoPorId = (id) => (cursos || []).find((c) => c.idCurso === id);
+  const whatsapp = numeroWhatsapp();
   const soBoasVindas = mensagens.length === 1 && mensagens[0].inicial;
 
   return (
@@ -203,6 +218,18 @@ function ChatAssistente() {
                         </button>
                       ) : null;
                     })}
+                  </div>
+                )}
+                {m.atendente && (
+                  <div className="chat-cursos">
+                    {whatsapp && (
+                      <a className="chat-contato-btn chat-contato-whats" href={linkWhatsapp(whatsapp, mensagens.slice(0, i))} target="_blank" rel="noopener noreferrer">
+                        💬 Chamar no WhatsApp
+                      </a>
+                    )}
+                    <a className="chat-contato-btn" href={linkEmail(mensagens.slice(0, i))} target="_blank" rel="noopener noreferrer">
+                      ✉️ Enviar e-mail
+                    </a>
                   </div>
                 )}
               </div>
@@ -251,7 +278,12 @@ function ChatAssistente() {
               ➤
             </button>
           </form>
-          <p className="chat-rodape">Respostas geradas por IA. Confira os detalhes na página do curso.</p>
+          <div className="chat-rodape">
+            <button type="button" className="chat-atendente-btn" onClick={falarComAtendente} disabled={enviando}>
+              👤 Falar com atendente
+            </button>
+            <span>Respostas geradas por IA. Confira os detalhes na página do curso.</span>
+          </div>
         </section>
       )}
 
