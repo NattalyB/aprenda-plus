@@ -99,6 +99,7 @@ public class AuthInterceptor implements HandlerInterceptor {
         }
 
         if ("POST".equals(metodo) && caminho.equals("/alunos/com-documento")) return true;  // cadastro pelo site
+        if ("POST".equals(metodo) && caminho.equals("/chat")) return true;                  // assistente virtual do site
         return "POST".equals(metodo) && caminho.equals("/alunos");    // cadastro de novo aluno
     }
 

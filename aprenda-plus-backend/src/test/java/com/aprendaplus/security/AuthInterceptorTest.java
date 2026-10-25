@@ -274,6 +274,15 @@ class AuthInterceptorTest {
         assertTrue(doFuncionario(3, "GET", "/financeiro/resumo"));
     }
 
+    // ===== Assistente virtual (chat) =====
+
+    @Test
+    void visitantePodeConversarComOAssistente() throws Exception {
+        assertTrue(requisicao("POST", "/chat", null));
+        assertFalse(requisicao("GET", "/chat", null));
+        assertEquals(401, response.getStatus());
+    }
+
     // ===== Documento de escolaridade =====
 
     @Test

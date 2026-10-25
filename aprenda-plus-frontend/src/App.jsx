@@ -28,6 +28,7 @@ import AdminMatriculaForm from './pages/admin/AdminMatriculaForm';
 import AdminFuncionarios from './pages/admin/AdminFuncionarios';
 import AdminFuncionarioForm from './pages/admin/AdminFuncionarioForm';
 import Aviso from './components/Aviso';
+import ChatAssistente from './components/ChatAssistente';
 import RotaModulo from './components/admin/RotaModulo';
 import AdminInicio from './pages/admin/AdminInicio';
 import AdminSistema from './pages/admin/AdminSistema';
@@ -49,6 +50,7 @@ function SitePage({ children }) {
       {children}
       <Footer />
       <Aviso />
+      <ChatAssistente />
     </SearchProvider>
   );
 }
