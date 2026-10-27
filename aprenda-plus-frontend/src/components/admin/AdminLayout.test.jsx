@@ -50,8 +50,9 @@ test('Master vê o menu completo, o nome, o nível e a página atual', () => {
 
   expect(screen.getByText('Olá, Admin Teste')).toBeInTheDocument();
   expect(screen.getByText('Master')).toBeInTheDocument();
-  // Início + 12 módulos (incluindo Sala de aula, Financeiro e Sistema)
-  expect(within(menu()).getAllByRole('link')).toHaveLength(13);
+  // Início + 14 módulos (incluindo Sala de aula, Financeiro, Treinamentos, Histórico e Sistema)
+  expect(within(menu()).getAllByRole('link')).toHaveLength(15);
+  expect(screen.getByText('Histórico de alterações')).toBeInTheDocument();
   expect(screen.getByText('Funcionários do painel')).toBeInTheDocument();
   expect(screen.getByText('Sistema')).toBeInTheDocument();
   expect(screen.getByRole('button', { name: /Notificações/ })).toBeInTheDocument();
@@ -65,7 +66,8 @@ test('outro nível só vê os módulos liberados', () => {
   montar('/admin');
 
   const textos = within(menu()).getAllByRole('link').map((link) => link.textContent);
-  expect(textos).toEqual(['🏠Início', '🧾Inscrições', '✅Matrículas']);
+  // Treinamentos aparece para toda a equipe
+  expect(textos).toEqual(['🏠Início', '🧾Inscrições', '✅Matrículas', '📚Treinamentos']);
   expect(screen.getByText('Início do painel')).toBeInTheDocument();
 });
 

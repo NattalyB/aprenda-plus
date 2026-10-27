@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { buscarDisciplinaPorId, criarDisciplina, atualizarDisciplina } from '../../services/disciplinaService';
 import { listarCursos } from '../../services/cursoService';
+import UltimaAlteracao from '../../components/admin/UltimaAlteracao';
 
 function AdminDisciplinaForm() {
   const navigate = useNavigate();
@@ -84,6 +85,7 @@ function AdminDisciplinaForm() {
           <p className="admin-subtitulo">
             {modoEdicao ? 'Atualize as informações da disciplina e salve.' : 'Preencha as informações para cadastrar uma nova disciplina.'}
           </p>
+          {modoEdicao && <UltimaAlteracao alvo="disciplinas" id={id} />}
         </div>
       </div>
 

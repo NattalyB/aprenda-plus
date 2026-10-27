@@ -12,6 +12,7 @@ import { listarCursos } from '../../services/cursoService';
 import { listarDisciplinas } from '../../services/disciplinaService';
 import CursosDisciplinasProfessor, { estaInativa } from '../../components/admin/CursosDisciplinasProfessor';
 import CampoCep from '../../components/CampoCep';
+import UltimaAlteracao from '../../components/admin/UltimaAlteracao';
 
 function AdminProfessorForm() {
   const navigate = useNavigate();
@@ -149,6 +150,7 @@ function AdminProfessorForm() {
           <p className="admin-subtitulo">
             {modoEdicao ? 'Atualize os dados do professor e salve.' : 'Preencha os dados para cadastrar um novo professor.'}
           </p>
+          {modoEdicao && <UltimaAlteracao alvo="professores" id={id} />}
         </div>
       </div>
 

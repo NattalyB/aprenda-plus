@@ -274,6 +274,31 @@ class AuthInterceptorTest {
         assertTrue(doFuncionario(3, "GET", "/financeiro/resumo"));
     }
 
+    // ===== Treinamentos e histórico =====
+
+    @Test
+    void todaAEquipeVeOsTreinamentosMasSoOMasterEdita() throws Exception {
+        assertTrue(doFuncionario(3, "GET", "/treinamentos"));
+        assertTrue(doFuncionario(3, "GET", "/treinamentos/4/pdf"));
+        assertFalse(doFuncionario(3, "POST", "/treinamentos"));
+        assertEquals(403, response.getStatus());
+        assertFalse(doFuncionario(2, "PUT", "/treinamentos/4"));
+        assertFalse(doFuncionario(5, "DELETE", "/treinamentos/4"));
+        assertTrue(doFuncionario(1, "POST", "/treinamentos"));
+        assertTrue(doFuncionario(1, "DELETE", "/treinamentos/4"));
+        assertFalse(requisicao("GET", "/treinamentos", tokenAluno));
+    }
+
+    @Test
+    void historicoSoOMasterVeMasAUltimaAlteracaoEhParaTodos() throws Exception {
+        assertFalse(doFuncionario(2, "GET", "/atividades"));
+        assertEquals(403, response.getStatus());
+        assertTrue(doFuncionario(1, "GET", "/atividades"));
+        assertTrue(doFuncionario(2, "GET", "/atividades/ultima"));
+        assertFalse(doFuncionario(2, "DELETE", "/atividades/ultima"));
+        assertFalse(requisicao("GET", "/atividades/ultima", tokenAluno));
+    }
+
     // ===== Assistente virtual (chat) =====
 
     @Test

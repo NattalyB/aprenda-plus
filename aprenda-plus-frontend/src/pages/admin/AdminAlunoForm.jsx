@@ -5,6 +5,7 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import { buscarAlunoPorId, criarAluno, atualizarAluno } from '../../services/alunoService';
 import CampoCep from '../../components/CampoCep';
 import DocumentosDoAluno from '../../components/admin/DocumentosDoAluno';
+import UltimaAlteracao from '../../components/admin/UltimaAlteracao';
 
 function AdminAlunoForm() {
   const navigate = useNavigate();
@@ -80,6 +81,7 @@ function AdminAlunoForm() {
           <p className="admin-subtitulo">
             {modoEdicao ? 'Atualize os dados do aluno e salve.' : 'Preencha os dados para cadastrar um novo aluno.'}
           </p>
+          {modoEdicao && <UltimaAlteracao alvo="alunos" id={id} />}
         </div>
       </div>
 

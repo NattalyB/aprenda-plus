@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { buscarPeriodoLetivoPorId, criarPeriodoLetivo, atualizarPeriodoLetivo } from '../../services/periodoLetivoService';
+import UltimaAlteracao from '../../components/admin/UltimaAlteracao';
 
 function AdminPeriodoLetivoForm() {
   const navigate = useNavigate();
@@ -64,6 +65,7 @@ function AdminPeriodoLetivoForm() {
           <p className="admin-subtitulo">
             {modoEdicao ? 'Atualize as datas ou o status do período.' : 'Defina o nome e as datas do novo período.'}
           </p>
+          {modoEdicao && <UltimaAlteracao alvo="periodos-letivos" id={id} />}
         </div>
       </div>
 

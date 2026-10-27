@@ -39,6 +39,8 @@ import SalaTurma from './pages/sala/SalaTurma';
 import CertificadoConclusao from './pages/sala/CertificadoConclusao';
 import ValidarCertificado from './pages/ValidarCertificado';
 import AdminSalaDeAula from './pages/admin/AdminSalaDeAula';
+import AdminTreinamentos from './pages/admin/AdminTreinamentos';
+import AdminHistorico from './pages/admin/AdminHistorico';
 import EsqueciSenha from './pages/EsqueciSenha';
 import RedefinirSenha from './pages/RedefinirSenha';
 
@@ -87,6 +89,8 @@ function App() {
           <Route index element={<AdminInicio />} />
           <Route path="sistema" element={<RotaModulo modulo="sistema"><AdminSistema /></RotaModulo>} />
           <Route path="financeiro" element={<RotaModulo modulo="financeiro"><AdminFinanceiro /></RotaModulo>} />
+          <Route path="treinamentos" element={<RotaModulo modulo="treinamentos"><AdminTreinamentos /></RotaModulo>} />
+          <Route path="historico" element={<RotaModulo modulo="historico"><AdminHistorico /></RotaModulo>} />
 
           <Route path="cursos" element={<RotaModulo modulo="cursos"><AdminCursos /></RotaModulo>} />
           <Route path="cursos/novo" element={<RotaModulo modulo="cursos"><AdminCursoForm /></RotaModulo>} />

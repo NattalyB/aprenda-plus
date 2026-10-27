@@ -47,9 +47,15 @@ class ModulosTest {
 
     @Test
     void masterTemTodosOsModulosInclusiveSistema() {
-        assertEquals(Modulos.LIBERAVEIS.size() + 1, Modulos.TODOS.size());
+        assertEquals(Modulos.LIBERAVEIS.size() + 2, Modulos.TODOS.size());
         assertTrue(Modulos.TODOS.contains(Modulos.SISTEMA));
         assertFalse(Modulos.LIBERAVEIS.contains(Modulos.SISTEMA));
+        // Treinamentos: só o Master edita, então também não é liberável
+        assertTrue(Modulos.TODOS.contains(Modulos.TREINAMENTOS));
+        assertFalse(Modulos.LIBERAVEIS.contains(Modulos.TREINAMENTOS));
+        assertEquals("", Modulos.escrever(List.of("treinamentos")));
+        assertEquals(Modulos.TREINAMENTOS, Modulos.doCaminho("/treinamentos/3/pdf"));
+        assertEquals(Modulos.SISTEMA, Modulos.doCaminho("/atividades"));
         assertEquals(List.of("alunos", "professores", "cursos", "disciplinas", "periodos", "turmas", "aulas",
                 "inscricoes", "matriculas", "financeiro", "funcionarios"), Modulos.LIBERAVEIS);
     }

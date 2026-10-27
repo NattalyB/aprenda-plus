@@ -138,6 +138,9 @@ public class AuthInterceptor implements HandlerInterceptor {
         if (caminho.equals("/niveis-acesso/meu")) {
             return true; // cada um pode ver o próprio nível
         }
+        if ("GET".equals(metodo) && caminho.equals("/atividades/ultima")) {
+            return true; // "última alteração" que aparece nos formulários do painel
+        }
 
         String modulo = Modulos.doCaminho(caminho);
         if (modulo == null) {

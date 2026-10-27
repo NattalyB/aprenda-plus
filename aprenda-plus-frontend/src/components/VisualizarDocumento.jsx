@@ -3,14 +3,15 @@ import { baixarArquivoDoDocumento } from '../services/documentoService';
 
 // Janela que mostra o documento (PDF ou foto) sem sair da tela.
 // O arquivo vem da API com o token de quem está logado, por isso não dá pra usar um link direto.
-function VisualizarDocumento({ documento, onFechar, children }) {
+// carregar: função que baixa o arquivo (padrão: documento do aluno). Os treinamentos usam a deles.
+function VisualizarDocumento({ documento, onFechar, children, carregar = baixarArquivoDoDocumento }) {
   const [url, setUrl] = useState(null);
   const [erro, setErro] = useState(null);
 
   useEffect(() => {
     let endereco = null;
     let ativo = true;
-    baixarArquivoDoDocumento(documento.idDocumento)
+    carregar(documento.idDocumento)
       .then((resposta) => {
         if (!ativo) return;
         const blob = new Blob([resposta.data], { type: documento.contentType });

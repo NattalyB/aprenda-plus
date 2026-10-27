@@ -28,13 +28,14 @@ function AdminInicio() {
         </div>
       </div>
 
-      {atalhos.length === 0 ? (
+      {atalhos.every((m) => m.todos) && (
         <div className="admin-sem-acesso">
           <span aria-hidden="true">🔒</span>
           <h2>Nenhum módulo liberado</h2>
           <p>O seu nível de acesso ainda não tem módulos liberados. Fale com um usuário Master.</p>
         </div>
-      ) : (
+      )}
+      {atalhos.length > 0 && (
         <ul className="admin-atalhos">
           {atalhos.map((modulo) => (
             <li key={modulo.chave}>

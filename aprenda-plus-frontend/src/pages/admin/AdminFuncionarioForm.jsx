@@ -4,6 +4,7 @@ import { CampoCpf, CampoTelefone } from '../../components/CamposFormatados';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { buscarFuncionarioPorId, criarFuncionario, atualizarFuncionario, listarNiveis } from '../../services/funcionarioService';
 import { getAcessoAdmin } from '../../services/authAdminService';
+import UltimaAlteracao from '../../components/admin/UltimaAlteracao';
 
 // Id do funcionário logado: ele não pode inativar a própria conta
 const idLogado = () => localStorage.getItem('idFuncionario');
@@ -90,6 +91,7 @@ function AdminFuncionarioForm() {
               ? 'Atualize os dados de acesso ao painel.'
               : 'Cadastre uma pessoa da equipe para administrar o painel.'}
           </p>
+          {modoEdicao && <UltimaAlteracao alvo="funcionarios" id={id} />}
         </div>
       </div>
 

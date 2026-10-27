@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { buscarCursoPorId, criarCurso, atualizarCurso } from '../../services/cursoService';
+import UltimaAlteracao from '../../components/admin/UltimaAlteracao';
 
 const formatarValor = (valor) =>
   Number(valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -77,6 +78,7 @@ function AdminCursoForm() {
           <p className="admin-subtitulo">
             {modoEdicao ? 'Atualize as informações do curso e salve.' : 'Preencha as informações para cadastrar um novo curso.'}
           </p>
+          {modoEdicao && <UltimaAlteracao alvo="cursos" id={id} />}
         </div>
       </div>
 

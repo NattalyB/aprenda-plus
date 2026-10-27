@@ -3,6 +3,7 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import { buscarMatriculaPorId, criarMatricula, atualizarMatricula } from '../../services/matriculaService';
 import { listarAlunos } from '../../services/alunoService';
 import { listarTurmas } from '../../services/turmaService';
+import UltimaAlteracao from '../../components/admin/UltimaAlteracao';
 
 // 12345678901 -> 123.456.789-01
 const formatarCpf = (cpf) =>
@@ -78,6 +79,7 @@ function AdminMatriculaForm() {
           <p className="admin-subtitulo">
             {modoEdicao ? 'Atualize o status ou os dados da matrícula.' : 'Escolha o aluno e a turma para criar a matrícula.'}
           </p>
+          {modoEdicao && <UltimaAlteracao alvo="matriculas" id={id} />}
         </div>
       </div>
 

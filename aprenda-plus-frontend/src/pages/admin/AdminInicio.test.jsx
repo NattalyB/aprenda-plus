@@ -25,13 +25,15 @@ test('mostra um atalho para cada módulo liberado', () => {
   expect(screen.getAllByRole('link').map((link) => link.getAttribute('href'))).toEqual([
     '/admin/inscricoes',
     '/admin/matriculas',
+    '/admin/treinamentos',
   ]);
+  expect(screen.queryByText('Nenhum módulo liberado')).not.toBeInTheDocument();
 });
 
 test('o Master vê todos os atalhos, inclusive Sistema', () => {
   montar({ nivel: 'Master', master: true, modulos: [] });
 
-  expect(screen.getAllByRole('link')).toHaveLength(12);
+  expect(screen.getAllByRole('link')).toHaveLength(14);
   expect(screen.getByText('Sistema')).toBeInTheDocument();
   expect(screen.getByRole('heading', { name: 'Olá!' })).toBeInTheDocument();
 });

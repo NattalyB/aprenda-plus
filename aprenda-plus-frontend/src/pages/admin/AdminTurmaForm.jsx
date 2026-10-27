@@ -3,6 +3,7 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import { buscarTurmaPorId, criarTurma, atualizarTurma } from '../../services/turmaService';
 import { listarCursos } from '../../services/cursoService';
 import { listarPeriodosLetivos } from '../../services/periodoLetivoService';
+import UltimaAlteracao from '../../components/admin/UltimaAlteracao';
 
 function AdminTurmaForm() {
   const navigate = useNavigate();
@@ -77,6 +78,7 @@ function AdminTurmaForm() {
           <p className="admin-subtitulo">
             {modoEdicao ? 'Atualize as informações da turma e salve.' : 'Defina o curso, o período e os detalhes da nova turma.'}
           </p>
+          {modoEdicao && <UltimaAlteracao alvo="turmas" id={id} />}
         </div>
       </div>
 
