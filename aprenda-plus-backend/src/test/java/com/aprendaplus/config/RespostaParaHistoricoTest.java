@@ -27,6 +27,6 @@ class RespostaParaHistoricoTest {
         assertEquals("aluno salvo", guardado("POST", "aluno salvo"));
         assertNull(guardado("PUT", "aluno salvo"));
         assertNull(guardado("POST", null));
-        assertNull(advice.beforeBodyWrite("x", null, null, null, null, null));
+        assertEquals("x", advice.beforeBodyWrite("x", null, null, null, null, null));
     }
 }
