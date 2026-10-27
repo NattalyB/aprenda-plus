@@ -162,7 +162,8 @@ public class AuthInterceptor implements HandlerInterceptor {
             return liberados.contains(Modulos.SISTEMA)
                     || (listaDeNiveis && liberados.contains(Modulos.FUNCIONARIOS));
         }
-        if (consulta && !Modulos.FUNCIONARIOS.equals(modulo)) {
+        // Funcionários e Histórico são sensíveis: até para consultar precisa do módulo
+        if (consulta && !Modulos.FUNCIONARIOS.equals(modulo) && !Modulos.HISTORICO.equals(modulo)) {
             return true;
         }
         return liberados.contains(modulo);

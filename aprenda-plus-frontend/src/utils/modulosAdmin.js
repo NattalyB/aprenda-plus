@@ -13,12 +13,12 @@ export const MODULOS = [
   { chave: 'financeiro', rota: '/admin/financeiro', menu: 'Financeiro', titulo: 'Financeiro', icone: '💰', descricao: 'Parcelas, recebimentos e indicadores' },
   { chave: 'funcionarios', rota: '/admin/funcionarios', menu: 'Funcionários do painel', titulo: 'Funcionários', icone: '👥', descricao: 'Quem acessa o painel' },
   { chave: 'treinamentos', rota: '/admin/treinamentos', menu: 'Treinamentos', titulo: 'Treinamentos', icone: '📚', descricao: 'Vídeos e manuais de como usar o sistema', todos: true },
-  { chave: 'historico', rota: '/admin/historico', menu: 'Histórico de alterações', titulo: 'Histórico', icone: '🕒', descricao: 'Quem cadastrou e alterou cada informação', soMaster: true },
+  { chave: 'historico', rota: '/admin/historico', menu: 'Histórico de alterações', titulo: 'Histórico', icone: '🕒', descricao: 'Quem cadastrou e alterou cada informação' },
   { chave: 'sistema', rota: '/admin/sistema', menu: 'Sistema', titulo: 'Sistema', icone: '⚙️', descricao: 'Níveis de acesso e permissões', soMaster: true },
 ];
 
 // Módulos que o Master pode liberar para os outros níveis
-// (Sistema e Histórico são só do Master; Treinamentos toda a equipe já vê)
+// (Sistema é só do Master; Treinamentos toda a equipe já vê)
 export const MODULOS_LIBERAVEIS = MODULOS.filter((m) => !m.soMaster && !m.todos);
 
 export const moduloPorChave = (chave) => MODULOS.find((m) => m.chave === chave);

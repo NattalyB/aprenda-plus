@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useParams, Link } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams, Link } from 'react-router-dom';
+import { destinoDeVolta } from '../../utils/voltarPara';
 import { buscarDisciplinaPorId, criarDisciplina, atualizarDisciplina } from '../../services/disciplinaService';
 import { listarCursos } from '../../services/cursoService';
 import UltimaAlteracao from '../../components/admin/UltimaAlteracao';
@@ -8,6 +9,10 @@ function AdminDisciplinaForm() {
   const navigate = useNavigate();
   const { id } = useParams();
   const modoEdicao = Boolean(id);
+  // Aberto pela aba Disciplinas do curso: já vem com o curso marcado e volta para lá
+  const [parametros] = useSearchParams();
+  const voltarPara = destinoDeVolta(parametros, '/admin/disciplinas');
+  const cursoDaAba = Number(parametros.get('curso')) || null;
 
   const [cursos, setCursos] = useState([]);
   const [form, setForm] = useState({
@@ -17,7 +22,7 @@ function AdminDisciplinaForm() {
     cargaHoraria: '',
     modalidade: '',
     preRequisitos: '',
-    cursos: [],
+    cursos: cursoDaAba ? [{ idCurso: cursoDaAba }] : [],
     status: 'ativa',
   });
   const [erro, setErro] = useState(null);
@@ -64,7 +69,7 @@ function AdminDisciplinaForm() {
 
     acao
       .then(() => {
-        navigate('/admin/disciplinas');
+        navigate(voltarPara);
       })
       .catch((error) => {
         const errosCampos = error.response?.data?.erros;
@@ -166,7 +171,7 @@ function AdminDisciplinaForm() {
           </div>
 
           <div className="form-acoes">
-            <Link to="/admin/disciplinas" className="admin-btn admin-btn-secundario">
+            <Link to={voltarPara} className="admin-btn admin-btn-secundario">
               Cancelar
             </Link>
             <button type="submit" className="form-btn" disabled={enviando}>

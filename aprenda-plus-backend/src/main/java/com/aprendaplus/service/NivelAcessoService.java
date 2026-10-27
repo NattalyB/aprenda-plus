@@ -31,6 +31,14 @@ public class NivelAcessoService implements PermissoesDoFuncionario {
     public static final String COR_PADRAO = "#64748b";
     private static final Pattern COR = Pattern.compile("^#[0-9a-fA-F]{6}$");
 
+    // O funcionário logado é Master?
+    public boolean ehMaster(Integer idFuncionario) {
+        if (idFuncionario == null) return false;
+        return funcionarioRepository.findById(idFuncionario)
+                .map(f -> f.getNivel() != null && f.getNivel().isMaster())
+                .orElse(false);
+    }
+
     public List<NivelAcesso> listar() {
         return nivelAcessoRepository.findAllByOrderByMasterDescNomeAsc();
     }

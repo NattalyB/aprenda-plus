@@ -17,14 +17,25 @@ public class FuncionarioController {
     @Autowired
     private FuncionarioService funcionarioService;
 
+    // Quem não é Master não vê as contas Master (usadas só pelos devs/suporte)
     @GetMapping
-    public List<Funcionario> listar() {
-        return funcionarioService.listarTodos();
+    public List<Funcionario> listar(@RequestAttribute(name = "usuarioId", required = false) Integer usuarioId) {
+        List<Funcionario> todos = funcionarioService.listarTodos();
+        if (usuarioId == null || funcionarioService.podeVerContasMaster(usuarioId)) {
+            return todos;
+        }
+        return todos.stream().filter(f -> !FuncionarioService.ehContaMaster(f)).toList();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Funcionario> buscar(@PathVariable Integer id) {
-        return ResponseEntity.ok(funcionarioService.buscarPorId(id));
+    public ResponseEntity<?> buscar(@PathVariable Integer id,
+                                    @RequestAttribute(name = "usuarioId", required = false) Integer usuarioId) {
+        Funcionario funcionario = funcionarioService.buscarPorId(id);
+        if (usuarioId != null && FuncionarioService.ehContaMaster(funcionario)
+                && !funcionarioService.podeVerContasMaster(usuarioId)) {
+            return ResponseEntity.status(404).body(Map.of("mensagem", "Funcionário não encontrado."));
+        }
+        return ResponseEntity.ok(funcionario);
     }
 
     @PostMapping

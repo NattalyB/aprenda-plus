@@ -18,9 +18,14 @@ public class NivelAcessoController {
     @Autowired
     private NivelAcessoService nivelAcessoService;
 
+    // A lista aparece também no cadastro de funcionários: quem não é Master não vê o nível Master
     @GetMapping
-    public List<NivelAcesso> listar() {
-        return nivelAcessoService.listar();
+    public List<NivelAcesso> listar(@RequestAttribute(name = "usuarioId", required = false) Integer usuarioId) {
+        List<NivelAcesso> niveis = nivelAcessoService.listar();
+        if (usuarioId == null || nivelAcessoService.ehMaster(usuarioId)) {
+            return niveis;
+        }
+        return niveis.stream().filter(n -> !n.isMaster()).toList();
     }
 
     // Nível e módulos de quem está logado

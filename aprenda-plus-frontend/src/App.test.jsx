@@ -57,7 +57,7 @@ test('o painel admin com login abre a tela pedida dentro do layout', async () =>
   abrir('#/admin/alunos');
 
   expect(await screen.findByText('Alunos cadastrados')).toBeInTheDocument();
-  expect(screen.getByText('PAINEL ADMIN')).toBeInTheDocument();
+  expect(screen.getByText('PAINEL MASTER')).toBeInTheDocument();
 });
 
 test('o painel admin abre no início com os atalhos do nível', async () => {

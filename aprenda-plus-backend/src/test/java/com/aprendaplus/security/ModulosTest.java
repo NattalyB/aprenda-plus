@@ -55,8 +55,9 @@ class ModulosTest {
         assertFalse(Modulos.LIBERAVEIS.contains(Modulos.TREINAMENTOS));
         assertEquals("", Modulos.escrever(List.of("treinamentos")));
         assertEquals(Modulos.TREINAMENTOS, Modulos.doCaminho("/treinamentos/3/pdf"));
-        assertEquals(Modulos.SISTEMA, Modulos.doCaminho("/atividades"));
+        assertEquals(Modulos.HISTORICO, Modulos.doCaminho("/atividades"));
+        assertTrue(Modulos.LIBERAVEIS.contains(Modulos.HISTORICO));
         assertEquals(List.of("alunos", "professores", "cursos", "disciplinas", "periodos", "turmas", "aulas",
-                "inscricoes", "matriculas", "financeiro", "funcionarios"), Modulos.LIBERAVEIS);
+                "inscricoes", "matriculas", "financeiro", "funcionarios", "historico"), Modulos.LIBERAVEIS);
     }
 }

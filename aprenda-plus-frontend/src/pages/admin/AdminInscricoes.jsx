@@ -37,7 +37,9 @@ const CAMPOS_ORDENACAO = {
   status: (i) => STATUS_INSCRICAO[i.status] || i.status,
 };
 
-function AdminInscricoes() {
+// idAluno: quando a tela aparece como aba dentro do cadastro do aluno, mostra só as inscrições dele
+function AdminInscricoes({ idAluno } = {}) {
+  const naAba = idAluno != null;
   const [inscricoes, setInscricoes] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState(null);
@@ -60,7 +62,8 @@ function AdminInscricoes() {
   const carregar = () => {
     listarInscricoes()
       .then((response) => {
-        setInscricoes(response.data);
+        const todas = response.data || [];
+        setInscricoes(naAba ? todas.filter((i) => String(i.aluno?.idAluno) === String(idAluno)) : todas);
         setCarregando(false);
       })
       .catch(() => {
@@ -72,7 +75,7 @@ function AdminInscricoes() {
   useEffect(() => {
     carregar();
     carregarDocumentos();
-  }, []);
+  }, [idAluno]);
 
   const documentoRevisado = (documento) => {
     carregarDocumentos();
@@ -140,9 +143,9 @@ function AdminInscricoes() {
 
   return (
     <div>
-      <div className="admin-header">
+      <div className={naAba ? 'admin-header admin-header-aba' : 'admin-header'}>
         <div>
-          <h1 className="admin-titulo">Inscrições</h1>
+          {!naAba && <h1 className="admin-titulo">Inscrições</h1>}
           <p className="admin-subtitulo">
             {inscricoesFiltradas.length} de {inscricoes.length} inscrição(ões) · clique no status para alterar
           </p>
@@ -212,7 +215,7 @@ function AdminInscricoes() {
               {inscricoesFiltradas.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="admin-vazio">
-                    {busca || statusFiltro || documentoFiltro ? 'Nenhuma inscrição encontrada com esses filtros.' : 'Nenhuma inscrição registrada ainda.'}
+                    {busca || statusFiltro || documentoFiltro ? 'Nenhuma inscrição encontrada com esses filtros.' : naAba ? 'Este aluno ainda não tem inscrições.' : 'Nenhuma inscrição registrada ainda.'}
                   </td>
                 </tr>
               ) : (

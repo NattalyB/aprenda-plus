@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useParams, Link } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams, Link } from 'react-router-dom';
+import { destinoDeVolta } from '../../utils/voltarPara';
 import { buscarMatriculaPorId, criarMatricula, atualizarMatricula } from '../../services/matriculaService';
 import { listarAlunos } from '../../services/alunoService';
 import { listarTurmas } from '../../services/turmaService';
@@ -13,11 +14,14 @@ function AdminMatriculaForm() {
   const navigate = useNavigate();
   const { id } = useParams();
   const modoEdicao = Boolean(id);
+  // Aberto pela aba Matrículas do aluno: já vem com o aluno escolhido e volta para lá
+  const [parametros] = useSearchParams();
+  const voltarPara = destinoDeVolta(parametros, '/admin/matriculas');
 
   const [alunos, setAlunos] = useState([]);
   const [turmas, setTurmas] = useState([]);
   const [form, setForm] = useState({
-    aluno: { idAluno: '' },
+    aluno: { idAluno: parametros.get('aluno') || '' },
     turma: { idTurma: '' },
     status: 'ativa',
     contratoUrl: '',
@@ -58,7 +62,7 @@ function AdminMatriculaForm() {
 
     acao
       .then(() => {
-        navigate('/admin/matriculas');
+        navigate(voltarPara);
       })
       .catch((error) => {
         const errosCampos = error.response?.data?.erros;
@@ -141,7 +145,7 @@ function AdminMatriculaForm() {
           </div>
 
           <div className="form-acoes">
-            <Link to="/admin/matriculas" className="admin-btn admin-btn-secundario">
+            <Link to={voltarPara} className="admin-btn admin-btn-secundario">
               Cancelar
             </Link>
             <button type="submit" className="form-btn" disabled={enviando}>

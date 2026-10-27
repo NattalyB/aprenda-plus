@@ -43,6 +43,12 @@ public class AtividadeService {
     @Autowired
     private ProfessorRepository professorRepository;
 
+    @Autowired
+    private FuncionarioService funcionarioService;
+
+    // Como as ações das contas Master (devs/suporte) aparecem para quem não é Master
+    static final String NOME_SUPORTE = "Suporte do sistema";
+
     Supplier<LocalDateTime> relogio = () -> LocalDateTime.now(FUSO);
 
     // Chamado pelo AtividadeInterceptor depois de cada requisição que deu certo
@@ -119,6 +125,12 @@ public class AtividadeService {
 
     public PaginaAtividades buscar(String modulo, String tipo, String acao, String busca,
                                    LocalDate de, LocalDate ate, int pagina, int tamanho) {
+        return buscar(modulo, tipo, acao, busca, de, ate, pagina, tamanho, null);
+    }
+
+    // idQuemVe: funcionário logado. Se não for Master, as contas Master aparecem como "Suporte do sistema".
+    public PaginaAtividades buscar(String modulo, String tipo, String acao, String busca,
+                                   LocalDate de, LocalDate ate, int pagina, int tamanho, Integer idQuemVe) {
         int tam = Math.max(1, Math.min(tamanho, TAMANHO_MAXIMO_PAGINA));
         int pag = Math.max(1, pagina);
         LocalDateTime inicio = de == null ? INICIO_DOS_TEMPOS : de.atStartOfDay();
@@ -129,10 +141,18 @@ public class AtividadeService {
         List<RegistroAtividade> itens = total == 0 ? List.of()
                 : registroRepository.buscar(m, t, a, b, inicio, fim, tam, (pag - 1) * tam);
         int totalPaginas = (int) Math.max(1, (total + tam - 1) / tam);
+        java.util.Set<Integer> ocultos = contasOcultas(idQuemVe);
+        if (!ocultos.isEmpty()) {
+            itens = itens.stream().map(r -> ehDeContaOculta(r, ocultos) ? comoSuporte(r) : r).toList();
+        }
         return new PaginaAtividades(itens, total, pag, tam, totalPaginas);
     }
 
     public UltimaAlteracao ultima(String alvo, Integer registroId) {
+        return ultima(alvo, registroId, null);
+    }
+
+    public UltimaAlteracao ultima(String alvo, Integer registroId, Integer idQuemVe) {
         if (alvo == null || alvo.isBlank() || registroId == null) {
             return new UltimaAlteracao(null, null, null, null, null);
         }
@@ -141,11 +161,46 @@ public class AtividadeService {
         var ultimo = registroRepository.findFirstByAlvoAndRegistroIdOrderByQuandoDescIdRegistroDesc(alvo, registroId)
                 .orElse(null);
         boolean soCadastro = ultimo != null && criado != null && ultimo.getIdRegistro().equals(criado.getIdRegistro());
+        java.util.Set<Integer> ocultos = (criado == null && ultimo == null) ? java.util.Set.of() : contasOcultas(idQuemVe);
         return new UltimaAlteracao(
-                criado == null ? null : criado.getUsuarioNome(), criado == null ? null : criado.getQuando(),
-                ultimo == null || soCadastro ? null : ultimo.getUsuarioNome(),
+                criado == null ? null : nomeVisivel(criado, ocultos), criado == null ? null : criado.getQuando(),
+                ultimo == null || soCadastro ? null : nomeVisivel(ultimo, ocultos),
                 ultimo == null || soCadastro ? null : ultimo.getQuando(),
                 ultimo == null ? null : ultimo.getDescricao());
+    }
+
+    // Contas cujo nome não aparece para quem está vendo (vazio = mostra tudo)
+    private java.util.Set<Integer> contasOcultas(Integer idQuemVe) {
+        if (idQuemVe == null || funcionarioService.podeVerContasMaster(idQuemVe)) {
+            return java.util.Set.of();
+        }
+        return funcionarioService.idsDasContasMaster();
+    }
+
+    private static boolean ehDeContaOculta(RegistroAtividade r, java.util.Set<Integer> ocultos) {
+        return "funcionario".equals(r.getUsuarioTipo()) && r.getUsuarioId() != null && ocultos.contains(r.getUsuarioId());
+    }
+
+    private static String nomeVisivel(RegistroAtividade r, java.util.Set<Integer> ocultos) {
+        return ehDeContaOculta(r, ocultos) ? NOME_SUPORTE : r.getUsuarioNome();
+    }
+
+    // Cópia (não mexe no registro do banco) com o nome trocado e sem o id da conta
+    static RegistroAtividade comoSuporte(RegistroAtividade r) {
+        RegistroAtividade c = new RegistroAtividade();
+        c.setIdRegistro(r.getIdRegistro());
+        c.setQuando(r.getQuando());
+        c.setUsuarioTipo(r.getUsuarioTipo());
+        c.setUsuarioId(null);
+        c.setUsuarioNome(NOME_SUPORTE);
+        c.setModulo(r.getModulo());
+        c.setAcao(r.getAcao());
+        c.setDescricao(r.getDescricao());
+        c.setAlvo(r.getAlvo());
+        c.setRegistroId(r.getRegistroId());
+        c.setMetodo(r.getMetodo());
+        c.setCaminho(r.getCaminho());
+        return c;
     }
 
     // Sem filtro de texto = "" (nunca null)

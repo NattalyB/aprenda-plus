@@ -20,6 +20,8 @@ public final class Modulos {
     public static final String MATRICULAS = "matriculas";
     public static final String FINANCEIRO = "financeiro";
     public static final String FUNCIONARIOS = "funcionarios";
+    // Histórico de alterações: o Master libera para quem ele quiser (ex.: Proprietário)
+    public static final String HISTORICO = "historico";
     // Configuração dos níveis de acesso: exclusivo do Master
     public static final String SISTEMA = "sistema";
     // Treinamentos: toda a equipe consulta, só o Master cadastra (não é liberável para outros níveis)
@@ -27,7 +29,8 @@ public final class Modulos {
 
     // Módulos que o Master pode liberar para os outros níveis (o "sistema" não entra)
     public static final List<String> LIBERAVEIS = List.of(
-            ALUNOS, PROFESSORES, CURSOS, DISCIPLINAS, PERIODOS, TURMAS, AULAS, INSCRICOES, MATRICULAS, FINANCEIRO, FUNCIONARIOS);
+            ALUNOS, PROFESSORES, CURSOS, DISCIPLINAS, PERIODOS, TURMAS, AULAS, INSCRICOES, MATRICULAS, FINANCEIRO, FUNCIONARIOS,
+            HISTORICO);
 
     // Todos os módulos (o que o Master tem)
     public static final List<String> TODOS;
@@ -62,7 +65,7 @@ public final class Modulos {
             Map.entry("/financeiro", FINANCEIRO),
             Map.entry("/funcionarios", FUNCIONARIOS),
             Map.entry("/niveis-acesso", SISTEMA),
-            Map.entry("/atividades", SISTEMA),          // histórico de alterações: só o Master
+            Map.entry("/atividades", HISTORICO),        // histórico de alterações
             Map.entry("/treinamentos", TREINAMENTOS));
 
     private Modulos() {

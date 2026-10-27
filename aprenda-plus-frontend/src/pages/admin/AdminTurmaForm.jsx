@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useParams, Link } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams, Link } from 'react-router-dom';
+import { destinoDeVolta } from '../../utils/voltarPara';
 import { buscarTurmaPorId, criarTurma, atualizarTurma } from '../../services/turmaService';
 import { listarCursos } from '../../services/cursoService';
 import { listarPeriodosLetivos } from '../../services/periodoLetivoService';
@@ -9,12 +10,15 @@ function AdminTurmaForm() {
   const navigate = useNavigate();
   const { id } = useParams();
   const modoEdicao = Boolean(id);
+  // Aberto pela aba Turmas do curso: já vem com o curso escolhido e volta para lá
+  const [parametros] = useSearchParams();
+  const voltarPara = destinoDeVolta(parametros, '/admin/turmas');
 
   const [cursos, setCursos] = useState([]);
   const [periodos, setPeriodos] = useState([]);
   const [form, setForm] = useState({
     nome: '',
-    curso: { idCurso: '' },
+    curso: { idCurso: parametros.get('curso') || '' },
     periodoLetivo: { idPeriodoLetivo: '' },
     cargaHoraria: '',
     modalidade: '',
@@ -57,7 +61,7 @@ function AdminTurmaForm() {
 
     acao
       .then(() => {
-        navigate('/admin/turmas');
+        navigate(voltarPara);
       })
       .catch((error) => {
         const errosCampos = error.response?.data?.erros;
@@ -158,7 +162,7 @@ function AdminTurmaForm() {
           </div>
 
           <div className="form-acoes">
-            <Link to="/admin/turmas" className="admin-btn admin-btn-secundario">
+            <Link to={voltarPara} className="admin-btn admin-btn-secundario">
               Cancelar
             </Link>
             <button type="submit" className="form-btn" disabled={enviando}>

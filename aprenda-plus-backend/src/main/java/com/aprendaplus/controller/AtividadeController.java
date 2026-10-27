@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 
 // Histórico de alterações do sistema.
-// GET /atividades: lista com filtros (só o Master). GET /atividades/ultima: usado nos formulários (toda a equipe).
+// GET /atividades: lista com filtros (módulo Histórico). GET /atividades/ultima: usado nos formulários (toda a equipe).
 @RestController
 @RequestMapping("/atividades")
 public class AtividadeController {
@@ -25,13 +25,15 @@ public class AtividadeController {
                                     @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate de,
                                     @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate ate,
                                     @RequestParam(defaultValue = "1") int pagina,
-                                    @RequestParam(defaultValue = "20") int tamanho) {
-        return ResponseEntity.ok(atividadeService.buscar(modulo, tipo, acao, busca, de, ate, pagina, tamanho));
+                                    @RequestParam(defaultValue = "20") int tamanho,
+                                    @RequestAttribute(name = "usuarioId", required = false) Integer usuarioId) {
+        return ResponseEntity.ok(atividadeService.buscar(modulo, tipo, acao, busca, de, ate, pagina, tamanho, usuarioId));
     }
 
     // Ex.: /atividades/ultima?alvo=alunos&id=12
     @GetMapping("/ultima")
-    public ResponseEntity<?> ultima(@RequestParam String alvo, @RequestParam Integer id) {
-        return ResponseEntity.ok(atividadeService.ultima(alvo, id));
+    public ResponseEntity<?> ultima(@RequestParam String alvo, @RequestParam Integer id,
+                                    @RequestAttribute(name = "usuarioId", required = false) Integer usuarioId) {
+        return ResponseEntity.ok(atividadeService.ultima(alvo, id, usuarioId));
     }
 }

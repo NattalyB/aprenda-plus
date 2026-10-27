@@ -52,6 +52,29 @@ class FuncionarioServiceTest {
         return n;
     }
 
+    @Test
+    void contasMasterSoAparecemParaOMaster() {
+        Funcionario suporte = new Funcionario();
+        suporte.setIdFuncionario(3);
+        suporte.setNivel(master);
+        Funcionario dono = new Funcionario();
+        dono.setIdFuncionario(9);
+        dono.setNivel(administrativo);
+        Funcionario semNivel = new Funcionario();
+        semNivel.setIdFuncionario(10);
+        when(funcionarioRepository.findById(3)).thenReturn(Optional.of(suporte));
+        when(funcionarioRepository.findById(9)).thenReturn(Optional.of(dono));
+        when(funcionarioRepository.findAll()).thenReturn(List.of(suporte, dono, semNivel));
+
+        assertTrue(funcionarioService.podeVerContasMaster(null));
+        assertTrue(funcionarioService.podeVerContasMaster(3));
+        assertFalse(funcionarioService.podeVerContasMaster(9));
+        assertTrue(FuncionarioService.ehContaMaster(suporte));
+        assertFalse(FuncionarioService.ehContaMaster(semNivel));
+        assertFalse(FuncionarioService.ehContaMaster(null));
+        assertEquals(java.util.Set.of(3), funcionarioService.idsDasContasMaster());
+    }
+
     @BeforeEach
     void niveisCadastrados() {
         lenient().when(nivelAcessoRepository.findById(1)).thenReturn(Optional.of(master));

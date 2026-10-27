@@ -6,6 +6,7 @@ import Paginacao from '../../components/admin/Paginacao';
 import { Link } from 'react-router-dom';
 import { listarDisciplinas, deletarDisciplina } from '../../services/disciplinaService';
 import ImportarPlanilha from '../../components/admin/ImportarPlanilha';
+import { rotaComVolta } from '../../utils/voltarPara';
 
 const normalizar = (texto) =>
   (texto || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -27,7 +28,10 @@ const CAMPOS_ORDENACAO = {
   status: (d) => d.status || 'ativa',
 };
 
-function AdminDisciplinas() {
+// idCurso: quando a tela aparece como aba dentro do cadastro do curso, mostra só as disciplinas dele
+function AdminDisciplinas({ idCurso } = {}) {
+  const naAba = idCurso != null;
+  const voltar = naAba ? `/admin/cursos/${idCurso}/editar?aba=disciplinas` : null;
   const [disciplinas, setDisciplinas] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState(null);
@@ -37,7 +41,10 @@ function AdminDisciplinas() {
   const carregar = () => {
     listarDisciplinas()
       .then((response) => {
-        setDisciplinas(response.data);
+        const todas = response.data || [];
+        setDisciplinas(
+          naAba ? todas.filter((d) => (d.cursos || []).some((c) => String(c.idCurso) === String(idCurso))) : todas
+        );
         setCarregando(false);
       })
       .catch(() => {
@@ -48,7 +55,7 @@ function AdminDisciplinas() {
 
   useEffect(() => {
     carregar();
-  }, []);
+  }, [idCurso]);
 
   const handleExcluir = (id) => {
     if (window.confirm('Tem certeza que deseja excluir esta disciplina?')) {
@@ -89,16 +96,16 @@ function AdminDisciplinas() {
 
   return (
     <div>
-      <div className="admin-header">
+      <div className={naAba ? 'admin-header admin-header-aba' : 'admin-header'}>
         <div>
-          <h1 className="admin-titulo">Disciplinas cadastradas</h1>
+          {!naAba && <h1 className="admin-titulo">Disciplinas cadastradas</h1>}
           <p className="admin-subtitulo">
             {disciplinasFiltradas.length} de {disciplinas.length} disciplina(s)
           </p>
         </div>
         <div className="admin-header-acoes">
-          <ImportarPlanilha tipo="disciplinas" onConcluido={carregar} />
-          <Link to="/admin/disciplinas/novo" className="admin-btn admin-btn-primary">
+          {!naAba && <ImportarPlanilha tipo="disciplinas" onConcluido={carregar} />}
+          <Link to={rotaComVolta('/admin/disciplinas/novo', voltar, { curso: idCurso })} className="admin-btn admin-btn-primary">
             + Nova disciplina
           </Link>
         </div>
@@ -118,17 +125,19 @@ function AdminDisciplinas() {
           />
         </div>
 
-        <select
-          name="filtroCurso"
-          className="admin-filtro-select"
-          value={cursoFiltro}
-          onChange={(e) => setCursoFiltro(e.target.value)}
-        >
-          <option value="">Todos os cursos</option>
-          {cursosDisponiveis.map((curso) => (
-            <option key={curso.idCurso} value={String(curso.idCurso)}>{curso.nome}</option>
-          ))}
-        </select>
+        {!naAba && (
+          <select
+            name="filtroCurso"
+            className="admin-filtro-select"
+            value={cursoFiltro}
+            onChange={(e) => setCursoFiltro(e.target.value)}
+          >
+            <option value="">Todos os cursos</option>
+            {cursosDisponiveis.map((curso) => (
+              <option key={curso.idCurso} value={String(curso.idCurso)}>{curso.nome}</option>
+            ))}
+          </select>
+        )}
       </div>
 
       <div className="admin-card">
@@ -148,7 +157,7 @@ function AdminDisciplinas() {
               {disciplinasFiltradas.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="admin-vazio">
-                    {busca || cursoFiltro ? 'Nenhuma disciplina encontrada com esses filtros.' : 'Nenhuma disciplina cadastrada ainda.'}
+                    {busca || cursoFiltro ? 'Nenhuma disciplina encontrada com esses filtros.' : naAba ? 'Este curso ainda não tem disciplinas.' : 'Nenhuma disciplina cadastrada ainda.'}
                   </td>
                 </tr>
               ) : (
@@ -166,7 +175,7 @@ function AdminDisciplinas() {
                     <td>
                       <div className="admin-acoes">
                         <Link
-                          to={`/admin/disciplinas/${disciplina.idDisciplina}/editar`}
+                          to={rotaComVolta(`/admin/disciplinas/${disciplina.idDisciplina}/editar`, voltar)}
                           className="admin-btn admin-btn-sm admin-btn-editar"
                         >
                           Editar

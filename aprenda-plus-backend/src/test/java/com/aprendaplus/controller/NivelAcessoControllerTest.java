@@ -46,10 +46,25 @@ class NivelAcessoControllerTest {
         mockMvc.perform(get("/niveis-acesso"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].master").value(true))
-                .andExpect(jsonPath("$[0].modulos[11]").value("sistema"))
+                .andExpect(jsonPath("$[0].modulos[12]").value("sistema"))
                 .andExpect(jsonPath("$[1].nome").value("Financeiro"))
                 .andExpect(jsonPath("$[1].modulos[1]").value("matriculas"))
                 .andExpect(jsonPath("$[1].modulosTexto").doesNotExist());
+    }
+
+    @Test
+    void quemNaoEhMasterNaoVeONivelMaster() throws Exception {
+        when(nivelAcessoService.listar()).thenReturn(List.of(
+                nivel(1, "Master", "", true), nivel(4, "Proprietário", "alunos,funcionarios", false)));
+        when(nivelAcessoService.ehMaster(9)).thenReturn(false);
+        when(nivelAcessoService.ehMaster(3)).thenReturn(true);
+
+        mockMvc.perform(get("/niveis-acesso").requestAttr("usuarioId", 9))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].nome").value("Proprietário"));
+        mockMvc.perform(get("/niveis-acesso").requestAttr("usuarioId", 3))
+                .andExpect(jsonPath("$.length()").value(2));
     }
 
     @Test

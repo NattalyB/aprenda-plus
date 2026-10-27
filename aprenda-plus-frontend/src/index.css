@@ -703,6 +703,11 @@ body {
   color: #001e42;
   padding: 0.2rem 0.6rem;
   border-radius: 999px;
+  /* O nome do nível pode ser longo (ex.: PAINEL PROPRIETÁRIO) */
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .admin-nav {
@@ -6462,4 +6467,38 @@ img {
   .portal-prof-topo h1 {
     font-size: 1.35rem;
   }
+}
+
+/* ===== Abas dentro do cadastro (aluno: inscrições/matrículas; curso: disciplinas/turmas) ===== */
+.cadastro-abas {
+  display: flex;
+  gap: 0.25rem;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 1.25rem;
+  overflow-x: auto;
+}
+
+.cadastro-abas button {
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  padding: 0.7rem 1rem;
+  font: inherit;
+  font-weight: 600;
+  color: #6b7280;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.cadastro-abas button:hover {
+  color: #0b2239;
+}
+
+.cadastro-abas button[aria-selected='true'] {
+  color: #0b2239;
+  border-bottom-color: #00b4d8;
+}
+
+.admin-header-aba {
+  margin-bottom: 0.75rem;
 }

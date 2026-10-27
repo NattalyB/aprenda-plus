@@ -5,6 +5,7 @@ import { usePaginacao } from '../../utils/paginacao';
 import Paginacao from '../../components/admin/Paginacao';
 import { Link } from 'react-router-dom';
 import { listarMatriculas, deletarMatricula } from '../../services/matriculaService';
+import { rotaComVolta } from '../../utils/voltarPara';
 
 const normalizar = (texto) =>
   (texto || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -37,7 +38,11 @@ const CAMPOS_ORDENACAO = {
   status: (m) => LABEL_STATUS[m.status] || m.status,
 };
 
-function AdminMatriculas() {
+// idAluno: quando a tela aparece como aba dentro do cadastro do aluno, mostra só as matrículas dele
+// (e os formulários abertos daqui voltam para essa aba)
+function AdminMatriculas({ idAluno } = {}) {
+  const naAba = idAluno != null;
+  const voltar = naAba ? `/admin/alunos/${idAluno}/editar?aba=matriculas` : null;
   const [matriculas, setMatriculas] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState(null);
@@ -47,7 +52,8 @@ function AdminMatriculas() {
   const carregar = () => {
     listarMatriculas()
       .then((response) => {
-        setMatriculas(response.data);
+        const todas = response.data || [];
+        setMatriculas(naAba ? todas.filter((m) => String(m.aluno?.idAluno) === String(idAluno)) : todas);
         setCarregando(false);
       })
       .catch(() => {
@@ -58,7 +64,7 @@ function AdminMatriculas() {
 
   useEffect(() => {
     carregar();
-  }, []);
+  }, [idAluno]);
 
   const handleExcluir = (id) => {
     if (window.confirm('Tem certeza que deseja excluir esta matrícula?')) {
@@ -94,14 +100,14 @@ function AdminMatriculas() {
 
   return (
     <div>
-      <div className="admin-header">
+      <div className={naAba ? 'admin-header admin-header-aba' : 'admin-header'}>
         <div>
-          <h1 className="admin-titulo">Matrículas</h1>
+          {!naAba && <h1 className="admin-titulo">Matrículas</h1>}
           <p className="admin-subtitulo">
             {matriculasFiltradas.length} de {matriculas.length} matrícula(s)
           </p>
         </div>
-        <Link to="/admin/matriculas/novo" className="admin-btn admin-btn-primary">
+        <Link to={rotaComVolta('/admin/matriculas/novo', voltar, { aluno: idAluno })} className="admin-btn admin-btn-primary">
           + Nova matrícula
         </Link>
       </div>
@@ -151,7 +157,7 @@ function AdminMatriculas() {
               {matriculasFiltradas.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="admin-vazio">
-                    {busca || statusFiltro ? 'Nenhuma matrícula encontrada com esses filtros.' : 'Nenhuma matrícula registrada ainda.'}
+                    {busca || statusFiltro ? 'Nenhuma matrícula encontrada com esses filtros.' : naAba ? 'Este aluno ainda não tem matrículas.' : 'Nenhuma matrícula registrada ainda.'}
                   </td>
                 </tr>
               ) : (
@@ -169,7 +175,7 @@ function AdminMatriculas() {
                     <td>
                       <div className="admin-acoes">
                         <Link
-                          to={`/admin/matriculas/${matricula.idMatricula}/editar`}
+                          to={rotaComVolta(`/admin/matriculas/${matricula.idMatricula}/editar`, voltar)}
                           className="admin-btn admin-btn-sm admin-btn-editar"
                         >
                           Editar

@@ -33,13 +33,13 @@ class AtividadeControllerTest {
         r.setUsuarioNome("Carla");
         r.setDescricao("Alterou aluno #12");
         when(atividadeService.buscar("Alunos", "funcionario", "alterou", "carla",
-                LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 27), 2, 50))
+                LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 27), 2, 50, 4))
                 .thenReturn(new PaginaAtividades(List.of(r), 51, 2, 50, 2));
 
         mockMvc.perform(get("/atividades").param("modulo", "Alunos").param("tipo", "funcionario")
                         .param("acao", "alterou").param("busca", "carla")
                         .param("de", "2026-10-01").param("ate", "2026-10-27")
-                        .param("pagina", "2").param("tamanho", "50"))
+                        .param("pagina", "2").param("tamanho", "50").requestAttr("usuarioId", 4))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.itens[0].usuarioNome").value("Carla"))
                 .andExpect(jsonPath("$.total").value(51))
@@ -48,7 +48,7 @@ class AtividadeControllerTest {
 
     @Test
     void buscaSemFiltrosUsaAPrimeiraPagina() throws Exception {
-        when(atividadeService.buscar(null, null, null, null, null, null, 1, 20))
+        when(atividadeService.buscar(null, null, null, null, null, null, 1, 20, null))
                 .thenReturn(new PaginaAtividades(List.of(), 0, 1, 20, 1));
 
         mockMvc.perform(get("/atividades")).andExpect(status().isOk()).andExpect(jsonPath("$.total").value(0));
@@ -56,7 +56,7 @@ class AtividadeControllerTest {
 
     @Test
     void ultimaAlteracaoDeUmRegistro() throws Exception {
-        when(atividadeService.ultima("alunos", 12)).thenReturn(new UltimaAlteracao(
+        when(atividadeService.ultima("alunos", 12, null)).thenReturn(new UltimaAlteracao(
                 "Ana", LocalDateTime.of(2026, 10, 20, 9, 0), "Carla", LocalDateTime.of(2026, 10, 27, 18, 45), "Alterou aluno #12"));
 
         mockMvc.perform(get("/atividades/ultima").param("alvo", "alunos").param("id", "12"))

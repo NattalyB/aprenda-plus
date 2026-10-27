@@ -6,6 +6,7 @@ import Paginacao from '../../components/admin/Paginacao';
 import { Link } from 'react-router-dom';
 import { listarTurmas, deletarTurma } from '../../services/turmaService';
 import { listarMatriculas } from '../../services/matriculaService';
+import { rotaComVolta } from '../../utils/voltarPara';
 
 const normalizar = (texto) =>
   (texto || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -48,7 +49,10 @@ const CAMPOS_ORDENACAO = {
   status: (t) => STATUS_TURMA[t.status] || t.status,
 };
 
-function AdminTurmas() {
+// idCurso: quando a tela aparece como aba dentro do cadastro do curso, mostra só as turmas dele
+function AdminTurmas({ idCurso } = {}) {
+  const naAba = idCurso != null;
+  const voltar = naAba ? `/admin/cursos/${idCurso}/editar?aba=turmas` : null;
   const [turmas, setTurmas] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState(null);
@@ -61,7 +65,8 @@ function AdminTurmas() {
   const carregar = () => {
     listarTurmas()
       .then((response) => {
-        setTurmas(response.data);
+        const todas = response.data || [];
+        setTurmas(naAba ? todas.filter((t) => String(t.curso?.idCurso) === String(idCurso)) : todas);
         setCarregando(false);
       })
       .catch(() => {
@@ -76,7 +81,7 @@ function AdminTurmas() {
     listarMatriculas()
       .then((response) => setMatriculas(response.data || []))
       .catch(() => setMatriculas(null));
-  }, []);
+  }, [idCurso]);
 
   // { idTurma: [matrículas da turma] }
   const matriculasPorTurma = useMemo(() => {
@@ -135,14 +140,14 @@ function AdminTurmas() {
 
   return (
     <div>
-      <div className="admin-header">
+      <div className={naAba ? 'admin-header admin-header-aba' : 'admin-header'}>
         <div>
-          <h1 className="admin-titulo">Turmas cadastradas</h1>
+          {!naAba && <h1 className="admin-titulo">Turmas cadastradas</h1>}
           <p className="admin-subtitulo">
             {turmasFiltradas.length} de {turmas.length} turma(s)
           </p>
         </div>
-        <Link to="/admin/turmas/novo" className="admin-btn admin-btn-primary">
+        <Link to={rotaComVolta('/admin/turmas/novo', voltar, { curso: idCurso })} className="admin-btn admin-btn-primary">
           + Nova turma
         </Link>
       </div>
@@ -161,17 +166,19 @@ function AdminTurmas() {
           />
         </div>
 
-        <select
-          name="filtroCurso"
-          className="admin-filtro-select"
-          value={cursoFiltro}
-          onChange={(e) => setCursoFiltro(e.target.value)}
-        >
-          <option value="">Todos os cursos</option>
-          {cursosDisponiveis.map((curso) => (
-            <option key={curso.idCurso} value={String(curso.idCurso)}>{curso.nome}</option>
-          ))}
-        </select>
+        {!naAba && (
+          <select
+            name="filtroCurso"
+            className="admin-filtro-select"
+            value={cursoFiltro}
+            onChange={(e) => setCursoFiltro(e.target.value)}
+          >
+            <option value="">Todos os cursos</option>
+            {cursosDisponiveis.map((curso) => (
+              <option key={curso.idCurso} value={String(curso.idCurso)}>{curso.nome}</option>
+            ))}
+          </select>
+        )}
 
         <select
           name="filtroStatus"
@@ -205,7 +212,7 @@ function AdminTurmas() {
               {turmasFiltradas.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="admin-vazio">
-                    {busca || cursoFiltro || statusFiltro ? 'Nenhuma turma encontrada com esses filtros.' : 'Nenhuma turma cadastrada ainda.'}
+                    {busca || cursoFiltro || statusFiltro ? 'Nenhuma turma encontrada com esses filtros.' : naAba ? 'Este curso ainda não tem turmas.' : 'Nenhuma turma cadastrada ainda.'}
                   </td>
                 </tr>
               ) : (
@@ -239,7 +246,7 @@ function AdminTurmas() {
                     <td>
                       <div className="admin-acoes">
                         <Link
-                          to={`/admin/turmas/${turma.idTurma}/editar`}
+                          to={rotaComVolta(`/admin/turmas/${turma.idTurma}/editar`, voltar)}
                           className="admin-btn admin-btn-sm admin-btn-editar"
                         >
                           Editar

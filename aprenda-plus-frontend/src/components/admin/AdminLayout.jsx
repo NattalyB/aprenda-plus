@@ -90,7 +90,7 @@ function AdminLayout() {
         <div className="admin-sidebar-topo">
           <Link to="/admin" className="admin-sidebar-logo" {...propsDoItem('Início')}>
             <img src={logo} alt="Aprenda Plus" />
-            <span className="admin-badge">PAINEL ADMIN</span>
+            <span className="admin-badge">PAINEL {(acesso?.nivel || 'admin').toUpperCase()}</span>
           </Link>
           <button
             type="button"

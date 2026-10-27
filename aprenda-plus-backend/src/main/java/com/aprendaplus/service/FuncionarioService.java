@@ -111,6 +111,25 @@ public class FuncionarioService {
         }
     }
 
+    // Contas Master (devs/suporte) ficam escondidas de quem não é Master.
+    // idQuemVe null = chamada interna (sem usuário logado): vê tudo.
+    public boolean podeVerContasMaster(Integer idQuemVe) {
+        return idQuemVe == null || ehMaster(idQuemVe);
+    }
+
+    public static boolean ehContaMaster(Funcionario f) {
+        return f != null && f.getNivel() != null && f.getNivel().isMaster();
+    }
+
+    // Ids das contas Master (para esconder as ações delas no histórico)
+    public java.util.Set<Integer> idsDasContasMaster() {
+        java.util.Set<Integer> ids = new java.util.HashSet<>();
+        for (Funcionario f : funcionarioRepository.findAll()) {
+            if (ehContaMaster(f)) ids.add(f.getIdFuncionario());
+        }
+        return ids;
+    }
+
     private boolean ehMaster(Integer idFuncionario) {
         return funcionarioRepository.findById(idFuncionario)
                 .map(f -> f.getNivel() != null && f.getNivel().isMaster())

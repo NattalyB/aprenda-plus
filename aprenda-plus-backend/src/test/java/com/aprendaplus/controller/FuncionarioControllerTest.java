@@ -44,6 +44,38 @@ class FuncionarioControllerTest {
                 .andExpect(jsonPath("$[0].nomeCompleto").value("Funcionario Teste"));
     }
 
+    private static Funcionario comNivel(int id, String nome, boolean master) {
+        Funcionario f = new Funcionario();
+        f.setIdFuncionario(id);
+        f.setNomeCompleto(nome);
+        com.aprendaplus.entity.NivelAcesso nivel = new com.aprendaplus.entity.NivelAcesso();
+        nivel.setMaster(master);
+        f.setNivel(nivel);
+        return f;
+    }
+
+    @Test
+    void contasMasterFicamEscondidasDeQuemNaoEhMaster() throws Exception {
+        Funcionario master = comNivel(3, "Suporte/Sistema", true);
+        Funcionario dono = comNivel(9, "Pedro Proprietário", false);
+        when(funcionarioService.listarTodos()).thenReturn(Arrays.asList(master, dono));
+        when(funcionarioService.buscarPorId(3)).thenReturn(master);
+        when(funcionarioService.podeVerContasMaster(9)).thenReturn(false);
+        when(funcionarioService.podeVerContasMaster(3)).thenReturn(true);
+
+        mockMvc.perform(get("/funcionarios").requestAttr("usuarioId", 9))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].nomeCompleto").value("Pedro Proprietário"));
+        mockMvc.perform(get("/funcionarios/3").requestAttr("usuarioId", 9))
+                .andExpect(status().isNotFound());
+
+        mockMvc.perform(get("/funcionarios").requestAttr("usuarioId", 3))
+                .andExpect(jsonPath("$.length()").value(2));
+        mockMvc.perform(get("/funcionarios/3").requestAttr("usuarioId", 3))
+                .andExpect(status().isOk());
+    }
+
     @Test
     void deveCriarFuncionarioComSucesso() throws Exception {
         Funcionario funcionario = new Funcionario();

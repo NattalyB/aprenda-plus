@@ -63,6 +63,23 @@ class NivelAcessoServiceTest {
     // ===== Cadastro de níveis =====
 
     @Test
+    void sabeSeOFuncionarioEhMaster() {
+        com.aprendaplus.entity.Funcionario suporte = new com.aprendaplus.entity.Funcionario();
+        NivelAcesso nivelMaster = new NivelAcesso();
+        nivelMaster.setMaster(true);
+        suporte.setNivel(nivelMaster);
+        com.aprendaplus.entity.Funcionario semNivel = new com.aprendaplus.entity.Funcionario();
+        when(funcionarioRepository.findById(3)).thenReturn(java.util.Optional.of(suporte));
+        when(funcionarioRepository.findById(4)).thenReturn(java.util.Optional.of(semNivel));
+        when(funcionarioRepository.findById(5)).thenReturn(java.util.Optional.empty());
+
+        assertTrue(nivelAcessoService.ehMaster(3));
+        assertFalse(nivelAcessoService.ehMaster(4));
+        assertFalse(nivelAcessoService.ehMaster(5));
+        assertFalse(nivelAcessoService.ehMaster(null));
+    }
+
+    @Test
     void listaComOMasterPrimeiro() {
         when(nivelAcessoRepository.findAllByOrderByMasterDescNomeAsc())
                 .thenReturn(List.of(nivel(1, "Master", "", true), nivel(2, "Financeiro", "", false)));

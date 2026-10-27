@@ -45,6 +45,9 @@ class AtividadeServiceTest {
     @Mock
     private ProfessorRepository professorRepository;
 
+    @Mock
+    private FuncionarioService funcionarioService;
+
     @InjectMocks
     private AtividadeService service;
 
@@ -223,6 +226,56 @@ class AtividadeServiceTest {
         r.setDescricao(descricao);
         r.setQuando(AGORA.plusMinutes(id));
         return r;
+    }
+
+    @Test
+    void quemNaoEhMasterVeAsAcoesDoMasterComoSuporte() {
+        RegistroAtividade doMaster = registro(1, "Suporte/Sistema", "alterou", "Alterou curso #3");
+        doMaster.setUsuarioTipo("funcionario");
+        doMaster.setUsuarioId(3);
+        RegistroAtividade daSecretaria = registro(2, "Julia", "alterou", "Alterou aluno #7");
+        daSecretaria.setUsuarioTipo("funcionario");
+        daSecretaria.setUsuarioId(4);
+        RegistroAtividade doAluno = registro(5, "Maria", "cadastrou", "Fez inscrição");
+        doAluno.setUsuarioTipo("aluno");
+        doAluno.setUsuarioId(3);
+        when(registroRepository.contar(any(), any(), any(), any(), any(), any())).thenReturn(3L);
+        when(registroRepository.buscar(any(), any(), any(), any(), any(), any(), anyInt(), anyInt()))
+                .thenReturn(List.of(doMaster, daSecretaria, doAluno));
+        when(funcionarioService.podeVerContasMaster(9)).thenReturn(false);
+        when(funcionarioService.podeVerContasMaster(3)).thenReturn(true);
+        when(funcionarioService.idsDasContasMaster()).thenReturn(java.util.Set.of(3));
+
+        PaginaAtividades paraODono = service.buscar(null, null, null, null, null, null, 1, 20, 9);
+        assertEquals("Suporte do sistema", paraODono.itens().get(0).getUsuarioNome());
+        assertNull(paraODono.itens().get(0).getUsuarioId());
+        assertEquals("Alterou curso #3", paraODono.itens().get(0).getDescricao());
+        assertEquals("Julia", paraODono.itens().get(1).getUsuarioNome());
+        assertEquals("Maria", paraODono.itens().get(2).getUsuarioNome());
+        assertEquals("Suporte/Sistema", doMaster.getUsuarioNome()); // o registro original não muda
+
+        PaginaAtividades paraOMaster = service.buscar(null, null, null, null, null, null, 1, 20, 3);
+        assertEquals("Suporte/Sistema", paraOMaster.itens().get(0).getUsuarioNome());
+    }
+
+    @Test
+    void ultimaAlteracaoDoMasterApareceComoSuporte() {
+        RegistroAtividade criou = registro(1, "Suporte/Sistema", "cadastrou", "Cadastrou aluno #12");
+        criou.setUsuarioTipo("funcionario");
+        criou.setUsuarioId(3);
+        RegistroAtividade alterou = registro(5, "Carla", "alterou", "Alterou aluno #12");
+        alterou.setUsuarioTipo("funcionario");
+        alterou.setUsuarioId(4);
+        when(registroRepository.findFirstByAlvoAndRegistroIdAndAcaoOrderByQuandoAscIdRegistroAsc("alunos", 12, "cadastrou"))
+                .thenReturn(Optional.of(criou));
+        when(registroRepository.findFirstByAlvoAndRegistroIdOrderByQuandoDescIdRegistroDesc("alunos", 12))
+                .thenReturn(Optional.of(alterou));
+        when(funcionarioService.podeVerContasMaster(9)).thenReturn(false);
+        when(funcionarioService.idsDasContasMaster()).thenReturn(java.util.Set.of(3));
+
+        UltimaAlteracao u = service.ultima("alunos", 12, 9);
+        assertEquals("Suporte do sistema", u.criadoPor());
+        assertEquals("Carla", u.alteradoPor());
     }
 
     @Test
