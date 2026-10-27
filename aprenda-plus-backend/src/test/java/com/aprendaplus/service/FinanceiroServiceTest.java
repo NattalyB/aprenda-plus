@@ -1,15 +1,18 @@
 package com.aprendaplus.service;
 
 import com.aprendaplus.dto.AlertasFinanceiros;
+import com.aprendaplus.dto.CalculoParcela;
 import com.aprendaplus.dto.ParcelaFinanceira;
 import com.aprendaplus.dto.ResumoFinanceiro;
 import com.aprendaplus.entity.Aluno;
+import com.aprendaplus.entity.ConfiguracaoFinanceira;
 import com.aprendaplus.entity.Curso;
 import com.aprendaplus.entity.Inscricao;
 import com.aprendaplus.entity.Matricula;
 import com.aprendaplus.entity.Pagamento;
 import com.aprendaplus.entity.Turma;
 import com.aprendaplus.exception.RegraDeNegocioException;
+import com.aprendaplus.repository.ConfiguracaoFinanceiraRepository;
 import com.aprendaplus.repository.InscricaoRepository;
 import com.aprendaplus.repository.MatriculaRepository;
 import com.aprendaplus.repository.PagamentoRepository;
@@ -44,6 +47,9 @@ class FinanceiroServiceTest {
 
     @Mock
     private InscricaoRepository inscricaoRepository;
+
+    @Mock
+    private ConfiguracaoFinanceiraRepository configuracaoRepository;
 
     @InjectMocks
     private FinanceiroService financeiroService;
@@ -566,5 +572,152 @@ class FinanceiroServiceTest {
         // Cartão pago adiantado por engano: volta a esperar o vencimento
         assertEquals("pendente", cartao.status());
         assertTrue(cartao.cobrancaAutomatica());
+    }
+
+    // ===== Multa, juros e desconto =====
+
+    private void regrasDeCobranca(String multa, String juros, String desconto, int carencia) {
+        ConfiguracaoFinanceira regras = new ConfiguracaoFinanceira();
+        regras.setMultaPercentual(new BigDecimal(multa));
+        regras.setJurosMesPercentual(new BigDecimal(juros));
+        regras.setDescontoPontualidadePercentual(new BigDecimal(desconto));
+        regras.setDiasCarencia(carencia);
+        when(configuracaoRepository.findById(ConfiguracaoFinanceira.ID_UNICO)).thenReturn(Optional.of(regras));
+    }
+
+    @Test
+    void baixaAtrasadaGuardaMultaJurosEValorPago() {
+        regrasDeCobranca("2", "1", "5", 0);
+        Pagamento p = parcela(5, null, 1, "500", HOJE.minusDays(30), "atrasado");
+        when(pagamentoRepository.findById(5)).thenReturn(Optional.of(p));
+
+        ParcelaFinanceira resultado = financeiroService.registrarPagamento(5, HOJE, "Boleto bancário", false, null, HOJE);
+
+        assertEquals(new BigDecimal("10.00"), p.getValorMulta());
+        assertEquals(new BigDecimal("5.00"), p.getValorJuros());
+        assertEquals(new BigDecimal("0.00"), p.getValorDesconto());
+        assertEquals(new BigDecimal("515.00"), p.getValorPago());
+        assertEquals(new BigDecimal("515.00"), resultado.valorPago());
+        assertEquals(new BigDecimal("515.00"), resultado.valorAtualizado());
+        assertEquals(new BigDecimal("500"), resultado.valor());
+    }
+
+    @Test
+    void baixaEmDiaGanhaDescontoEIsencaoTiraOsEncargos() {
+        regrasDeCobranca("2", "1", "5", 0);
+        Pagamento emDia = parcela(5, null, 1, "500", HOJE, "pendente");
+        Pagamento atrasada = parcela(6, null, 1, "500", HOJE.minusDays(30), "atrasado");
+        when(pagamentoRepository.findById(5)).thenReturn(Optional.of(emDia));
+        when(pagamentoRepository.findById(6)).thenReturn(Optional.of(atrasada));
+
+        financeiroService.registrarPagamento(5, HOJE, null, false, null, HOJE);
+        financeiroService.registrarPagamento(6, HOJE, null, true, new BigDecimal("20"), HOJE);
+
+        assertEquals(new BigDecimal("475.00"), emDia.getValorPago());
+        assertEquals(new BigDecimal("25.00"), emDia.getValorDesconto());
+        assertEquals(new BigDecimal("0.00"), atrasada.getValorMulta());
+        assertEquals(new BigDecimal("480.00"), atrasada.getValorPago());
+    }
+
+    @Test
+    void estornoApagaOsValoresDaBaixa() {
+        Pagamento p = parcela(5, null, 1, "500", HOJE.minusDays(5), "pago");
+        p.setDataPagamento(HOJE);
+        p.setValorMulta(new BigDecimal("10.00"));
+        p.setValorJuros(new BigDecimal("0.83"));
+        p.setValorDesconto(BigDecimal.ZERO);
+        p.setValorPago(new BigDecimal("510.83"));
+        when(pagamentoRepository.findById(5)).thenReturn(Optional.of(p));
+
+        ParcelaFinanceira resultado = financeiroService.estornar(5, HOJE);
+
+        assertNull(p.getValorMulta());
+        assertNull(p.getValorJuros());
+        assertNull(p.getValorDesconto());
+        assertNull(p.getValorPago());
+        assertNull(resultado.valorPago());
+    }
+
+    @Test
+    void listaMostraQuantoCustaPagarHoje() {
+        regrasDeCobranca("2", "1", "0", 0);
+        LocalDate hoje = financeiroService.hoje();
+        Pagamento atrasada = parcela(1, null, 1, "500", hoje.minusDays(30), "atrasado");
+        Pagamento paga = parcela(2, null, 2, "500", hoje.minusDays(60), "pago");
+        paga.setDataPagamento(hoje.minusDays(50));
+        paga.setValorPago(new BigDecimal("508.33"));
+        Pagamento antiga = parcela(3, null, 3, "500", hoje.minusDays(90), "pago");
+        antiga.setDataPagamento(hoje.minusDays(90));
+        Pagamento cancelada = parcela(4, null, 4, "500", hoje.minusDays(10), "cancelado");
+        when(pagamentoRepository.findAll()).thenReturn(List.of(atrasada, paga, antiga, cancelada));
+
+        List<ParcelaFinanceira> lista = financeiroService.listarParcelas();
+
+        ParcelaFinanceira primeira = lista.stream().filter(x -> x.idPagamento() == 1).findFirst().orElseThrow();
+        ParcelaFinanceira segunda = lista.stream().filter(x -> x.idPagamento() == 2).findFirst().orElseThrow();
+        ParcelaFinanceira terceira = lista.stream().filter(x -> x.idPagamento() == 3).findFirst().orElseThrow();
+        ParcelaFinanceira quarta = lista.stream().filter(x -> x.idPagamento() == 4).findFirst().orElseThrow();
+        assertEquals(new BigDecimal("515.00"), primeira.valorAtualizado());
+        assertEquals(new BigDecimal("508.33"), segunda.valorAtualizado());
+        assertEquals(new BigDecimal("500"), terceira.valorAtualizado());
+        assertEquals(new BigDecimal("500"), quarta.valorAtualizado());
+    }
+
+    @Test
+    void recebidoDoMesSomaOValorPago() {
+        Pagamento comJuros = parcela(1, null, 1, "500", HOJE.minusDays(20), "pago");
+        comJuros.setDataPagamento(HOJE.minusDays(2));
+        comJuros.setValorPago(new BigDecimal("512.50"));
+        Pagamento antiga = parcela(2, null, 2, "300", HOJE.minusDays(5), "pago");
+        antiga.setDataPagamento(HOJE.minusDays(5));
+        when(pagamentoRepository.findAll()).thenReturn(List.of(comJuros, antiga));
+
+        ResumoFinanceiro r = financeiroService.resumo(HOJE);
+
+        assertEquals(new BigDecimal("812.50"), r.recebidoNoMes());
+        assertEquals(new BigDecimal("812.50"), r.porMes().get(5).recebido());
+    }
+
+    @Test
+    void semRegrasSalvasNaoCobraNada() {
+        ConfiguracaoFinanceira regras = financeiroService.regras();
+        assertEquals(0, regras.getMultaPercentual().signum());
+        assertEquals(0, regras.getJurosMesPercentual().signum());
+        assertEquals(0, regras.getDiasCarencia());
+    }
+
+    @Test
+    void salvaAsRegrasSempreNaLinhaUm() {
+        when(configuracaoRepository.save(any(ConfiguracaoFinanceira.class))).thenAnswer(i -> i.getArgument(0));
+        ConfiguracaoFinanceira novas = new ConfiguracaoFinanceira();
+        novas.setId(99);
+        novas.setMultaPercentual(new BigDecimal("2"));
+        novas.setJurosMesPercentual(new BigDecimal("1"));
+        novas.setDescontoPontualidadePercentual(new BigDecimal("5"));
+        novas.setDiasCarencia(3);
+
+        ConfiguracaoFinanceira salvas = financeiroService.salvarRegras(novas);
+
+        assertEquals(1, salvas.getId());
+        assertNotNull(salvas.getAtualizadoEm());
+
+        novas.setMultaPercentual(new BigDecimal("10"));
+        assertThrows(RegraDeNegocioException.class, () -> financeiroService.salvarRegras(novas));
+        verify(configuracaoRepository, times(1)).save(any());
+    }
+
+    @Test
+    void calculaAPreviaDaBaixa() {
+        regrasDeCobranca("2", "1", "0", 0);
+        Pagamento aberta = parcela(5, null, 1, "500", HOJE.minusDays(15), "atrasado");
+        when(pagamentoRepository.findById(5)).thenReturn(Optional.of(aberta));
+        when(pagamentoRepository.findById(6)).thenReturn(Optional.of(parcela(6, null, 1, "500", HOJE, "pago")));
+
+        CalculoParcela c = financeiroService.calcular(5, HOJE, false, null);
+
+        assertEquals(new BigDecimal("512.50"), c.total());
+        assertEquals(15L, c.diasAtraso());
+        assertEquals("Esta parcela não está em aberto.", assertThrows(RegraDeNegocioException.class,
+                () -> financeiroService.calcular(6, HOJE, false, null)).getMessage());
     }
 }

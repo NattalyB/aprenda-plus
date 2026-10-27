@@ -87,6 +87,16 @@ class AtividadeTextoTest {
         assertEquals("Registrou pagamento da parcela #4", d("PUT", "/financeiro/parcelas/4/pagamento").texto());
         assertEquals("Estornou parcela #4", d("PUT", "/financeiro/parcelas/4/estorno").texto());
         assertEquals("Alterou parcela", d("PUT", "/financeiro/outra").texto());
+        assertEquals("Alterou as regras de multa, juros e desconto", d("PUT", "/financeiro/configuracao").texto());
+        assertEquals("Cadastrou conta a pagar", d("POST", "/financeiro/contas").texto());
+        assertEquals("Alterou conta a pagar #8", d("PUT", "/financeiro/contas/8").texto());
+        assertEquals("Excluiu conta a pagar #8", d("DELETE", "/financeiro/contas/8").texto());
+        assertEquals("Pagou a conta #8", d("PUT", "/financeiro/contas/8/pagamento").texto());
+        assertEquals("Desfez o pagamento da conta #8", d("PUT", "/financeiro/contas/8/estorno").texto());
+        assertEquals("Financeiro", d("PUT", "/financeiro/contas/8/pagamento").modulo());
+        assertEquals("Alterou o valor da hora-aula do professor #3", d("PUT", "/financeiro/professores/3/valor-hora").texto());
+        assertEquals("Gerou o pagamento de hora-aula do professor #3", d("POST", "/financeiro/professores/3/pagamento").texto());
+        assertEquals("Alterou parcela", d("PUT", "/financeiro/professores/3").texto());
         Descricao vinculos = d("PUT", "/professores/2/vinculos");
         assertEquals("Alterou cursos e disciplinas do professor #2", vinculos.texto());
         assertEquals("professores", vinculos.alvo());

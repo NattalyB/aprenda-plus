@@ -36,6 +36,20 @@ public class Pagamento {
     @Column(name = "status", nullable = false, length = 20)
     private String status = "pendente";
 
+    // Preenchidos na baixa: multa e juros (pagou atrasado), desconto (pagou em dia)
+    // e o valor que entrou de fato. Vazios = parcela antiga ou ainda não paga.
+    @Column(name = "valor_multa", precision = 10, scale = 2)
+    private BigDecimal valorMulta;
+
+    @Column(name = "valor_juros", precision = 10, scale = 2)
+    private BigDecimal valorJuros;
+
+    @Column(name = "valor_desconto", precision = 10, scale = 2)
+    private BigDecimal valorDesconto;
+
+    @Column(name = "valor_pago", precision = 10, scale = 2)
+    private BigDecimal valorPago;
+
     @Column(name = "criado_em", insertable = false, updatable = false)
     private LocalDateTime criadoEm;
 
@@ -67,6 +81,22 @@ public class Pagamento {
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+
+    public BigDecimal getValorMulta() { return valorMulta; }
+    public void setValorMulta(BigDecimal valorMulta) { this.valorMulta = valorMulta; }
+
+    public BigDecimal getValorJuros() { return valorJuros; }
+    public void setValorJuros(BigDecimal valorJuros) { this.valorJuros = valorJuros; }
+
+    public BigDecimal getValorDesconto() { return valorDesconto; }
+    public void setValorDesconto(BigDecimal valorDesconto) { this.valorDesconto = valorDesconto; }
+
+    public BigDecimal getValorPago() { return valorPago; }
+    public void setValorPago(BigDecimal valorPago) { this.valorPago = valorPago; }
+
+    // O que entrou no caixa: o valor pago (com multa/juros/desconto) ou, nas parcelas antigas, o valor da parcela
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    public BigDecimal getValorRecebido() { return valorPago != null ? valorPago : valorParcela; }
 
     public LocalDateTime getCriadoEm() { return criadoEm; }
     public LocalDateTime getAtualizadoEm() { return atualizadoEm; }

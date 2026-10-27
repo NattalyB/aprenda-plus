@@ -1,17 +1,20 @@
 package com.aprendaplus.service;
 
 import com.aprendaplus.dto.AlertasFinanceiros;
+import com.aprendaplus.dto.CalculoParcela;
 import com.aprendaplus.dto.ParcelaFinanceira;
 import com.aprendaplus.dto.ResumoFinanceiro;
 import com.aprendaplus.dto.ResumoFinanceiro.ValorPorItem;
 import com.aprendaplus.dto.ResumoFinanceiro.ValorPorMes;
 import com.aprendaplus.entity.Aluno;
+import com.aprendaplus.entity.ConfiguracaoFinanceira;
 import com.aprendaplus.entity.Curso;
 import com.aprendaplus.entity.Inscricao;
 import com.aprendaplus.entity.Matricula;
 import com.aprendaplus.entity.Pagamento;
 import com.aprendaplus.entity.Turma;
 import com.aprendaplus.exception.RegraDeNegocioException;
+import com.aprendaplus.repository.ConfiguracaoFinanceiraRepository;
 import com.aprendaplus.repository.InscricaoRepository;
 import com.aprendaplus.repository.MatriculaRepository;
 import com.aprendaplus.repository.PagamentoRepository;
@@ -66,6 +69,9 @@ public class FinanceiroService {
 
     @Autowired
     private InscricaoRepository inscricaoRepository;
+
+    @Autowired
+    private ConfiguracaoFinanceiraRepository configuracaoRepository;
 
     LocalDate hoje() {
         return LocalDate.now(ZONA);
@@ -175,10 +181,22 @@ public class FinanceiroService {
 
     @Transactional
     public ParcelaFinanceira registrarPagamento(Integer idPagamento, LocalDate dataPagamento, String formaPagamento) {
-        return registrarPagamento(idPagamento, dataPagamento, formaPagamento, hoje());
+        return registrarPagamento(idPagamento, dataPagamento, formaPagamento, false, null, hoje());
+    }
+
+    // isentarEncargos: perdoa multa e juros; descontoCombinado: desconto digitado na baixa (opcional)
+    @Transactional
+    public ParcelaFinanceira registrarPagamento(Integer idPagamento, LocalDate dataPagamento, String formaPagamento,
+                                                boolean isentarEncargos, BigDecimal descontoCombinado) {
+        return registrarPagamento(idPagamento, dataPagamento, formaPagamento, isentarEncargos, descontoCombinado, hoje());
     }
 
     ParcelaFinanceira registrarPagamento(Integer idPagamento, LocalDate dataPagamento, String formaPagamento, LocalDate hoje) {
+        return registrarPagamento(idPagamento, dataPagamento, formaPagamento, false, null, hoje);
+    }
+
+    ParcelaFinanceira registrarPagamento(Integer idPagamento, LocalDate dataPagamento, String formaPagamento,
+                                         boolean isentarEncargos, BigDecimal descontoCombinado, LocalDate hoje) {
         Pagamento parcela = buscar(idPagamento);
         if (PAGO.equals(parcela.getStatus())) {
             throw new RegraDeNegocioException("Esta parcela já está paga.");
@@ -190,8 +208,14 @@ public class FinanceiroService {
         if (data.isAfter(hoje)) {
             throw new RegraDeNegocioException("A data do pagamento não pode ser no futuro.");
         }
+        CalculoParcela conta = CalculoCobranca.calcular(parcela.getValorParcela(), parcela.getDataVencimento(), data,
+                regras(), isentarEncargos, descontoCombinado);
         parcela.setStatus(PAGO);
         parcela.setDataPagamento(data);
+        parcela.setValorMulta(conta.multa());
+        parcela.setValorJuros(conta.juros());
+        parcela.setValorDesconto(conta.desconto());
+        parcela.setValorPago(conta.total());
         if (formaPagamento != null && !formaPagamento.isBlank()) {
             parcela.setFormaPagamento(formaPagamento.trim());
         }
@@ -218,9 +242,41 @@ public class FinanceiroService {
         }
         parcela.setFormaPagamento(formaCombinada);
         parcela.setDataPagamento(null);
+        parcela.setValorMulta(null);
+        parcela.setValorJuros(null);
+        parcela.setValorDesconto(null);
+        parcela.setValorPago(null);
         parcela.setStatus(parcela.getDataVencimento().isBefore(hoje) ? ATRASADO : PENDENTE);
         Pagamento salva = pagamentoRepository.save(parcela);
         return paraParcela(salva, totalDaMatricula(salva));
+    }
+
+    // ===== Multa, juros e desconto =====
+
+    // Regras de cobrança salvas (sem nada salvo: sem multa, juros nem desconto)
+    public ConfiguracaoFinanceira regras() {
+        return configuracaoRepository.findById(ConfiguracaoFinanceira.ID_UNICO).orElseGet(ConfiguracaoFinanceira::new);
+    }
+
+    @Transactional
+    public ConfiguracaoFinanceira salvarRegras(ConfiguracaoFinanceira novas) {
+        CalculoCobranca.validar(novas);
+        novas.setId(ConfiguracaoFinanceira.ID_UNICO);
+        novas.setAtualizadoEm(java.time.LocalDateTime.now(ZONA));
+        return configuracaoRepository.save(novas);
+    }
+
+    // Quanto a parcela em aberto custa se for paga na data (prévia da tela de baixa)
+    @Transactional(readOnly = true)
+    public CalculoParcela calcular(Integer idPagamento, LocalDate dataPagamento, boolean isentarEncargos,
+                                   BigDecimal descontoCombinado) {
+        Pagamento parcela = buscar(idPagamento);
+        if (!EM_ABERTO.contains(parcela.getStatus())) {
+            throw new RegraDeNegocioException("Esta parcela não está em aberto.");
+        }
+        LocalDate data = dataPagamento == null ? hoje() : dataPagamento;
+        return CalculoCobranca.calcular(parcela.getValorParcela(), parcela.getDataVencimento(), data, regras(),
+                isentarEncargos, descontoCombinado);
     }
 
     // ===== Consultas =====
@@ -276,7 +332,7 @@ public class FinanceiroService {
         YearMonth mesAtual = YearMonth.from(hoje);
 
         BigDecimal previstoNoMes = somar(validas, p -> YearMonth.from(p.getDataVencimento()).equals(mesAtual));
-        BigDecimal recebidoNoMes = somar(validas,
+        BigDecimal recebidoNoMes = somarRecebido(validas,
                 p -> PAGO.equals(p.getStatus()) && p.getDataPagamento() != null
                         && YearMonth.from(p.getDataPagamento()).equals(mesAtual));
         BigDecimal emAtraso = somar(validas, p -> ATRASADO.equals(p.getStatus()));
@@ -295,7 +351,7 @@ public class FinanceiroService {
             porMes.add(new ValorPorMes(
                     mes.toString(),
                     somar(validas, p -> YearMonth.from(p.getDataVencimento()).equals(mes)),
-                    somar(validas, p -> PAGO.equals(p.getStatus()) && p.getDataPagamento() != null
+                    somarRecebido(validas, p -> PAGO.equals(p.getStatus()) && p.getDataPagamento() != null
                             && YearMonth.from(p.getDataPagamento()).equals(mes))));
         }
 
@@ -347,6 +403,8 @@ public class FinanceiroService {
 
     private List<ParcelaFinanceira> paraParcelas(List<Pagamento> parcelas) {
         Map<String, Inscricao> formas = parcelas.isEmpty() ? Map.of() : formasDasInscricoes();
+        ConfiguracaoFinanceira regras = parcelas.isEmpty() ? null : regras();
+        LocalDate hoje = hoje();
         Map<Integer, Integer> totalPorMatricula = new HashMap<>();
         for (Pagamento p : parcelas) {
             Integer id = p.getMatricula() == null ? null : p.getMatricula().getIdMatricula();
@@ -357,15 +415,16 @@ public class FinanceiroService {
                         .thenComparing(Pagamento::getNumeroParcela))
                 .map(p -> paraParcela(p, totalPorMatricula.getOrDefault(
                         p.getMatricula() == null ? null : p.getMatricula().getIdMatricula(), 1),
-                        cobrancaAutomatica(formaCombinada(p, formas))))
+                        cobrancaAutomatica(formaCombinada(p, formas)), regras, hoje))
                 .toList();
     }
 
     private ParcelaFinanceira paraParcela(Pagamento p, int total) {
-        return paraParcela(p, total, cobrancaAutomatica(formaCombinada(p, formasDasInscricoes())));
+        return paraParcela(p, total, cobrancaAutomatica(formaCombinada(p, formasDasInscricoes())), regras(), hoje());
     }
 
-    private ParcelaFinanceira paraParcela(Pagamento p, int total, boolean automatica) {
+    private ParcelaFinanceira paraParcela(Pagamento p, int total, boolean automatica,
+                                          ConfiguracaoFinanceira regras, LocalDate hoje) {
         Matricula matricula = p.getMatricula();
         Aluno aluno = matricula == null ? null : matricula.getAluno();
         Turma turma = matricula == null ? null : matricula.getTurma();
@@ -383,7 +442,25 @@ public class FinanceiroService {
                 p.getDataPagamento(),
                 p.getFormaPagamento(),
                 p.getStatus(),
-                automatica);
+                automatica,
+                p.getValorMulta(),
+                p.getValorJuros(),
+                p.getValorDesconto(),
+                p.getValorPago(),
+                valorAtualizado(p, automatica, regras, hoje));
+    }
+
+    // Em aberto: quanto custa pagar hoje. Paga: o que entrou. Cancelada: o valor da parcela.
+    // Pix e cartão caem sozinhos no vencimento, então não têm multa, juros nem desconto.
+    private static BigDecimal valorAtualizado(Pagamento p, boolean automatica, ConfiguracaoFinanceira regras,
+                                              LocalDate hoje) {
+        if (PAGO.equals(p.getStatus())) {
+            return p.getValorRecebido();
+        }
+        if (!EM_ABERTO.contains(p.getStatus()) || automatica || p.getValorParcela() == null) {
+            return p.getValorParcela();
+        }
+        return CalculoCobranca.calcular(p.getValorParcela(), p.getDataVencimento(), hoje, regras).total();
     }
 
     // Pix e cartão: o dinheiro cai sozinho. Boleto (e o resto): alguém confere e dá baixa.
@@ -437,6 +514,16 @@ public class FinanceiroService {
         return parcelas.stream()
                 .filter(filtro)
                 .map(Pagamento::getValorParcela)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .setScale(2, RoundingMode.HALF_UP);
+    }
+
+    // Soma do que entrou de fato (com multa, juros e desconto da baixa)
+    static BigDecimal somarRecebido(List<Pagamento> parcelas, java.util.function.Predicate<Pagamento> filtro) {
+        return parcelas.stream()
+                .filter(filtro)
+                .map(Pagamento::getValorRecebido)
                 .filter(Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add)
                 .setScale(2, RoundingMode.HALF_UP);

@@ -16,6 +16,11 @@ import {
   baixarArquivo,
 } from '../../utils/financeiro';
 import { GraficoMensal, BarrasHorizontais } from '../../components/admin/GraficosFinanceiro';
+import PreviaDaBaixa from '../../components/admin/financeiro/PreviaDaBaixa';
+import ContasAPagar from '../../components/admin/financeiro/ContasAPagar';
+import FluxoDeCaixa from '../../components/admin/financeiro/FluxoDeCaixa';
+import PagamentoProfessores from '../../components/admin/financeiro/PagamentoProfessores';
+import RegrasDeCobranca from '../../components/admin/financeiro/RegrasDeCobranca';
 
 const normalizar = (texto) =>
   (texto || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
@@ -30,6 +35,14 @@ const FILTROS = [
 ];
 
 const FORMAS = ['Pix', 'Cartão de crédito', 'Boleto bancário', 'Dinheiro', 'Transferência'];
+
+// Abas que só carregam os próprios dados quando são abertas
+const ABAS_EXTRAS = [
+  { chave: 'contas', rotulo: 'Contas a pagar' },
+  { chave: 'fluxo', rotulo: 'Fluxo de caixa' },
+  { chave: 'professores', rotulo: 'Professores' },
+  { chave: 'regras', rotulo: 'Regras de cobrança' },
+];
 
 // Módulo Financeiro do painel: indicadores, gráficos e as parcelas de todas as matrículas
 function AdminFinanceiro() {
@@ -65,12 +78,15 @@ function AdminFinanceiro() {
 
   const abrirBaixa = (parcela) => {
     setSucesso(null);
-    setBaixa({ id: parcela.idPagamento, data: hojeISO(), forma: parcela.formaPagamento || 'Pix' });
+    setBaixa({ id: parcela.idPagamento, data: hojeISO(), forma: parcela.formaPagamento || 'Pix', isentar: false, desconto: '' });
   };
 
   const confirmarBaixa = (parcela) => {
     setProcessando(true);
-    registrarPagamentoDaParcela(parcela.idPagamento, { dataPagamento: baixa.data, formaPagamento: baixa.forma })
+    const dados = { dataPagamento: baixa.data, formaPagamento: baixa.forma };
+    if (baixa.isentar) dados.isentarEncargos = true;
+    if (String(baixa.desconto || '').trim() !== '') dados.desconto = String(baixa.desconto).trim();
+    registrarPagamentoDaParcela(parcela.idPagamento, dados)
       .then(() => {
         avisar(`Pagamento da parcela ${parcela.numeroParcela}/${parcela.totalParcelas} de ${parcela.aluno} registrado.`);
         setBaixa(null);
@@ -105,22 +121,25 @@ function AdminFinanceiro() {
       .catch((error) => setErro(mensagemDoErro(error, 'Não foi possível gerar as parcelas.')));
   };
 
-  if (!parcelas || !resumo) {
+  // As abas novas cuidam dos próprios dados (não dependem das parcelas)
+  const abaExtra = ABAS_EXTRAS.some((a) => a.chave === aba);
+
+  if (!abaExtra && (!parcelas || !resumo)) {
     return erro ? <div className="form-erro">{erro}</div> : <p>Carregando financeiro...</p>;
   }
 
   const termo = normalizar(busca.trim());
-  const filtradas = parcelas.filter(
+  const filtradas = (parcelas || []).filter(
     (p) =>
       (filtro === 'todas' || situacaoDaParcela(p) === filtro) &&
       (!termo || normalizar(p.aluno).includes(termo) || normalizar(p.curso).includes(termo))
   );
   const totalFiltrado = filtradas.reduce((soma, p) => soma + Number(p.valor), 0);
-  const contagem = (situacao) => parcelas.filter((p) => situacaoDaParcela(p) === situacao).length;
+  const contagem = (situacao) => (parcelas || []).filter((p) => situacaoDaParcela(p) === situacao).length;
   // Pix/cartão que já chegou no vencimento caiu sozinho: não tem o que desfazer
   const podeDesfazer = (p) => p.status === 'pago' && !(p.cobrancaAutomatica && p.vencimento <= hojeISO());
   const percentualRecebido =
-    Number(resumo.previstoNoMes) > 0
+    resumo && Number(resumo.previstoNoMes) > 0
       ? Math.round((Number(resumo.recebidoNoMes) / Number(resumo.previstoNoMes)) * 100)
       : 0;
 
@@ -136,9 +155,11 @@ function AdminFinanceiro() {
             só os boletos precisam de baixa aqui. Pagamentos simulados.
           </p>
         </div>
-        <button type="button" className="admin-btn admin-btn-secundario financeiro-sem-impressao" onClick={gerarFaltantes}>
-          Gerar parcelas que faltam
-        </button>
+        {!abaExtra && (
+          <button type="button" className="admin-btn admin-btn-secundario financeiro-sem-impressao" onClick={gerarFaltantes}>
+            Gerar parcelas que faltam
+          </button>
+        )}
       </div>
 
       {erro && <div className="form-erro">{erro}</div>}
@@ -153,11 +174,21 @@ function AdminFinanceiro() {
           Visão geral
         </button>
         <button type="button" role="tab" aria-selected={aba === 'parcelas'} onClick={() => setAba('parcelas')}>
-          Parcelas <span className="financeiro-aba-contador">{parcelas.length}</span>
+          Parcelas {parcelas && <span className="financeiro-aba-contador">{parcelas.length}</span>}
         </button>
+        {ABAS_EXTRAS.map((a) => (
+          <button key={a.chave} type="button" role="tab" aria-selected={aba === a.chave} onClick={() => setAba(a.chave)}>
+            {a.rotulo}
+          </button>
+        ))}
       </div>
 
-      {aba === 'visao' ? (
+      {aba === 'contas' && <ContasAPagar />}
+      {aba === 'fluxo' && <FluxoDeCaixa />}
+      {aba === 'professores' && <PagamentoProfessores />}
+      {aba === 'regras' && <RegrasDeCobranca />}
+
+      {abaExtra ? null : aba === 'visao' ? (
         <>
           <ul className="financeiro-indicadores">
             <li>
@@ -279,7 +310,10 @@ function AdminFinanceiro() {
                         </td>
                         <td>{p.numeroParcela}/{p.totalParcelas}</td>
                         <td>{formatarData(p.vencimento)}</td>
-                        <td>{formatarValor(p.valor)}</td>
+                        <td>
+                          {formatarValor(p.valor)}
+                          <ValorAtualizado parcela={p} />
+                        </td>
                         <td>
                           <span className={`status-badge parcela-${situacaoDaParcela(p)}`}>{rotuloDaSituacao(p)}</span>
                         </td>
@@ -313,6 +347,30 @@ function AdminFinanceiro() {
                                   ))}
                                 </select>
                               </label>
+                              <label>
+                                Desconto (R$)
+                                <input
+                                  type="text"
+                                  inputMode="decimal"
+                                  placeholder="automático"
+                                  value={baixa.desconto}
+                                  onChange={(e) => setBaixa({ ...baixa, desconto: e.target.value })}
+                                />
+                              </label>
+                              <label className="financeiro-baixa-check">
+                                <input
+                                  type="checkbox"
+                                  checked={baixa.isentar}
+                                  onChange={(e) => setBaixa({ ...baixa, isentar: e.target.checked })}
+                                />
+                                Isentar multa e juros
+                              </label>
+                              <PreviaDaBaixa
+                                idPagamento={p.idPagamento}
+                                data={baixa.data}
+                                isentarEncargos={baixa.isentar}
+                                desconto={baixa.desconto}
+                              />
                               <div className="admin-acoes">
                                 <button
                                   type="button"
@@ -356,6 +414,23 @@ function AdminFinanceiro() {
       )}
     </div>
   );
+}
+
+// Embaixo do valor: quanto foi pago (com multa/juros/desconto) ou quanto custa pagar hoje
+function ValorAtualizado({ parcela }) {
+  const atualizado = Number(parcela.valorAtualizado);
+  if (parcela.valorAtualizado == null || Math.abs(atualizado - Number(parcela.valor)) < 0.005) return null;
+  if (parcela.status === 'pago') {
+    return <small className="financeiro-detalhe">pago {formatarValor(atualizado)}</small>;
+  }
+  if (parcela.status === 'pendente' || parcela.status === 'atrasado') {
+    return (
+      <small className={atualizado > Number(parcela.valor) ? 'financeiro-detalhe financeiro-encargo' : 'financeiro-detalhe'}>
+        hoje {formatarValor(atualizado)}
+      </small>
+    );
+  }
+  return null;
 }
 
 export default AdminFinanceiro;

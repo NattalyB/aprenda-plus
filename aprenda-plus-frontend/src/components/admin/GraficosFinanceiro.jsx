@@ -168,3 +168,150 @@ export function BarrasHorizontais({ itens, rotulo, vazio = 'Sem dados ainda.' })
     </ul>
   );
 }
+
+// Cores do fluxo de caixa (validadas para daltonismo e contraste)
+export const COR_ENTRADA = '#1d4ed8';
+export const COR_SAIDA = '#c2410c';
+
+// Fluxo de caixa por mês: entradas x saídas. A parte de baixo da barra (cor cheia) é o realizado;
+// a de cima (mais clara) é o que ainda está previsto.
+export function GraficoFluxo({ dados, mesAtual }) {
+  const [destaque, setDestaque] = useState(null);
+  const total = (d, tipo) =>
+    tipo === 'entrada'
+      ? Number(d.entradasRealizadas) + Number(d.entradasPrevistas)
+      : Number(d.saidasRealizadas) + Number(d.saidasPrevistas);
+  const maximo = topoDoEixo(Math.max(0, ...dados.flatMap((d) => [total(d, 'entrada'), total(d, 'saida')])));
+  const larguraUtil = LARGURA - MARGEM.esquerda - MARGEM.direita;
+  const alturaUtil = ALTURA - MARGEM.topo - MARGEM.base;
+  const larguraGrupo = larguraUtil / Math.max(dados.length, 1);
+  const larguraBarra = Math.min(16, larguraGrupo * 0.3);
+  const y = (valor) => MARGEM.topo + alturaUtil - (Number(valor) / maximo) * alturaUtil;
+  const altura = (valor) => (Number(valor) / maximo) * alturaUtil;
+  const ativo = destaque === null ? null : dados[destaque];
+
+  // Realizado em baixo (base reta); previsto em cima, com 2px de folga entre os dois
+  const barra = (x, realizado, previsto, cor) => {
+    const hRealizado = altura(realizado);
+    const hPrevisto = altura(previsto);
+    const temOsDois = hRealizado > 0 && hPrevisto > 0;
+    const topoRealizado = MARGEM.topo + alturaUtil - hRealizado;
+    return (
+      <>
+        {hRealizado > 0 && (
+          <path
+            d={temOsDois
+              ? `M${x},${topoRealizado} H${x + larguraBarra} V${topoRealizado + hRealizado} H${x} Z`
+              : caminhoDaBarra(x, topoRealizado, larguraBarra, hRealizado)}
+            fill={cor}
+          />
+        )}
+        {hPrevisto > 0 && (
+          <path
+            d={caminhoDaBarra(x, topoRealizado - hPrevisto, larguraBarra, Math.max(hPrevisto - (temOsDois ? 2 : 0), 0.5))}
+            fill={cor}
+            fillOpacity={0.35}
+            stroke={cor}
+            strokeWidth={1}
+            strokeDasharray="3 2"
+          />
+        )}
+      </>
+    );
+  };
+
+  return (
+    <figure className="grafico">
+      <div className="grafico-legenda" aria-hidden="true">
+        <span><i style={{ background: COR_ENTRADA }} /> Entradas</span>
+        <span><i style={{ background: COR_SAIDA }} /> Saídas</span>
+        <span><i className="grafico-legenda-previsto" /> Parte clara = previsto (ainda não aconteceu)</span>
+      </div>
+
+      <div className="grafico-area">
+        <svg viewBox={`0 0 ${LARGURA} ${ALTURA}`} role="img" aria-label="Entradas e saídas por mês">
+          {[0, 0.25, 0.5, 0.75, 1].map((fracao) => {
+            const valor = maximo * fracao;
+            return (
+              <g key={fracao}>
+                <line
+                  x1={MARGEM.esquerda}
+                  x2={LARGURA - MARGEM.direita}
+                  y1={y(valor)}
+                  y2={y(valor)}
+                  className={fracao === 0 ? 'grafico-base' : 'grafico-grade'}
+                />
+                <text x={MARGEM.esquerda - 8} y={y(valor) + 4} textAnchor="end" className="grafico-eixo">
+                  {formatarCompacto(valor)}
+                </text>
+              </g>
+            );
+          })}
+
+          {dados.map((d, i) => {
+            const centro = MARGEM.esquerda + larguraGrupo * i + larguraGrupo / 2;
+            return (
+              <g key={d.mes}>
+                {barra(centro - larguraBarra - 1, d.entradasRealizadas, d.entradasPrevistas, COR_ENTRADA)}
+                {barra(centro + 1, d.saidasRealizadas, d.saidasPrevistas, COR_SAIDA)}
+                <text
+                  x={centro}
+                  y={ALTURA - 10}
+                  textAnchor="middle"
+                  className={d.mes === mesAtual ? 'grafico-eixo grafico-eixo-atual' : 'grafico-eixo'}
+                >
+                  {nomeDoMes(d.mes)}
+                </text>
+                <rect
+                  data-testid={`fluxo-${d.mes}`}
+                  x={MARGEM.esquerda + larguraGrupo * i}
+                  y={MARGEM.topo}
+                  width={larguraGrupo}
+                  height={alturaUtil}
+                  fill="transparent"
+                  onMouseEnter={() => setDestaque(i)}
+                  onMouseLeave={() => setDestaque(null)}
+                />
+              </g>
+            );
+          })}
+        </svg>
+
+        {ativo && (
+          <div
+            className="grafico-dica"
+            role="tooltip"
+            style={{ left: `${((MARGEM.esquerda + larguraGrupo * (destaque + 0.5)) / LARGURA) * 100}%` }}
+          >
+            <strong>{nomeDoMes(ativo.mes)}</strong>
+            <span><i style={{ background: COR_ENTRADA }} /> Entradas: {formatarValor(total(ativo, 'entrada'))}</span>
+            {Number(ativo.entradasPrevistas) > 0 && <small>({formatarValor(ativo.entradasPrevistas)} previsto)</small>}
+            <span><i style={{ background: COR_SAIDA }} /> Saídas: {formatarValor(total(ativo, 'saida'))}</span>
+            {Number(ativo.saidasPrevistas) > 0 && <small>({formatarValor(ativo.saidasPrevistas)} previsto)</small>}
+            <span>Saldo do mês: {formatarValor(ativo.saldo)}</span>
+          </div>
+        )}
+      </div>
+
+      <details className="grafico-tabela">
+        <summary>Ver em tabela</summary>
+        <table>
+          <thead>
+            <tr><th>Mês</th><th>Entradas</th><th>Saídas</th><th>Saldo</th><th>Acumulado</th></tr>
+          </thead>
+          <tbody>
+            {dados.map((d) => (
+              <tr key={d.mes}>
+                <td>{nomeDoMes(d.mes)}</td>
+                <td>{formatarValor(total(d, 'entrada'))}</td>
+                <td>{formatarValor(total(d, 'saida'))}</td>
+                <td>{formatarValor(d.saldo)}</td>
+                <td>{formatarValor(d.saldoAcumulado)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </details>
+    </figure>
+  );
+}

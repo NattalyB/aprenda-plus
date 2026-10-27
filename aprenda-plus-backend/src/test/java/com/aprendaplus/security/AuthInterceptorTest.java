@@ -271,7 +271,18 @@ class AuthInterceptorTest {
     void baixaDeParcelaExigeOModuloFinanceiro() throws Exception {
         assertFalse(doFuncionario(2, "PUT", "/financeiro/parcelas/3/pagamento"));
         assertTrue(doFuncionario(1, "PUT", "/financeiro/parcelas/3/pagamento"));
-        assertTrue(doFuncionario(3, "GET", "/financeiro/resumo"));
+    }
+
+    @Test
+    void financeiroEhSensivelAteParaConsultar() throws Exception {
+        // contas a pagar, salários e recebimentos: só quem tem o módulo Financeiro vê
+        assertFalse(doFuncionario(3, "GET", "/financeiro/resumo"));
+        assertEquals(403, response.getStatus());
+        assertFalse(doFuncionario(3, "GET", "/financeiro/contas"));
+        assertFalse(doFuncionario(2, "GET", "/financeiro/professores"));
+        assertTrue(doFuncionario(1, "GET", "/financeiro/contas"));
+        assertTrue(doFuncionario(1, "GET", "/financeiro/fluxo-caixa"));
+        assertTrue(doFuncionario(1, "PUT", "/financeiro/configuracao"));
     }
 
     // ===== Portal do Professor =====

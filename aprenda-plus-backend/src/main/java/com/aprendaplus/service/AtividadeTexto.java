@@ -111,6 +111,8 @@ public final class AtividadeTexto {
                 }
             }
             case "financeiro" -> {
+                Descricao saida = financeiro(metodo, p, modulo);
+                if (saida != null) return saida;
                 if (p.length > 1 && "gerar-parcelas".equals(p[1])) {
                     return new Descricao(modulo, CADASTROU, "Gerou parcelas", null, null, false);
                 }
@@ -160,6 +162,44 @@ public final class AtividadeTexto {
             return new Descricao(modulo, acao, verbo(acao) + " " + recurso.singular() + " #" + num1, base, num1, false);
         }
         return new Descricao(modulo, acao, verbo(acao) + " " + recurso.singular(), null, null, false);
+    }
+
+    // Contas a pagar, regras de cobrança e pagamento dos professores (/financeiro/...)
+    private static Descricao financeiro(String metodo, String[] p, String modulo) {
+        if (p.length < 2) return null;
+        switch (p[1]) {
+            case "configuracao" -> {
+                return new Descricao(modulo, ALTEROU, "Alterou as regras de multa, juros e desconto", null, null, false);
+            }
+            case "contas" -> {
+                if (p.length == 2) {
+                    return new Descricao(modulo, CADASTROU, "Cadastrou conta a pagar", null, null, false);
+                }
+                String id = p[2];
+                if (p.length > 3 && "pagamento".equals(p[3])) {
+                    return new Descricao(modulo, ALTEROU, "Pagou a conta #" + id, null, null, false);
+                }
+                if (p.length > 3 && "estorno".equals(p[3])) {
+                    return new Descricao(modulo, ALTEROU, "Desfez o pagamento da conta #" + id, null, null, false);
+                }
+                String acao = acaoDoMetodo(metodo);
+                return new Descricao(modulo, acao, verbo(acao) + " conta a pagar #" + id, null, null, false);
+            }
+            case "professores" -> {
+                if (p.length > 3 && "valor-hora".equals(p[3])) {
+                    return new Descricao(modulo, ALTEROU, "Alterou o valor da hora-aula do professor #" + p[2],
+                            null, null, false);
+                }
+                if (p.length > 3 && "pagamento".equals(p[3])) {
+                    return new Descricao(modulo, CADASTROU, "Gerou o pagamento de hora-aula do professor #" + p[2],
+                            null, null, false);
+                }
+                return null;
+            }
+            default -> {
+                return null;
+            }
+        }
     }
 
     // /planos-de-aula/turma/{t}/aulas, /planos-de-aula/aulas/{id}, /planos-de-aula/avisos/{id}...

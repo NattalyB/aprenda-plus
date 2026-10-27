@@ -11,6 +11,9 @@ import java.util.Set;
 
 public class AuthInterceptor implements HandlerInterceptor {
 
+    private static final Set<String> MODULOS_SENSIVEIS =
+            Set.of(Modulos.FUNCIONARIOS, Modulos.HISTORICO, Modulos.FINANCEIRO);
+
     private final JwtUtil jwtUtil;
 
     // Diz quais módulos cada funcionário pode usar (nível de acesso).
@@ -141,7 +144,7 @@ public class AuthInterceptor implements HandlerInterceptor {
     // - consultar (GET) é livre para a equipe, porque uma tela usa dados de outras
     //   (ex.: Matrículas precisa listar os alunos);
     // - criar, editar e excluir exige o módulo liberado no nível;
-    // - Funcionários e Sistema são sensíveis: até para consultar precisa do módulo.
+    // - Funcionários, Histórico, Financeiro e Sistema são sensíveis: até para consultar precisa do módulo.
     private boolean funcionarioPodeAcessar(String metodo, String caminho, Set<String> liberados) {
         if (caminho.equals("/niveis-acesso/meu")) {
             return true; // cada um pode ver o próprio nível
@@ -162,8 +165,9 @@ public class AuthInterceptor implements HandlerInterceptor {
             return liberados.contains(Modulos.SISTEMA)
                     || (listaDeNiveis && liberados.contains(Modulos.FUNCIONARIOS));
         }
-        // Funcionários e Histórico são sensíveis: até para consultar precisa do módulo
-        if (consulta && !Modulos.FUNCIONARIOS.equals(modulo) && !Modulos.HISTORICO.equals(modulo)) {
+        // Funcionários, Histórico e Financeiro (contas, salários, pagamentos) são sensíveis:
+        // até para consultar precisa do módulo
+        if (consulta && !MODULOS_SENSIVEIS.contains(modulo)) {
             return true;
         }
         return liberados.contains(modulo);

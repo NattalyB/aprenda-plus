@@ -17,7 +17,8 @@ export function Recibo({ parcela, aluno, onFechar }) {
         </div>
 
         <p className="recibo-texto">
-          Recebemos de <strong>{aluno || 'Aluno(a)'}</strong> o valor de <strong>{formatarValor(parcela.valor)}</strong>,
+          Recebemos de <strong>{aluno || 'Aluno(a)'}</strong> o valor de{' '}
+          <strong>{formatarValor(parcela.valorPago ?? parcela.valor)}</strong>,
           referente à parcela <strong>{parcela.numeroParcela} de {parcela.totalParcelas}</strong> do curso{' '}
           <strong>{parcela.curso}</strong>
           {parcela.turma ? ` (${parcela.turma})` : ''}.
@@ -27,6 +28,9 @@ export function Recibo({ parcela, aluno, onFechar }) {
           <div><dt>Vencimento</dt><dd>{formatarData(parcela.vencimento)}</dd></div>
           <div><dt>Pago em</dt><dd>{formatarData(parcela.dataPagamento)}</dd></div>
           <div><dt>Forma de pagamento</dt><dd>{parcela.formaPagamento || '-'}</dd></div>
+          {Number(parcela.multa) > 0 && <div><dt>Multa</dt><dd>{formatarValor(parcela.multa)}</dd></div>}
+          {Number(parcela.juros) > 0 && <div><dt>Juros</dt><dd>{formatarValor(parcela.juros)}</dd></div>}
+          {Number(parcela.desconto) > 0 && <div><dt>Desconto</dt><dd>- {formatarValor(parcela.desconto)}</dd></div>}
         </dl>
 
         <p className="recibo-aviso">
@@ -86,7 +90,12 @@ function PagamentosDaInscricao({ parcelas, aluno }) {
           {parcelas.map((p) => (
             <li key={p.idPagamento}>
               <span>Parcela {p.numeroParcela}/{p.totalParcelas}</span>
-              <span>{formatarValor(p.valor)}</span>
+              <span>
+                {formatarValor(p.valor)}
+                {p.status === 'atrasado' && Number(p.valorAtualizado) > Number(p.valor) && (
+                  <small className="meus-pagamentos-atualizado">hoje {formatarValor(p.valorAtualizado)} com multa e juros</small>
+                )}
+              </span>
               <span>Vence {formatarData(p.vencimento)}</span>
               <span
                 className={`status-badge parcela-${situacaoDaParcela(p)}`}

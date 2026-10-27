@@ -1,6 +1,8 @@
 package com.aprendaplus.controller;
 
 import com.aprendaplus.dto.AlertasFinanceiros;
+import com.aprendaplus.dto.CalculoParcela;
+import com.aprendaplus.entity.ConfiguracaoFinanceira;
 import com.aprendaplus.dto.ParcelaFinanceira;
 import com.aprendaplus.dto.ResumoFinanceiro;
 import com.aprendaplus.exception.RegraDeNegocioException;
@@ -17,6 +19,8 @@ import java.time.LocalDate;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -84,7 +88,7 @@ class FinanceiroControllerTest {
 
     @Test
     void registraPagamentoComDataEForma() throws Exception {
-        when(financeiroService.registrarPagamento(5, LocalDate.of(2026, 10, 10), "Pix")).thenReturn(parcela("pago"));
+        when(financeiroService.registrarPagamento(5, LocalDate.of(2026, 10, 10), "Pix", false, null)).thenReturn(parcela("pago"));
 
         mockMvc.perform(put("/financeiro/parcelas/5/pagamento")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -95,7 +99,7 @@ class FinanceiroControllerTest {
 
     @Test
     void registraPagamentoSemCorpoOuSemData() throws Exception {
-        when(financeiroService.registrarPagamento(eq(5), isNull(), any())).thenReturn(parcela("pago"));
+        when(financeiroService.registrarPagamento(eq(5), isNull(), any(), eq(false), isNull())).thenReturn(parcela("pago"));
 
         mockMvc.perform(put("/financeiro/parcelas/5/pagamento"))
                 .andExpect(status().isOk());
@@ -103,7 +107,7 @@ class FinanceiroControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{ \"dataPagamento\": \" \" }"))
                 .andExpect(status().isOk());
-        verify(financeiroService, times(2)).registrarPagamento(eq(5), isNull(), any());
+        verify(financeiroService, times(2)).registrarPagamento(eq(5), isNull(), any(), eq(false), isNull());
     }
 
     @Test
@@ -135,5 +139,75 @@ class FinanceiroControllerTest {
         mockMvc.perform(post("/financeiro/gerar-parcelas"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.matriculas").value(4));
+    }
+
+    // ===== Multa, juros e desconto =====
+
+    @Test
+    void baixaComIsencaoEDescontoNegociado() throws Exception {
+        when(financeiroService.registrarPagamento(5, LocalDate.of(2026, 10, 10), "Boleto bancário", true,
+                new BigDecimal("15.50"))).thenReturn(parcela("pago"));
+
+        mockMvc.perform(put("/financeiro/parcelas/5/pagamento")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"dataPagamento\": \"2026-10-10\", \"formaPagamento\": \"Boleto bancário\","
+                                + " \"isentarEncargos\": true, \"desconto\": \"15,50\" }"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void descontoInvalidoEhRecusado() throws Exception {
+        mockMvc.perform(put("/financeiro/parcelas/5/pagamento")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"desconto\": \"dez reais\" }"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.mensagem").value("Informe o desconto em reais, por exemplo 10.50."));
+        verify(financeiroService, never()).registrarPagamento(any(), any(), any(), anyBoolean(), any());
+    }
+
+    @Test
+    void previaDaBaixa() throws Exception {
+        when(financeiroService.calcular(5, LocalDate.of(2026, 10, 25), false, null)).thenReturn(new CalculoParcela(
+                new BigDecimal("500.00"), new BigDecimal("10.00"), new BigDecimal("2.50"), new BigDecimal("0.00"),
+                new BigDecimal("512.50"), 15, LocalDate.of(2026, 10, 25)));
+
+        mockMvc.perform(get("/financeiro/parcelas/5/calculo").param("data", "2026-10-25"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.total").value(512.5))
+                .andExpect(jsonPath("$.multa").value(10.0))
+                .andExpect(jsonPath("$.diasAtraso").value(15));
+        mockMvc.perform(get("/financeiro/parcelas/5/calculo").param("data", "amanhã"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void consultaESalvaAsRegras() throws Exception {
+        ConfiguracaoFinanceira regras = new ConfiguracaoFinanceira();
+        regras.setMultaPercentual(new BigDecimal("2.00"));
+        regras.setJurosMesPercentual(new BigDecimal("1.00"));
+        when(financeiroService.regras()).thenReturn(regras);
+        when(financeiroService.salvarRegras(any(ConfiguracaoFinanceira.class))).thenAnswer(i -> i.getArgument(0));
+
+        mockMvc.perform(get("/financeiro/configuracao"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.multaPercentual").value(2.0))
+                .andExpect(jsonPath("$.diasCarencia").value(0));
+        mockMvc.perform(put("/financeiro/configuracao")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"multaPercentual\": 2, \"jurosMesPercentual\": 1, "
+                                + "\"descontoPontualidadePercentual\": 5, \"diasCarencia\": 3 }"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.descontoPontualidadePercentual").value(5))
+                .andExpect(jsonPath("$.diasCarencia").value(3));
+    }
+
+    @Test
+    void leOsValoresDaTela() {
+        org.junit.jupiter.api.Assertions.assertNull(FinanceiroController.lerData(" "));
+        org.junit.jupiter.api.Assertions.assertNull(FinanceiroController.lerValor(null));
+        org.junit.jupiter.api.Assertions.assertEquals(new BigDecimal("10.5"), FinanceiroController.lerValor(10.5));
+        org.junit.jupiter.api.Assertions.assertTrue(FinanceiroController.sim("TRUE"));
+        org.junit.jupiter.api.Assertions.assertFalse(FinanceiroController.sim(null));
+        org.junit.jupiter.api.Assertions.assertFalse(FinanceiroController.sim("sim"));
     }
 }
