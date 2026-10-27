@@ -100,6 +100,18 @@ public class EmailService {
                 "Criar nova senha", link);
     }
 
+    public void acessoProfessor(String email, String nome, String link) {
+        enviarComLink(email, nome, "Seu acesso ao Portal do Professor AprendaPlus",
+                "Bem-vindo(a) ao Portal do Professor",
+                "<p>Olá, <strong>" + html(primeiroNome(nome)) + "</strong>!</p>"
+                        + "<p>A secretaria liberou o seu acesso ao <strong>Portal do Professor</strong>. Lá você acompanha"
+                        + " o andamento dos alunos, monta as aulas EAD e publica avisos para as suas turmas.</p>"
+                        + "<p>Clique no botão abaixo para criar a sua senha. O link vale por <strong>7 dias</strong>"
+                        + " e só pode ser usado uma vez. Depois, é só entrar no site em <strong>Entrar → Sou professor</strong>"
+                        + " com este e-mail e a senha que você criou.</p>",
+                "Criar minha senha", link);
+    }
+
     // Endereço completo de uma tela do site (ex.: "#/redefinir-senha?token=...")
     public String linkDoSite(String caminho) {
         String base = site == null ? "" : site;

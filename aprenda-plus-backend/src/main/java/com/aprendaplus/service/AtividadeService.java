@@ -5,6 +5,7 @@ import com.aprendaplus.dto.UltimaAlteracao;
 import com.aprendaplus.entity.RegistroAtividade;
 import com.aprendaplus.repository.AlunoRepository;
 import com.aprendaplus.repository.FuncionarioRepository;
+import com.aprendaplus.repository.ProfessorRepository;
 import com.aprendaplus.repository.RegistroAtividadeRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,12 +40,20 @@ public class AtividadeService {
     @Autowired
     private AlunoRepository alunoRepository;
 
+    @Autowired
+    private ProfessorRepository professorRepository;
+
     Supplier<LocalDateTime> relogio = () -> LocalDateTime.now(FUSO);
 
     // Chamado pelo AtividadeInterceptor depois de cada requisição que deu certo
     public void registrar(String metodo, String caminho, String query, Integer usuarioId, String papel, Object resposta) {
         try {
-            String tipo = "ADMIN".equals(papel) ? "funcionario" : "ALUNO".equals(papel) ? "aluno" : "visitante";
+            String tipo = switch (papel == null ? "" : papel) {
+                case "ADMIN" -> "funcionario";
+                case "ALUNO" -> "aluno";
+                case "PROFESSOR" -> "professor";
+                default -> "visitante";
+            };
             AtividadeTexto.Descricao d = AtividadeTexto.descrever(metodo, caminho, query, tipo);
             if (d == null) {
                 return;
@@ -83,6 +92,9 @@ public class AtividadeService {
     String nomeDoUsuario(String tipo, Integer usuarioId, Object resposta) {
         if ("funcionario".equals(tipo) && usuarioId != null) {
             return funcionarioRepository.findById(usuarioId).map(f -> f.getNomeCompleto()).orElse("Funcionário #" + usuarioId);
+        }
+        if ("professor".equals(tipo) && usuarioId != null) {
+            return professorRepository.findById(usuarioId).map(p -> p.getNomeCompleto()).orElse("Professor #" + usuarioId);
         }
         if ("aluno".equals(tipo) && usuarioId != null) {
             return alunoRepository.findById(usuarioId).map(a -> a.getNomeCompleto()).orElse("Aluno #" + usuarioId);

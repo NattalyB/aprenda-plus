@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import logo from '../assets/logo-aprenda-plus.png';
 import { estaLogado, getNomeAluno, logout } from '../services/authService';
+import { professorLogado, getNomeProfessor, sairProfessor } from '../services/docenteService';
 import { listarItensDoCarrinho } from '../services/carrinhoService';
 import { listarCursos } from '../services/cursoService';
 import { useSearch } from '../context/SearchContext';
@@ -106,6 +107,14 @@ function Header() {
     navigate('/');
   };
 
+  // Professor logado (e nenhum aluno): mostra o nome dele e o Sair do portal
+  const professor = !logado && professorLogado();
+  const sairDoPortal = () => {
+    sairProfessor();
+    setTermoBusca('');
+    navigate('/');
+  };
+
   // A logo sempre leva para o início e limpa a pesquisa anterior
   const voltarAoInicio = () => {
     setTermoBusca('');
@@ -173,8 +182,13 @@ function Header() {
         )}
       </div>
 
-      {/* Ordem fixa: Sala de aula · Minhas inscrições · Carrinho · (aluno + Sair) */}
+      {/* Ordem fixa: (Portal do professor) · Sala de aula · Minhas inscrições · Carrinho · (aluno + Sair) */}
       <div className="header-actions">
+        {professorLogado() && (
+          <Link to="/professor" className="header-minhas">
+            <span aria-hidden="true">👩‍🏫</span> <span className="header-minhas-texto">Portal do professor</span>
+          </Link>
+        )}
         {logado && (
           <Link to="/sala" className="header-minhas">
             <span aria-hidden="true">🎓</span> <span className="header-minhas-texto">Sala de aula</span>
@@ -198,6 +212,13 @@ function Header() {
               <span aria-hidden="true">👤</span> {primeiroNome}
             </span>
             <button className="btn-login" onClick={handleLogout}>Sair</button>
+          </div>
+        ) : professor ? (
+          <div className="header-usuario">
+            <span className="header-saudacao" title={getNomeProfessor() || ''}>
+              <span aria-hidden="true">👤</span> {(getNomeProfessor() || '').split(' ')[0]}
+            </span>
+            <button className="btn-login" onClick={sairDoPortal}>Sair</button>
           </div>
         ) : (
           <>

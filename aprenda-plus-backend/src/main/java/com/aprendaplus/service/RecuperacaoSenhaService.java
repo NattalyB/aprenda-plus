@@ -2,10 +2,12 @@ package com.aprendaplus.service;
 
 import com.aprendaplus.entity.Aluno;
 import com.aprendaplus.entity.Funcionario;
+import com.aprendaplus.entity.Professor;
 import com.aprendaplus.entity.RedefinicaoSenha;
 import com.aprendaplus.exception.RegraDeNegocioException;
 import com.aprendaplus.repository.AlunoRepository;
 import com.aprendaplus.repository.FuncionarioRepository;
+import com.aprendaplus.repository.ProfessorRepository;
 import com.aprendaplus.repository.RedefinicaoSenhaRepository;
 import com.aprendaplus.security.StatusConta;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,7 +25,8 @@ import java.time.ZoneId;
 import java.util.Base64;
 import java.util.HexFormat;
 
-// "Esqueci minha senha" para alunos e funcionários do painel.
+// "Esqueci minha senha" para alunos, professores e funcionários do painel,
+// e o link de primeiro acesso do Portal do Professor (enviado pela secretaria).
 // - O link vale por 1 hora e só pode ser usado uma vez.
 // - No banco fica só o hash do código: quem visse a tabela não conseguiria usar os links.
 // - A resposta é sempre a mesma, exista ou não o e-mail (assim ninguém descobre quem tem conta).
@@ -32,7 +35,9 @@ public class RecuperacaoSenhaService {
 
     public static final String ALUNO = "aluno";
     public static final String FUNCIONARIO = "funcionario";
+    public static final String PROFESSOR = "professor";
     static final Duration VALIDADE = Duration.ofHours(1);
+    static final Duration VALIDADE_PRIMEIRO_ACESSO = Duration.ofDays(7);
     static final ZoneId FUSO = ZoneId.of("America/Sao_Paulo");
     static final String LINK_INVALIDO = "Este link não é mais válido. Peça um novo em \"Esqueci minha senha\".";
 
@@ -49,7 +54,46 @@ public class RecuperacaoSenhaService {
     private FuncionarioRepository funcionarioRepository;
 
     @Autowired
+    private ProfessorRepository professorRepository;
+
+    @Autowired
     private EmailService emailService;
+
+    // Link para o professor criar a senha do portal. Devolve o link (o painel mostra para copiar,
+    // caso o e-mail não chegue) e se o e-mail foi enviado.
+    public record AcessoProfessor(String link, boolean emailEnviado, String email) {
+    }
+
+    @Transactional
+    public AcessoProfessor enviarAcessoProfessor(Integer idProfessor) {
+        Professor professor = professorRepository.findById(idProfessor)
+                .orElseThrow(() -> new RegraDeNegocioException("Professor não encontrado."));
+        if (StatusConta.motivoDoBloqueio(professor.getStatus()) != null) {
+            throw new RegraDeNegocioException("Ative o cadastro do professor antes de enviar o acesso.");
+        }
+        if (professor.getEmail() == null || professor.getEmail().isBlank()) {
+            throw new RegraDeNegocioException("Cadastre o e-mail do professor antes de enviar o acesso.");
+        }
+        LocalDateTime agora = LocalDateTime.now(FUSO);
+        String codigo = novoPedido(PROFESSOR, professor.getIdProfessor(), agora, VALIDADE_PRIMEIRO_ACESSO);
+        String link = emailService.linkDoSite("#/redefinir-senha?token=" + codigo);
+        emailService.acessoProfessor(professor.getEmail(), professor.getNomeCompleto(), link);
+        return new AcessoProfessor(link, emailService.configurado(), professor.getEmail());
+    }
+
+    // Invalida os links abertos da pessoa e cria um novo. Devolve o código (só ele abre o link).
+    private String novoPedido(String tipo, Integer id, LocalDateTime agora, Duration validade) {
+        invalidarLinksAbertos(tipo, id, agora);
+        String codigo = novoCodigo();
+        RedefinicaoSenha pedido = new RedefinicaoSenha();
+        pedido.setTipo(tipo);
+        pedido.setUsuarioId(id);
+        pedido.setTokenHash(hash(codigo));
+        pedido.setCriadoEm(agora);
+        pedido.setExpiraEm(agora.plus(validade));
+        redefinicaoRepository.save(pedido);
+        return codigo;
+    }
 
     @Transactional
     public void solicitar(String email, String tipo) {
@@ -70,6 +114,14 @@ public class RecuperacaoSenhaService {
             id = funcionario.getIdFuncionario();
             nome = funcionario.getNomeCompleto();
             caminho = "#/admin/redefinir-senha?token=";
+        } else if (PROFESSOR.equals(quem)) {
+            Professor professor = professorRepository.findFirstByEmailIgnoreCase(limpo);
+            if (professor == null || StatusConta.motivoDoBloqueio(professor.getStatus()) != null) {
+                return;
+            }
+            id = professor.getIdProfessor();
+            nome = professor.getNomeCompleto();
+            caminho = "#/redefinir-senha?token=";
         } else {
             Aluno aluno = alunoRepository.findByEmail(limpo);
             if (aluno == null || StatusConta.motivoDoBloqueio(aluno.getStatus()) != null) {
@@ -81,21 +133,12 @@ public class RecuperacaoSenhaService {
         }
 
         LocalDateTime agora = LocalDateTime.now(FUSO);
-        invalidarLinksAbertos(quem, id, agora);
-
-        String codigo = novoCodigo();
-        RedefinicaoSenha pedido = new RedefinicaoSenha();
-        pedido.setTipo(quem);
-        pedido.setUsuarioId(id);
-        pedido.setTokenHash(hash(codigo));
-        pedido.setCriadoEm(agora);
-        pedido.setExpiraEm(agora.plus(VALIDADE));
-        redefinicaoRepository.save(pedido);
+        String codigo = novoPedido(quem, id, agora, VALIDADE);
 
         emailService.redefinirSenha(limpo, nome, emailService.linkDoSite(caminho + codigo));
     }
 
-    // Troca a senha. Devolve "aluno" ou "funcionario" para a tela saber para qual login mandar.
+    // Troca a senha. Devolve "aluno", "professor" ou "funcionario" para a tela saber para qual login mandar.
     @Transactional
     public String redefinir(String codigo, String novaSenha) {
         if (novaSenha == null || novaSenha.isBlank()) {
@@ -119,6 +162,11 @@ public class RecuperacaoSenhaService {
                     .orElseThrow(() -> new RegraDeNegocioException(LINK_INVALIDO));
             funcionario.setSenhaHash(senhaCriptografada);
             funcionarioRepository.save(funcionario);
+        } else if (PROFESSOR.equals(pedido.getTipo())) {
+            Professor professor = professorRepository.findById(pedido.getUsuarioId())
+                    .orElseThrow(() -> new RegraDeNegocioException(LINK_INVALIDO));
+            professor.setSenhaHash(senhaCriptografada);
+            professorRepository.save(professor);
         } else {
             Aluno aluno = alunoRepository.findById(pedido.getUsuarioId())
                     .orElseThrow(() -> new RegraDeNegocioException(LINK_INVALIDO));
@@ -133,7 +181,10 @@ public class RecuperacaoSenhaService {
     }
 
     static String tipoValido(String tipo) {
-        return FUNCIONARIO.equalsIgnoreCase(tipo == null ? "" : tipo.trim()) ? FUNCIONARIO : ALUNO;
+        String t = tipo == null ? "" : tipo.trim();
+        if (FUNCIONARIO.equalsIgnoreCase(t)) return FUNCIONARIO;
+        if (PROFESSOR.equalsIgnoreCase(t)) return PROFESSOR;
+        return ALUNO;
     }
 
     // 32 bytes aleatórios em texto seguro para URL (43 caracteres)

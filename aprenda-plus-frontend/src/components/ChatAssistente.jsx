@@ -116,7 +116,7 @@ function ChatAssistente() {
   }, [aberto]);
 
   // Na sala de aula o balão atrapalharia os vídeos
-  if (location.pathname.startsWith('/sala')) return null;
+  if (location.pathname.startsWith('/sala') || location.pathname.startsWith('/professor')) return null;
 
   const enviar = (texto) => {
     const pergunta = (texto || '').trim();

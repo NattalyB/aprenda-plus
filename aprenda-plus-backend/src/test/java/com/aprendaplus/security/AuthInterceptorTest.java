@@ -274,6 +274,28 @@ class AuthInterceptorTest {
         assertTrue(doFuncionario(3, "GET", "/financeiro/resumo"));
     }
 
+    // ===== Portal do Professor =====
+
+    @Test
+    void professorSoUsaOPortal() throws Exception {
+        String tokenProfessor = jwtUtil.gerarToken("prof@teste.com", 3, "PROFESSOR");
+        MockHttpServletRequest[] guardado = new MockHttpServletRequest[1];
+        assertTrue(requisicao("GET", "/docente/turmas", tokenProfessor, guardado));
+        assertEquals(3, guardado[0].getAttribute("usuarioId"));
+        assertEquals("PROFESSOR", guardado[0].getAttribute("usuarioPapel"));
+        assertTrue(requisicao("POST", "/docente/turmas/5/aulas", tokenProfessor));
+        assertTrue(requisicao("GET", "/docente", tokenProfessor));
+        assertFalse(requisicao("GET", "/alunos", tokenProfessor));
+        assertEquals(403, response.getStatus());
+        assertFalse(requisicao("GET", "/financeiro/resumo", tokenProfessor));
+        assertFalse(requisicao("GET", "/docentes", tokenProfessor));
+        // Aluno e visitante não entram no portal
+        assertFalse(requisicao("GET", "/docente/turmas", tokenAluno));
+        assertFalse(requisicao("GET", "/docente/turmas", null));
+        assertEquals(401, response.getStatus());
+        assertTrue(requisicao("POST", "/auth/login-professor", null));
+    }
+
     // ===== Treinamentos e histórico =====
 
     @Test

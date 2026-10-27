@@ -7,6 +7,7 @@ import com.aprendaplus.entity.Funcionario;
 import com.aprendaplus.entity.RegistroAtividade;
 import com.aprendaplus.repository.AlunoRepository;
 import com.aprendaplus.repository.FuncionarioRepository;
+import com.aprendaplus.repository.ProfessorRepository;
 import com.aprendaplus.repository.RegistroAtividadeRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,6 +41,9 @@ class AtividadeServiceTest {
 
     @Mock
     private AlunoRepository alunoRepository;
+
+    @Mock
+    private ProfessorRepository professorRepository;
 
     @InjectMocks
     private AtividadeService service;
@@ -134,6 +138,26 @@ class AtividadeServiceTest {
         assertEquals("Lucas", captor.getAllValues().get(0).getUsuarioNome());
         assertEquals("aluno", captor.getAllValues().get(0).getUsuarioTipo());
         assertEquals("Aluno #8", captor.getAllValues().get(1).getUsuarioNome());
+    }
+
+    @Test
+    void acoesDoProfessorPeloPortal() {
+        com.aprendaplus.entity.Professor roberto = new com.aprendaplus.entity.Professor();
+        roberto.setNomeCompleto("Roberto Fagundes");
+        when(professorRepository.findById(3)).thenReturn(Optional.of(roberto));
+        when(professorRepository.findById(4)).thenReturn(Optional.empty());
+
+        service.registrar("POST", "/docente/turmas/5/aulas", null, 3, "PROFESSOR", null);
+        service.registrar("PUT", "/docente/aulas/9", null, 4, "PROFESSOR", null);
+
+        ArgumentCaptor<RegistroAtividade> captor = ArgumentCaptor.forClass(RegistroAtividade.class);
+        verify(registroRepository, times(2)).save(captor.capture());
+        RegistroAtividade primeiro = captor.getAllValues().get(0);
+        assertEquals("professor", primeiro.getUsuarioTipo());
+        assertEquals("Roberto Fagundes", primeiro.getUsuarioNome());
+        assertEquals("Cadastrou aula EAD da turma #5", primeiro.getDescricao());
+        assertEquals("/docente/turmas/5/aulas", primeiro.getCaminho());
+        assertEquals("Professor #4", captor.getAllValues().get(1).getUsuarioNome());
     }
 
     @Test

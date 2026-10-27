@@ -7,14 +7,18 @@ const api = axios.create({
   },
 });
 
-// Está numa tela do painel admin?
+// Está numa tela do painel admin? E no Portal do Professor?
 const estaNaAreaAdmin = () => window.location.hash.startsWith('#/admin');
+const estaNoPortalDoProfessor = () => window.location.hash.startsWith('#/professor');
 
 // Antes de cada requisição: envia o token de quem está logado
 api.interceptors.request.use((config) => {
-  const token = estaNaAreaAdmin()
-    ? localStorage.getItem('tokenAdmin')
-    : localStorage.getItem('token');
+  // Login do professor (a própria tela de login decide pelo endereço chamado)
+  const ehLoginDeProfessor = config.url === '/auth/login-professor';
+  let token;
+  if (estaNaAreaAdmin()) token = localStorage.getItem('tokenAdmin');
+  else if (estaNoPortalDoProfessor() || (config.url || '').startsWith('/docente')) token = localStorage.getItem('tokenProfessor');
+  else if (!ehLoginDeProfessor) token = localStorage.getItem('token');
 
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -34,6 +38,9 @@ api.interceptors.response.use(
           localStorage.removeItem(chave)
         );
         window.location.hash = '#/admin/login';
+      } else if (estaNoPortalDoProfessor() || (error.config?.url || '').startsWith('/docente')) {
+        ['tokenProfessor', 'idProfessor', 'nomeProfessor'].forEach((chave) => localStorage.removeItem(chave));
+        window.location.hash = '#/login?perfil=professor';
       } else {
         ['token', 'idAluno', 'nomeAluno'].forEach((chave) => localStorage.removeItem(chave));
         window.location.hash = '#/login';

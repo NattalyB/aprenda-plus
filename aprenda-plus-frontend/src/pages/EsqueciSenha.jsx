@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import logoBranco from '../assets/logo-aprenda-plus-branco.png';
 import { pedirNovaSenha } from '../services/senhaService';
 
 // Pede o link de nova senha por e-mail. painel = funcionário do painel admin.
 function EsqueciSenha({ painel = false }) {
+  const [parametros] = useSearchParams();
+  const professor = !painel && parametros.get('perfil') === 'professor';
   const [email, setEmail] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [resposta, setResposta] = useState(null);
@@ -14,13 +16,13 @@ function EsqueciSenha({ painel = false }) {
     e.preventDefault();
     setErro(null);
     setEnviando(true);
-    pedirNovaSenha(email.trim(), painel ? 'funcionario' : 'aluno')
+    pedirNovaSenha(email.trim(), painel ? 'funcionario' : professor ? 'professor' : 'aluno')
       .then((dados) => setResposta(dados.mensagem))
       .catch((error) => setErro(error.response?.data?.mensagem || 'Não foi possível enviar agora. Tente novamente.'))
       .finally(() => setEnviando(false));
   };
 
-  const voltar = painel ? '/admin/login' : '/login';
+  const voltar = painel ? '/admin/login' : professor ? '/login?perfil=professor' : '/login';
 
   const cartao = (
     <div className="form-card form-card-sm">

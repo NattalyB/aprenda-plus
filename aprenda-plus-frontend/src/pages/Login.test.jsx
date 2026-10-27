@@ -3,7 +3,10 @@ import Login from './Login';
 import { renderizar } from '../testUtils';
 import { login, salvarSessao } from '../services/authService';
 
+import { loginProfessor, salvarSessaoProfessor } from '../services/docenteService';
+
 jest.mock('../services/authService');
+jest.mock('../services/docenteService');
 
 const preencherEEnviar = (email = 'maria@teste.com', senha = 'senha123') => {
   fireEvent.change(screen.getByLabelText('E-mail'), { target: { value: email } });
@@ -68,4 +71,41 @@ test('tem o link de esqueci minha senha e o olho na senha', () => {
   expect(screen.getByRole('link', { name: 'Esqueci minha senha' })).toHaveAttribute('href', '/esqueci-senha');
   fireEvent.click(screen.getByRole('button', { name: 'Mostrar senha' }));
   expect(screen.getByLabelText('Senha')).toHaveAttribute('type', 'text');
+});
+
+describe('Sou professor', () => {
+  test('troca de aba e o professor entra no portal', async () => {
+    loginProfessor.mockResolvedValue({ token: 'tp', idProfessor: 3, nome: 'Roberto' });
+    renderizar(<Login />, { rota: '/login' });
+
+    expect(screen.getByRole('tab', { name: '🎓 Sou aluno' })).toHaveAttribute('aria-selected', 'true');
+    fireEvent.click(screen.getByRole('tab', { name: '👩‍🏫 Sou professor' }));
+    expect(screen.getByRole('heading', { name: 'Portal do Professor' })).toBeInTheDocument();
+    expect(screen.getByText(/Peça à secretaria/)).toBeInTheDocument();
+    expect(screen.queryByText('Cadastre-se')).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Esqueci minha senha' })).toHaveAttribute('href', '/esqueci-senha?perfil=professor');
+
+    preencherEEnviar('prof@x.com', 'prof123');
+    await waitFor(() => expect(screen.getByTestId('endereco')).toHaveTextContent('/professor'));
+    expect(loginProfessor).toHaveBeenCalledWith('prof@x.com', 'prof123');
+    expect(salvarSessaoProfessor).toHaveBeenCalledWith({ token: 'tp', idProfessor: 3, nome: 'Roberto' });
+    expect(login).not.toHaveBeenCalled();
+  });
+
+  test('abre direto na aba de professor e mostra o motivo do servidor', async () => {
+    loginProfessor
+      .mockRejectedValueOnce({ response: { status: 401, data: { erro: 'Você ainda não criou sua senha.' } } })
+      .mockRejectedValueOnce({ response: { status: 401, data: { erro: 'E-mail ou senha inválidos' } } });
+    renderizar(<Login />, { rota: '/login?perfil=professor', caminho: '/login' });
+
+    expect(screen.getByRole('tab', { name: '👩‍🏫 Sou professor' })).toHaveAttribute('aria-selected', 'true');
+    preencherEEnviar('prof@x.com', 'x');
+    expect(await screen.findByText('Você ainda não criou sua senha.')).toBeInTheDocument();
+    preencherEEnviar('prof@x.com', 'y');
+    expect(await screen.findByText('E-mail ou senha inválidos.')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('tab', { name: '🎓 Sou aluno' }));
+    expect(screen.queryByText('E-mail ou senha inválidos.')).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Login' })).toBeInTheDocument();
+  });
 });

@@ -35,6 +35,29 @@ describe('Header: visitante', () => {
   });
 });
 
+describe('Header: professor logado', () => {
+  test('mostra o atalho do Portal do Professor', async () => {
+    localStorage.setItem('tokenProfessor', 'tp');
+    localStorage.setItem('nomeProfessor', 'Roberto Fagundes');
+    renderizar(<Header />, { rota: '/professor' });
+    expect(screen.getByRole('link', { name: /Portal do professor/ })).toHaveAttribute('href', '/professor');
+    expect(screen.getByText('Roberto')).toBeInTheDocument();
+    expect(screen.queryByText('Cadastro')).not.toBeInTheDocument();
+    await waitFor(() => expect(listarCursos).toHaveBeenCalled());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Sair' }));
+    expect(localStorage.getItem('tokenProfessor')).toBeNull();
+    expect(screen.getByTestId('endereco')).toHaveTextContent(/^\/$/);
+  });
+
+  test('professor sem nome salvo', async () => {
+    localStorage.setItem('tokenProfessor', 'tp');
+    renderizar(<Header />);
+    expect(screen.getByRole('button', { name: 'Sair' })).toBeInTheDocument();
+    await waitFor(() => expect(listarCursos).toHaveBeenCalled());
+  });
+});
+
 describe('Header: aluno logado', () => {
   test('mostra só o primeiro nome e a quantidade de itens do carrinho', async () => {
     logarAluno('Maria Silva');

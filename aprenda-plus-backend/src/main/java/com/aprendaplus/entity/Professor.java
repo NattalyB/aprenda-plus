@@ -82,6 +82,11 @@ public class Professor {
     @Column(name = "status", nullable = false, length = 20)
     private String status = "ativo";
 
+    // Senha do Portal do Professor (criada por ele pelo link de acesso). Nunca vai nas respostas da API.
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    @Column(name = "senha_hash")
+    private String senhaHash;
+
     @Column(name = "criado_em", insertable = false, updatable = false)
     private LocalDateTime criadoEm;
 
@@ -128,6 +133,15 @@ public class Professor {
 
     public String getEstado() { return estado; }
     public void setEstado(String estado) { this.estado = estado; }
+
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    public String getSenhaHash() { return senhaHash; }
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    public void setSenhaHash(String senhaHash) { this.senhaHash = senhaHash; }
+
+    // Para o painel: o professor já criou a senha do portal?
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "acessoCriado", access = com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY)
+    public boolean isAcessoCriado() { return senhaHash != null && !senhaHash.isBlank(); }
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }

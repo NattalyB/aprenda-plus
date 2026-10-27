@@ -43,6 +43,8 @@ import AdminTreinamentos from './pages/admin/AdminTreinamentos';
 import AdminHistorico from './pages/admin/AdminHistorico';
 import EsqueciSenha from './pages/EsqueciSenha';
 import RedefinirSenha from './pages/RedefinirSenha';
+import MinhasTurmasProfessor from './pages/professor/MinhasTurmasProfessor';
+import TurmaProfessor from './pages/professor/TurmaProfessor';
 
 function SitePage({ children }) {
   return (
@@ -71,6 +73,9 @@ function App() {
         <Route path="/sala/:idTurma/certificado" element={<CertificadoConclusao />} />
         <Route path="/certificado" element={<SitePage><ValidarCertificado /></SitePage>} />
         <Route path="/certificado/:codigo" element={<SitePage><ValidarCertificado /></SitePage>} />
+
+        <Route path="/professor" element={<SitePage><MinhasTurmasProfessor /></SitePage>} />
+        <Route path="/professor/turmas/:idTurma" element={<SitePage><TurmaProfessor /></SitePage>} />
 
         <Route path="/esqueci-senha" element={<SitePage><EsqueciSenha /></SitePage>} />
         <Route path="/redefinir-senha" element={<SitePage><RedefinirSenha /></SitePage>} />

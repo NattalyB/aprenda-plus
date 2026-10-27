@@ -5,15 +5,16 @@ import BarraProgresso from '../../BarraProgresso';
 
 const STATUS = { ativa: 'Ativa', trancada: 'Trancada', concluida: 'Concluída' };
 
-// Progresso de cada aluno na sala de aula da turma
-function AndamentoDaTurma({ idTurma }) {
+// Progresso de cada aluno na sala de aula da turma.
+// carregar: de onde vêm os dados (painel ou Portal do Professor)
+function AndamentoDaTurma({ idTurma, carregar = andamentoDaTurma }) {
   const [alunos, setAlunos] = useState(null);
   const [erro, setErro] = useState(null);
 
   useEffect(() => {
     setAlunos(null);
     setErro(null);
-    andamentoDaTurma(idTurma)
+    carregar(idTurma)
       .then((lista) => setAlunos(lista || []))
       .catch(() => setErro('Não foi possível carregar o andamento da turma.'));
   }, [idTurma]);

@@ -261,6 +261,12 @@ public class ConteudoEadService {
 
     @Transactional
     public PlanoDaTurma publicarAviso(Integer idTurma, AvisoForm form, Integer idFuncionario) {
+        return publicarAvisoDe(idTurma, form, nomeDoAutor(idFuncionario));
+    }
+
+    // Aviso publicado por alguém que não é da equipe do painel (ex.: o professor, pelo portal)
+    @Transactional
+    public PlanoDaTurma publicarAvisoDe(Integer idTurma, AvisoForm form, String autor) {
         Turma turma = turma(idTurma);
         String[] textos = textosDoAviso(form);
         String titulo = textos[0];
@@ -271,7 +277,7 @@ public class ConteudoEadService {
         aviso.setTitulo(titulo);
         aviso.setMensagem(mensagem);
         aviso.setFixado(Boolean.TRUE.equals(form.fixado()));
-        aviso.setAutor(nomeDoAutor(idFuncionario));
+        aviso.setAutor(autor == null || autor.isBlank() ? "Equipe AprendaPlus" : autor);
         aviso.setCriadoEm(LocalDateTime.now(FUSO));
         avisoRepository.save(aviso);
 
@@ -553,6 +559,21 @@ public class ConteudoEadService {
             }
         }
         return "Equipe AprendaPlus";
+    }
+
+    // Turma de uma aula / de um aviso (null se não existir): usado para conferir o acesso do professor
+    @Transactional(readOnly = true)
+    public Integer turmaDaAula(Integer idAula) {
+        return aulaRepository.findById(idAula)
+                .map(a -> a.getPlano() == null || a.getPlano().getTurma() == null ? null : a.getPlano().getTurma().getIdTurma())
+                .orElse(null);
+    }
+
+    @Transactional(readOnly = true)
+    public Integer turmaDoAviso(Integer idAviso) {
+        return avisoRepository.findById(idAviso)
+                .map(a -> a.getTurma() == null ? null : a.getTurma().getIdTurma())
+                .orElse(null);
     }
 
     private Turma turma(Integer idTurma) {

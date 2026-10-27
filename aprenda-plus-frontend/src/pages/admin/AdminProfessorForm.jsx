@@ -13,6 +13,7 @@ import { listarDisciplinas } from '../../services/disciplinaService';
 import CursosDisciplinasProfessor, { estaInativa } from '../../components/admin/CursosDisciplinasProfessor';
 import CampoCep from '../../components/CampoCep';
 import UltimaAlteracao from '../../components/admin/UltimaAlteracao';
+import AcessoPortalProfessor from '../../components/admin/AcessoPortalProfessor';
 
 function AdminProfessorForm() {
   const navigate = useNavigate();
@@ -153,6 +154,8 @@ function AdminProfessorForm() {
           {modoEdicao && <UltimaAlteracao alvo="professores" id={id} />}
         </div>
       </div>
+
+      {modoEdicao && <AcessoPortalProfessor idProfessor={id} acessoCriado={Boolean(form.acessoCriado)} />}
 
       <div className="form-card admin-form-card">
         {erro && <div className="form-erro">{erro}</div>}

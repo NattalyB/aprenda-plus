@@ -4,6 +4,7 @@ import com.aprendaplus.dto.VinculosProfessor;
 import com.aprendaplus.entity.Professor;
 import com.aprendaplus.exception.RegraDeNegocioException;
 import com.aprendaplus.service.ProfessorService;
+import com.aprendaplus.service.RecuperacaoSenhaService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -30,6 +31,33 @@ class ProfessorControllerTest {
 
     @MockitoBean
     private ProfessorService professorService;
+
+    @MockitoBean
+    private RecuperacaoSenhaService recuperacaoSenhaService;
+
+    @Test
+    void enviaOAcessoAoPortal() throws Exception {
+        when(recuperacaoSenhaService.enviarAcessoProfessor(3)).thenReturn(
+                new RecuperacaoSenhaService.AcessoProfessor("https://site/#/redefinir-senha?token=abc", false, "r@x.com"));
+
+        mockMvc.perform(post("/professores/3/acesso"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.link").value("https://site/#/redefinir-senha?token=abc"))
+                .andExpect(jsonPath("$.emailEnviado").value(false));
+    }
+
+    @Test
+    void naoMandaASenhaNasRespostas() throws Exception {
+        Professor p = new Professor();
+        p.setIdProfessor(3);
+        p.setSenhaHash("hash-secreto");
+        when(professorService.buscarPorId(3)).thenReturn(p);
+
+        mockMvc.perform(get("/professores/3"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.senhaHash").doesNotExist())
+                .andExpect(jsonPath("$.acessoCriado").value(true));
+    }
 
     // Cadastro completo e válido (passa em todas as validações da entidade Professor)
     private static final String PROFESSOR_VALIDO = """

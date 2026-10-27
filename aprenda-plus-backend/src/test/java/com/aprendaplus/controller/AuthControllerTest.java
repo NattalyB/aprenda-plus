@@ -3,8 +3,10 @@ package com.aprendaplus.controller;
 import com.aprendaplus.entity.Aluno;
 import com.aprendaplus.entity.Funcionario;
 import com.aprendaplus.entity.NivelAcesso;
+import com.aprendaplus.entity.Professor;
 import com.aprendaplus.repository.AlunoRepository;
 import com.aprendaplus.repository.FuncionarioRepository;
+import com.aprendaplus.repository.ProfessorRepository;
 import com.aprendaplus.security.JwtUtil;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,7 +37,61 @@ class AuthControllerTest {
     private FuncionarioRepository funcionarioRepository;
 
     @MockitoBean
+    private ProfessorRepository professorRepository;
+
+    @MockitoBean
     private JwtUtil jwtUtil;
+
+    // ===== Login do professor =====
+
+    private Professor professorCadastrado(String senha, String status) {
+        Professor p = new Professor();
+        p.setIdProfessor(3);
+        p.setNomeCompleto("Roberto Fagundes");
+        p.setEmail("roberto@aprendaplus.com");
+        p.setStatus(status);
+        p.setSenhaHash(senha == null ? null : ENCODER.encode(senha));
+        return p;
+    }
+
+    @org.junit.jupiter.api.Test
+    void professorEntraComASenhaCriada() throws Exception {
+        when(professorRepository.findFirstByEmailIgnoreCase("roberto@aprendaplus.com"))
+                .thenReturn(professorCadastrado("prof123", "ativo"));
+        when(jwtUtil.gerarToken("roberto@aprendaplus.com", 3, "PROFESSOR")).thenReturn("token-professor");
+
+        mockMvc.perform(post("/auth/login-professor").contentType(MediaType.APPLICATION_JSON)
+                        .content(login(" roberto@aprendaplus.com ", "prof123")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token").value("token-professor"))
+                .andExpect(jsonPath("$.idProfessor").value(3))
+                .andExpect(jsonPath("$.nome").value("Roberto Fagundes"));
+    }
+
+    @org.junit.jupiter.api.Test
+    void professorSemSenhaSenhaErradaOuBloqueado() throws Exception {
+        when(professorRepository.findFirstByEmailIgnoreCase("novo@aprendaplus.com")).thenReturn(professorCadastrado(null, "ativo"));
+        when(professorRepository.findFirstByEmailIgnoreCase("roberto@aprendaplus.com"))
+                .thenReturn(professorCadastrado("prof123", "inativo"));
+
+        mockMvc.perform(post("/auth/login-professor").contentType(MediaType.APPLICATION_JSON)
+                        .content(login("novo@aprendaplus.com", "x")))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.erro").value(org.hamcrest.Matchers.containsString("ainda não criou sua senha")));
+        mockMvc.perform(post("/auth/login-professor").contentType(MediaType.APPLICATION_JSON)
+                        .content(login("roberto@aprendaplus.com", "errada")))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.erro").value("E-mail ou senha inválidos"));
+        mockMvc.perform(post("/auth/login-professor").contentType(MediaType.APPLICATION_JSON)
+                        .content(login("roberto@aprendaplus.com", "prof123")))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(post("/auth/login-professor").contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"senha\": \"x\" }"))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(post("/auth/login-professor").contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"email\": \"ninguem@x.com\" }"))
+                .andExpect(status().isUnauthorized());
+    }
 
     private String login(String email, String senha) {
         return "{ \"email\": \"" + email + "\", \"senha\": \"" + senha + "\" }";

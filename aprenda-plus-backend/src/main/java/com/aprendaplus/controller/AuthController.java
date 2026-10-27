@@ -15,8 +15,10 @@ import com.aprendaplus.entity.Aluno;
 import com.aprendaplus.entity.Funcionario;
 import com.aprendaplus.entity.LoginFuncionarioResponse;
 import com.aprendaplus.entity.LoginRequest;
+import com.aprendaplus.entity.Professor;
 import com.aprendaplus.repository.AlunoRepository;
 import com.aprendaplus.repository.FuncionarioRepository;
+import com.aprendaplus.repository.ProfessorRepository;
 import com.aprendaplus.security.JwtUtil;
 import com.aprendaplus.security.StatusConta;
 
@@ -29,6 +31,9 @@ public class AuthController {
 
     @Autowired
     private FuncionarioRepository funcionarioRepository;
+
+    @Autowired
+    private ProfessorRepository professorRepository;
 
     @Autowired
     private JwtUtil jwtUtil;
@@ -56,6 +61,33 @@ public class AuthController {
         response.put("idAluno", aluno.getIdAluno());
         response.put("nome", aluno.getNomeCompleto());
 
+        return ResponseEntity.ok(response);
+    }
+
+    // Portal do Professor: e-mail do cadastro + senha criada pelo link de acesso
+    @PostMapping("/login-professor")
+    public ResponseEntity<?> loginProfessor(@RequestBody LoginRequest request) {
+        String email = request.getEmail() == null ? "" : request.getEmail().trim();
+        Professor professor = email.isEmpty() ? null : professorRepository.findFirstByEmailIgnoreCase(email);
+
+        if (professor != null && professor.getSenhaHash() == null) {
+            return ResponseEntity.status(401).body(Map.of("erro",
+                    "Você ainda não criou sua senha. Use o link de acesso enviado pela secretaria ou clique em \"Esqueci minha senha\"."));
+        }
+        if (professor == null || request.getSenha() == null || !encoder.matches(request.getSenha(), professor.getSenhaHash())) {
+            return ResponseEntity.status(401).body(Map.of("erro", "E-mail ou senha inválidos"));
+        }
+
+        String bloqueio = StatusConta.motivoDoBloqueio(professor.getStatus());
+        if (bloqueio != null) {
+            return ResponseEntity.status(403).body(Map.of("erro", bloqueio));
+        }
+
+        String token = jwtUtil.gerarToken(professor.getEmail(), professor.getIdProfessor(), "PROFESSOR");
+        Map<String, Object> response = new HashMap<>();
+        response.put("token", token);
+        response.put("idProfessor", professor.getIdProfessor());
+        response.put("nome", professor.getNomeCompleto());
         return ResponseEntity.ok(response);
     }
 

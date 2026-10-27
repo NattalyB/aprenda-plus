@@ -9,4 +9,7 @@ public interface ProfessorRepository extends JpaRepository<Professor, Integer> {
     boolean existsByEmailIgnoreCase(String email);
 
     boolean existsByCpf(String cpf);
+
+    // Login do Portal do Professor
+    Professor findFirstByEmailIgnoreCase(String email);
 }

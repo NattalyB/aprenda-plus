@@ -18,6 +18,7 @@ export const ACOES = {
 
 export const TIPOS_USUARIO = {
   funcionario: 'Equipe',
+  professor: 'Professor',
   aluno: 'Aluno',
   visitante: 'Visitante',
 };
@@ -120,7 +121,7 @@ function AdminHistorico() {
           ))}
         </select>
         <select name="tipo" className="admin-filtro-select" value={filtros.tipo} onChange={mudar} aria-label="Quem fez">
-          <option value="">Equipe, alunos e visitantes</option>
+          <option value="">Todos (equipe, professores, alunos...)</option>
           {Object.entries(TIPOS_USUARIO).map(([valor, texto]) => (
             <option key={valor} value={valor}>{texto}</option>
           ))}

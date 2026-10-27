@@ -71,6 +71,11 @@ public final class AtividadeTexto {
     // null = não registra
     public static Descricao descrever(String metodo, String caminho, String query, String usuarioTipo) {
         if (ignorar(metodo, caminho, query)) return null;
+        // Portal do Professor: as mesmas ações da sala de aula do painel
+        // (/docente/turmas/5/aulas -> /planos-de-aula/turma/5/aulas)
+        if (caminho.startsWith("/docente/")) {
+            caminho = "/planos-de-aula/" + caminho.substring("/docente/".length()).replaceFirst("^turmas/", "turma/");
+        }
         String[] p = caminho.replaceAll("^/+|/+$", "").split("/");
         Recurso recurso = RECURSOS.get(p[0]);
         if (recurso == null) {
@@ -123,6 +128,10 @@ public final class AtividadeTexto {
                 }
             }
             case "professores" -> {
+                if (p.length > 2 && "acesso".equals(p[2])) {
+                    return new Descricao(modulo, ALTEROU, "Enviou o acesso ao Portal do Professor para o professor #" + p[1],
+                            "professores", num1, false);
+                }
                 if (p.length > 2 && "vinculos".equals(p[2])) {
                     return new Descricao(modulo, ALTEROU, "Alterou cursos e disciplinas do professor #" + p[1],
                             "professores", num1, false);

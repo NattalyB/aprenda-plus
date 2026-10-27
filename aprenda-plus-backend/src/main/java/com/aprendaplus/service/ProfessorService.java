@@ -52,6 +52,11 @@ public class ProfessorService {
     }
 
     public Professor salvar(Professor professor) {
+        // O formulário do painel não manda a senha do portal: mantém a que já existe
+        if (professor.getIdProfessor() != null && professor.getSenhaHash() == null) {
+            professorRepository.findById(professor.getIdProfessor())
+                    .ifPresent(atual -> professor.setSenhaHash(atual.getSenhaHash()));
+        }
         return professorRepository.save(professor);
     }
 

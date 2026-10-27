@@ -34,7 +34,9 @@ function RedefinirSenha({ painel = false }) {
     redefinirSenha(token, senha)
       .then((dados) => {
         mostrarAviso(dados.mensagem || 'Senha alterada!', 'sucesso');
-        navigate(dados.tipo === 'funcionario' ? '/admin/login' : '/login');
+        navigate(
+          dados.tipo === 'funcionario' ? '/admin/login' : dados.tipo === 'professor' ? '/login?perfil=professor' : '/login'
+        );
       })
       .catch((error) => {
         setErro(error.response?.data?.mensagem || 'Não foi possível alterar a senha. Tente novamente.');

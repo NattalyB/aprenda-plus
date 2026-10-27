@@ -109,6 +109,21 @@ class AtividadeTextoTest {
         assertEquals("Alterou sala de aula #4", d("PUT", "/planos-de-aula/4").texto());
     }
 
+    @Test
+    void portalDoProfessorEAcesso() {
+        Descricao aula = AtividadeTexto.descrever("POST", "/docente/turmas/5/aulas", null, "professor");
+        assertEquals("Sala de aula (EAD)", aula.modulo());
+        assertEquals("Cadastrou aula EAD da turma #5", aula.texto());
+        assertEquals("Alterou aula EAD #9", AtividadeTexto.descrever("PUT", "/docente/aulas/9", null, "professor").texto());
+        assertEquals("Excluiu aviso do mural #2", AtividadeTexto.descrever("DELETE", "/docente/avisos/2", null, "professor").texto());
+        assertEquals("Publicou aviso no mural da turma #5",
+                AtividadeTexto.descrever("POST", "/docente/turmas/5/avisos", null, "professor").texto());
+        assertNull(AtividadeTexto.descrever("POST", "/auth/login-professor", null, "visitante"));
+        Descricao acesso = d("POST", "/professores/3/acesso");
+        assertEquals("Enviou o acesso ao Portal do Professor para o professor #3", acesso.texto());
+        assertEquals(3, acesso.registroId());
+    }
+
     public static class ComGetter {
         public Integer getIdAluno() { return 12; }
         public String getNomeCompleto() { return "Ana"; }

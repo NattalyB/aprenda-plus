@@ -2,10 +2,12 @@ package com.aprendaplus.service;
 
 import com.aprendaplus.entity.Aluno;
 import com.aprendaplus.entity.Funcionario;
+import com.aprendaplus.entity.Professor;
 import com.aprendaplus.entity.RedefinicaoSenha;
 import com.aprendaplus.exception.RegraDeNegocioException;
 import com.aprendaplus.repository.AlunoRepository;
 import com.aprendaplus.repository.FuncionarioRepository;
+import com.aprendaplus.repository.ProfessorRepository;
 import com.aprendaplus.repository.RedefinicaoSenhaRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,6 +33,7 @@ class RecuperacaoSenhaServiceTest {
     @Mock private RedefinicaoSenhaRepository redefinicaoRepository;
     @Mock private AlunoRepository alunoRepository;
     @Mock private FuncionarioRepository funcionarioRepository;
+    @Mock private ProfessorRepository professorRepository;
     @Mock private EmailService emailService;
 
     @InjectMocks
@@ -143,6 +146,76 @@ class RecuperacaoSenhaServiceTest {
         verify(alunoRepository).save(lucas);
         assertNotNull(valido.getUsadoEm());
         assertNotNull(outro.getUsadoEm());
+    }
+
+    private static Professor professor(String status) {
+        Professor p = new Professor();
+        p.setIdProfessor(3);
+        p.setNomeCompleto("Roberto Fagundes");
+        p.setEmail("roberto@aprendaplus.com");
+        p.setStatus(status);
+        return p;
+    }
+
+    @Test
+    void secretariaEnviaOAcessoDoProfessorComLinkDeSeteDias() {
+        Professor roberto = professor("ativo");
+        when(professorRepository.findById(3)).thenReturn(Optional.of(roberto));
+        when(redefinicaoRepository.findByTipoAndUsuarioIdAndUsadoEmIsNull("professor", 3)).thenReturn(List.of());
+        when(emailService.linkDoSite(anyString())).thenAnswer(i -> "https://site/" + i.getArgument(0));
+        when(emailService.configurado()).thenReturn(true);
+
+        RecuperacaoSenhaService.AcessoProfessor acesso = service.enviarAcessoProfessor(3);
+
+        assertTrue(acesso.link().startsWith("https://site/#/redefinir-senha?token="));
+        assertTrue(acesso.emailEnviado());
+        assertEquals("roberto@aprendaplus.com", acesso.email());
+        ArgumentCaptor<RedefinicaoSenha> salvo = ArgumentCaptor.forClass(RedefinicaoSenha.class);
+        verify(redefinicaoRepository).save(salvo.capture());
+        assertEquals("professor", salvo.getValue().getTipo());
+        assertEquals(3, salvo.getValue().getUsuarioId());
+        assertTrue(salvo.getValue().getExpiraEm().isAfter(LocalDateTime.now().plusDays(6)));
+        verify(emailService).acessoProfessor(eq("roberto@aprendaplus.com"), eq("Roberto Fagundes"), eq(acesso.link()));
+    }
+
+    @Test
+    void acessoDoProfessorExigeCadastroAtivoComEmail() {
+        when(professorRepository.findById(9)).thenReturn(Optional.empty());
+        when(professorRepository.findById(4)).thenReturn(Optional.of(professor("inativo")));
+        Professor semEmail = professor("ativo");
+        semEmail.setEmail(" ");
+        when(professorRepository.findById(5)).thenReturn(Optional.of(semEmail));
+
+        assertEquals("Professor não encontrado.",
+                assertThrows(RegraDeNegocioException.class, () -> service.enviarAcessoProfessor(9)).getMessage());
+        assertEquals("Ative o cadastro do professor antes de enviar o acesso.",
+                assertThrows(RegraDeNegocioException.class, () -> service.enviarAcessoProfessor(4)).getMessage());
+        assertEquals("Cadastre o e-mail do professor antes de enviar o acesso.",
+                assertThrows(RegraDeNegocioException.class, () -> service.enviarAcessoProfessor(5)).getMessage());
+        verify(redefinicaoRepository, never()).save(any());
+    }
+
+    @Test
+    void professorPedeNovaSenhaETroca() {
+        Professor roberto = professor("ativo");
+        when(professorRepository.findFirstByEmailIgnoreCase("roberto@aprendaplus.com")).thenReturn(roberto);
+        when(professorRepository.findFirstByEmailIgnoreCase("ninguem@x.com")).thenReturn(null);
+        when(redefinicaoRepository.findByTipoAndUsuarioIdAndUsadoEmIsNull("professor", 3)).thenReturn(List.of());
+        when(emailService.linkDoSite(anyString())).thenAnswer(i -> "https://site/" + i.getArgument(0));
+
+        service.solicitar("roberto@aprendaplus.com", "professor");
+        service.solicitar("ninguem@x.com", "Professor");
+        verify(emailService).redefinirSenha(eq("roberto@aprendaplus.com"), eq("Roberto Fagundes"),
+                org.mockito.ArgumentMatchers.startsWith("https://site/#/redefinir-senha?token="));
+
+        RedefinicaoSenha valido = pedido("professor", 3, LocalDateTime.now().plusDays(2), null);
+        when(redefinicaoRepository.findFirstByTokenHash(any())).thenReturn(Optional.of(valido));
+        when(professorRepository.findById(3)).thenReturn(Optional.of(roberto));
+
+        assertEquals("professor", service.redefinir("abc", "segura123"));
+        verify(professorRepository).save(roberto);
+        assertTrue(new BCryptPasswordEncoder().matches("segura123", roberto.getSenhaHash()));
+        assertEquals("professor", RecuperacaoSenhaService.tipoValido(" PROFESSOR "));
     }
 
     @Test

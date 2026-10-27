@@ -10,4 +10,7 @@ public interface TurmaProfessorRepository extends JpaRepository<TurmaProfessor, 
 
     // Professores ligados a uma turma (para sugerir o responsável pela sala de aula)
     List<TurmaProfessor> findByTurma_IdTurma(Integer idTurma);
+
+    // Turmas em que o professor dá aula (Portal do Professor)
+    List<TurmaProfessor> findByProfessor_IdProfessor(Integer idProfessor);
 }

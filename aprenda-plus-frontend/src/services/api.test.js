@@ -33,6 +33,19 @@ describe('envio do token', () => {
     expect(config.headers.Authorization).toBe('Bearer token-admin');
   });
 
+  test('no Portal do Professor (ou rota /docente), envia o token do professor', () => {
+    localStorage.setItem('token', 'token-aluno');
+    localStorage.setItem('tokenProfessor', 'token-prof');
+    window.location.hash = '#/professor/turmas/5';
+    expect(antesDaRequisicao({ headers: {}, url: '/docente/turmas/5' }).headers.Authorization).toBe('Bearer token-prof');
+
+    window.location.hash = '#/';
+    expect(antesDaRequisicao({ headers: {}, url: '/docente/turmas' }).headers.Authorization).toBe('Bearer token-prof');
+    expect(antesDaRequisicao({ headers: {}, url: '/cursos' }).headers.Authorization).toBe('Bearer token-aluno');
+    // O login do professor não leva o token do aluno junto
+    expect(antesDaRequisicao({ headers: {}, url: '/auth/login-professor' }).headers.Authorization).toBeUndefined();
+  });
+
   test('sem login, não envia token', () => {
     const config = antesDaRequisicao({ headers: {} });
 
@@ -52,6 +65,20 @@ describe('sessão expirada (erro 401)', () => {
     expect(localStorage.getItem('token')).toBeNull();
     expect(localStorage.getItem('nomeAluno')).toBeNull();
     expect(window.location.hash).toBe('#/login');
+  });
+
+  test('no Portal do Professor, desloga o professor e manda para o login de professor', async () => {
+    localStorage.setItem('tokenProfessor', 'x');
+    localStorage.setItem('nomeProfessor', 'Roberto');
+    localStorage.setItem('token', 'aluno-continua');
+    window.location.hash = '#/professor';
+
+    await expect(respostaComErro(erroHttp(401, '/docente/turmas'))).rejects.toBeTruthy();
+
+    expect(localStorage.getItem('tokenProfessor')).toBeNull();
+    expect(localStorage.getItem('nomeProfessor')).toBeNull();
+    expect(localStorage.getItem('token')).toBe('aluno-continua');
+    expect(window.location.hash).toBe('#/login?perfil=professor');
   });
 
   test('no admin, desloga o funcionário e manda para o login do admin', async () => {

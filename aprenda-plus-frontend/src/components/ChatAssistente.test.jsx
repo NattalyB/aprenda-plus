@@ -190,6 +190,11 @@ test('botão fixo "Falar com atendente" responde na hora, com WhatsApp quando co
   }
 });
 
+test('não aparece no Portal do Professor', () => {
+  renderizar(<ChatAssistente />, { rota: '/professor/turmas/3' });
+  expect(screen.queryByRole('button', { name: 'Abrir o assistente virtual' })).not.toBeInTheDocument();
+});
+
 test('não aparece na sala de aula', () => {
   renderizar(<ChatAssistente />, { rota: '/sala/3' });
   expect(screen.queryByRole('button', { name: 'Abrir o assistente virtual' })).not.toBeInTheDocument();

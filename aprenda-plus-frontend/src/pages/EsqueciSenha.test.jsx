@@ -49,6 +49,16 @@ describe('Esqueci minha senha', () => {
     expect(api.post).toHaveBeenCalledWith('/auth/esqueci-senha', { email: 'ana@aprendaplus.com', tipo: 'funcionario' });
   });
 
+  test('professor pede o link como professor e volta para o login de professor', async () => {
+    api.post.mockResolvedValue({ data: { mensagem: 'Enviado!' } });
+    renderizar(<EsqueciSenha />, { rota: '/esqueci-senha?perfil=professor', caminho: '/esqueci-senha' });
+    fireEvent.change(screen.getByLabelText('E-mail'), { target: { value: 'prof@x.com' } });
+    fireEvent.click(screen.getByRole('button', { name: /ENVIAR/ }));
+    expect(await screen.findByText('Enviado!')).toBeInTheDocument();
+    expect(api.post).toHaveBeenCalledWith('/auth/esqueci-senha', { email: 'prof@x.com', tipo: 'professor' });
+    expect(screen.getByRole('link', { name: '← Voltar para o login' })).toHaveAttribute('href', '/login?perfil=professor');
+  });
+
   test('erro do servidor', async () => {
     api.post.mockRejectedValueOnce({ response: { data: { mensagem: 'Informe o seu e-mail.' } } })
       .mockRejectedValueOnce(new Error('rede'));
@@ -90,6 +100,14 @@ describe('Criar nova senha', () => {
     digitar('segura123', 'segura123');
     await screen.findByText('/admin/login');
     expect(mostrarAviso).toHaveBeenCalledWith('Senha alterada!', 'sucesso');
+  });
+
+  test('professor vai para o login do Portal do Professor', async () => {
+    api.post.mockResolvedValue({ data: { mensagem: 'Senha criada!', tipo: 'professor' } });
+    abrir();
+    digitar('segura123', 'segura123');
+    await waitFor(() => expect(screen.getByTestId('endereco')).toHaveTextContent('/login'));
+    expect(mostrarAviso).toHaveBeenCalledWith('Senha criada!', 'sucesso');
   });
 
   test('confere o tamanho e se as duas senhas são iguais', () => {

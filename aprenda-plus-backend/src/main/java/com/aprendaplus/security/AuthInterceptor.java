@@ -78,6 +78,14 @@ public class AuthInterceptor implements HandlerInterceptor {
             return negar(response, 403, "Seu nível de acesso não permite usar este módulo.");
         }
 
+        // Professor só acessa o Portal do Professor (a posse de cada turma é conferida no DocenteController)
+        if ("PROFESSOR".equals(papel)) {
+            if (caminho.equals("/docente") || caminho.startsWith("/docente/")) {
+                return true;
+            }
+            return negar(response, 403, "Você não tem permissão para acessar este recurso.");
+        }
+
         // Aluno só acessa as rotas da área dele
         if ("ALUNO".equals(papel) && ehRotaDeAluno(metodo, caminho)) {
             return true;
