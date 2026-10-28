@@ -1,11 +1,18 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { estaLogado } from '../services/authService';
 import { adicionarAoCarrinho } from '../services/carrinhoService';
 import { mostrarAviso } from '../services/avisoService';
 import PrecoCurso from './PrecoCurso';
+import { registrarCursoNoCarrinho, registrarCursoVisto } from '../services/eventoService';
 
 function CursoModal({ curso, onClose }) {
   const [adicionando, setAdicionando] = useState(false);
+  const idCurso = curso?.idCurso;
+
+  // Conta que o curso foi aberto (relatório de interesse do módulo Comercial)
+  useEffect(() => {
+    if (idCurso) registrarCursoVisto(idCurso);
+  }, [idCurso]);
 
   if (!curso) return null;
 
@@ -24,6 +31,7 @@ function CursoModal({ curso, onClose }) {
     setAdicionando(true);
     adicionarAoCarrinho(curso.idCurso)
       .then(() => {
+        registrarCursoNoCarrinho(curso.idCurso);
         mostrarAviso(`"${curso.nome}" foi adicionado ao carrinho!`, 'sucesso');
         onClose();
       })

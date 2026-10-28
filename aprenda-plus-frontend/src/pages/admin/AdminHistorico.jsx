@@ -6,7 +6,7 @@ import Paginacao from '../../components/admin/Paginacao';
 // Os mesmos nomes de módulo que o servidor grava (AtividadeTexto.java)
 export const MODULOS_HISTORICO = [
   'Alunos', 'Professores', 'Cursos', 'Disciplinas', 'Períodos letivos', 'Turmas', 'Sala de aula (EAD)',
-  'Inscrições', 'Matrículas', 'Financeiro', 'Funcionários', 'Treinamentos', 'Sistema', 'Outros',
+  'Inscrições', 'Matrículas', 'Financeiro', 'Comercial', 'Funcionários', 'Treinamentos', 'Sistema', 'Outros',
 ];
 
 export const ACOES = {

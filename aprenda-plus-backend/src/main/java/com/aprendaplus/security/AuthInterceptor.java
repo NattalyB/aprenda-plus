@@ -12,7 +12,7 @@ import java.util.Set;
 public class AuthInterceptor implements HandlerInterceptor {
 
     private static final Set<String> MODULOS_SENSIVEIS =
-            Set.of(Modulos.FUNCIONARIOS, Modulos.HISTORICO, Modulos.FINANCEIRO);
+            Set.of(Modulos.FUNCIONARIOS, Modulos.HISTORICO, Modulos.FINANCEIRO, Modulos.COMERCIAL);
 
     private final JwtUtil jwtUtil;
 
@@ -111,6 +111,7 @@ public class AuthInterceptor implements HandlerInterceptor {
 
         if ("POST".equals(metodo) && caminho.equals("/alunos/com-documento")) return true;  // cadastro pelo site
         if ("POST".equals(metodo) && caminho.equals("/chat")) return true;                  // assistente virtual do site
+        if ("POST".equals(metodo) && caminho.equals("/eventos")) return true;               // buscas e cursos vistos (Comercial)
         return "POST".equals(metodo) && caminho.equals("/alunos");    // cadastro de novo aluno
     }
 
@@ -144,7 +145,8 @@ public class AuthInterceptor implements HandlerInterceptor {
     // - consultar (GET) é livre para a equipe, porque uma tela usa dados de outras
     //   (ex.: Matrículas precisa listar os alunos);
     // - criar, editar e excluir exige o módulo liberado no nível;
-    // - Funcionários, Histórico, Financeiro e Sistema são sensíveis: até para consultar precisa do módulo.
+    // - Funcionários, Histórico, Financeiro, Comercial e Sistema são sensíveis: até para consultar precisa do módulo;
+    // - quem só tem o Comercial não tem a consulta livre: usa só o módulo dele (e os Treinamentos).
     private boolean funcionarioPodeAcessar(String metodo, String caminho, Set<String> liberados) {
         if (caminho.equals("/niveis-acesso/meu")) {
             return true; // cada um pode ver o próprio nível
@@ -165,9 +167,13 @@ public class AuthInterceptor implements HandlerInterceptor {
             return liberados.contains(Modulos.SISTEMA)
                     || (listaDeNiveis && liberados.contains(Modulos.FUNCIONARIOS));
         }
-        // Funcionários, Histórico e Financeiro (contas, salários, pagamentos) são sensíveis:
+        // Treinamentos: toda a equipe consulta (só o Master cadastra)
+        if (consulta && Modulos.TREINAMENTOS.equals(modulo)) {
+            return true;
+        }
+        // Funcionários, Histórico, Financeiro e Comercial (dados pessoais e financeiros) são sensíveis:
         // até para consultar precisa do módulo
-        if (consulta && !MODULOS_SENSIVEIS.contains(modulo)) {
+        if (consulta && !MODULOS_SENSIVEIS.contains(modulo) && !Modulos.soComercial(liberados)) {
             return true;
         }
         return liberados.contains(modulo);

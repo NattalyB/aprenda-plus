@@ -2,9 +2,11 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import CursoModal from './CursoModal';
 import { adicionarAoCarrinho } from '../services/carrinhoService';
 import { mostrarAviso } from '../services/avisoService';
+import { registrarCursoNoCarrinho, registrarCursoVisto } from '../services/eventoService';
 
 jest.mock('../services/carrinhoService');
 jest.mock('../services/avisoService');
+jest.mock('../services/eventoService');
 
 const curso = {
   idCurso: 2,
@@ -100,4 +102,22 @@ describe('CursoModal', () => {
 
     expect(onClose).toHaveBeenCalledTimes(2);
   });
+});
+
+test('conta o curso aberto e o curso posto no carrinho (módulo Comercial)', async () => {
+  localStorage.setItem('token', 'token-aluno');
+  adicionarAoCarrinho.mockResolvedValue({});
+  const { rerender } = render(<CursoModal curso={curso} onClose={() => {}} />);
+
+  expect(registrarCursoVisto).toHaveBeenCalledWith(2);
+  rerender(<CursoModal curso={{ ...curso }} onClose={() => {}} />);
+  expect(registrarCursoVisto).toHaveBeenCalledTimes(1);
+
+  fireEvent.click(screen.getByRole('button', { name: 'ADICIONAR AO CARRINHO' }));
+  await waitFor(() => expect(registrarCursoNoCarrinho).toHaveBeenCalledWith(2));
+});
+
+test('modal fechado não conta visualização', () => {
+  render(<CursoModal curso={null} onClose={() => {}} />);
+  expect(registrarCursoVisto).not.toHaveBeenCalled();
 });

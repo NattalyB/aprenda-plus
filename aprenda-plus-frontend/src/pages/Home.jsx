@@ -4,10 +4,15 @@ import { useSearch } from '../context/SearchContext';
 import CursoModal from '../components/CursoModal';
 import PrecoCurso from '../components/PrecoCurso';
 import { getImagemCurso } from '../utils/imagensCursos';
+import { registrarBusca, TAMANHO_MINIMO_BUSCA } from '../services/eventoService';
 
 // Remove acentos e deixa minúsculo, pra busca "analise" encontrar "Análise"
 const normalizar = (texto) =>
   (texto || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+
+// A busca filtra enquanto a pessoa digita: só registra o termo (para o Comercial)
+// depois que ela para de digitar por um instante, pra não contar "c", "ci", "cie"...
+export const ESPERA_PARA_REGISTRAR_BUSCA = 1200;
 
 function Home() {
   const [cursos, setCursos] = useState([]);
@@ -27,6 +32,18 @@ function Home() {
         setCarregando(false);
       });
   }, []);
+
+  // Registra a busca quando a pessoa termina de digitar (com quantos cursos ela encontrou)
+  useEffect(() => {
+    const termoDigitado = (termoBusca || '').trim();
+    if (carregando || erro || termoDigitado.length < TAMANHO_MINIMO_BUSCA) return undefined;
+    const espera = setTimeout(() => {
+      const chave = normalizar(termoDigitado);
+      const encontrados = cursos.filter((curso) => normalizar(curso.nome).includes(chave)).length;
+      registrarBusca(termoDigitado, encontrados);
+    }, ESPERA_PARA_REGISTRAR_BUSCA);
+    return () => clearTimeout(espera);
+  }, [termoBusca, cursos, carregando, erro]);
 
   if (carregando) return <p style={{ textAlign: 'center', padding: '2rem' }}>Carregando cursos...</p>;
   if (erro) return <p style={{ color: 'red', textAlign: 'center', padding: '2rem' }}>{erro}</p>;

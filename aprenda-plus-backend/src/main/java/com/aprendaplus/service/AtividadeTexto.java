@@ -47,20 +47,22 @@ public final class AtividadeTexto {
             Map.entry("niveis-acesso", new Recurso("Sistema", "nível de acesso", "IdNivel")),
             Map.entry("documentos", new Recurso("Alunos", "documento", null)),
             Map.entry("treinamentos", new Recurso("Treinamentos", "treinamento", "IdTreinamento")),
+            Map.entry("comercial", new Recurso("Comercial", "contato comercial", null)),
             Map.entry("sala", new Recurso("Sala de aula (EAD)", "certificado", null)));
 
     // Nomes das planilhas importadas
     private static final Map<String, String> PLANILHAS = Map.of(
             "alunos", "alunos", "professores", "professores", "cursos", "cursos", "disciplinas", "disciplinas");
 
-    // Rotas que não entram no histórico: login, chat, carrinho e marcar aula como vista (muito repetitivo)
+    // Rotas que não entram no histórico: login, chat, carrinho, eventos de navegação do site
+    // e marcar aula como vista (muito repetitivo)
     static boolean ignorar(String metodo, String caminho, String query) {
         if (metodo == null || caminho == null) return true;
         if (!"POST".equals(metodo) && !"PUT".equals(metodo) && !"PATCH".equals(metodo) && !"DELETE".equals(metodo)) {
             return true;
         }
         if (caminho.startsWith("/auth/") || caminho.equals("/chat") || caminho.startsWith("/error")
-                || caminho.startsWith("/actuator") || caminho.startsWith("/carrinhos")
+                || caminho.startsWith("/actuator") || caminho.startsWith("/carrinhos") || caminho.equals("/eventos")
                 || caminho.startsWith("/itens-carrinho") || caminho.matches("/sala/aulas/\\d+/concluida")) {
             return true;
         }
@@ -137,6 +139,11 @@ public final class AtividadeTexto {
                 if (p.length > 2 && "vinculos".equals(p[2])) {
                     return new Descricao(modulo, ALTEROU, "Alterou cursos e disciplinas do professor #" + p[1],
                             "professores", num1, false);
+                }
+            }
+            case "comercial" -> {
+                if ("POST".equals(metodo) && p.length == 2 && "contatos".equals(p[1])) {
+                    return new Descricao(modulo, CADASTROU, "Registrou contato com aluno", null, null, false);
                 }
             }
             case "sala" -> {

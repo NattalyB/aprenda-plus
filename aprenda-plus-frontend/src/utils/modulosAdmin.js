@@ -11,6 +11,7 @@ export const MODULOS = [
   { chave: 'inscricoes', rota: '/admin/inscricoes', menu: 'Inscrições', titulo: 'Inscrições', icone: '🧾', descricao: 'Compras dos alunos e pagamentos' },
   { chave: 'matriculas', rota: '/admin/matriculas', menu: 'Matrículas', titulo: 'Matrículas', icone: '✅', descricao: 'Alunos matriculados nas turmas' },
   { chave: 'financeiro', rota: '/admin/financeiro', menu: 'Financeiro', titulo: 'Financeiro', icone: '💰', descricao: 'Parcelas, recebimentos e indicadores' },
+  { chave: 'comercial', rota: '/admin/comercial', menu: 'Comercial', titulo: 'Comercial', icone: '📈', descricao: 'Leads, funil de vendas e interesse nos cursos' },
   { chave: 'funcionarios', rota: '/admin/funcionarios', menu: 'Funcionários do painel', titulo: 'Funcionários', icone: '👥', descricao: 'Quem acessa o painel' },
   { chave: 'treinamentos', rota: '/admin/treinamentos', menu: 'Treinamentos', titulo: 'Treinamentos', icone: '📚', descricao: 'Vídeos e manuais de como usar o sistema', todos: true },
   { chave: 'historico', rota: '/admin/historico', menu: 'Histórico de alterações', titulo: 'Histórico', icone: '🕒', descricao: 'Quem cadastrou e alterou cada informação' },

@@ -31,10 +31,13 @@ function Cadastro() {
     bairro: '',
     cidade: '',
     estado: '',
+    // Consentimento para receber ofertas (LGPD): começa desmarcado, a pessoa escolhe
+    aceitaMarketing: false,
   });
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, type, checked, value } = e.target;
+    setForm({ ...form, [name]: type === 'checkbox' ? checked : value });
   };
 
   const handleSubmit = (e) => {
@@ -216,6 +219,19 @@ function Cadastro() {
             arquivo={certificado}
             onChange={setCertificado}
           />
+
+          <label className="form-consentimento">
+            <input
+              type="checkbox"
+              name="aceitaMarketing"
+              checked={form.aceitaMarketing}
+              onChange={handleChange}
+            />
+            <span>
+              Quero receber novidades, ofertas e lembretes de cursos por e-mail e WhatsApp.
+              <small>Opcional. Você pode pedir para parar quando quiser.</small>
+            </span>
+          </label>
 
           <button type="submit" className="form-btn" disabled={enviando}>
             {enviando ? 'SALVANDO...' : 'CRIAR CONTA'}

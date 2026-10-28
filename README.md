@@ -19,6 +19,7 @@ Projeto final do curso **Desenvolvimento Full Stack** do programa **+PraTi / Cod
 - [Funcionalidades](#-funcionalidades)
 - [Fluxo da inscrição até a matrícula](#-fluxo-da-inscrição-até-a-matrícula)
 - [Financeiro](#-financeiro)
+- [Comercial](#-comercial)
 - [Documento de escolaridade e e-mails](#-documento-de-escolaridade-e-e-mails)
 - [Sala de aula EAD](#-sala-de-aula-ead)
 - [Recuperação de senha](#-recuperação-de-senha)
@@ -252,6 +253,50 @@ O módulo Financeiro usa a tabela `pagamento`, que já estava no modelo do banco
 - **Exportar planilha** (CSV que o Excel abre direto) e **imprimir** a lista.
 
 **Para o aluno:** em "Minhas inscrições", cada curso mostra as parcelas e o recibo das que foram pagas.
+
+---
+
+## 📈 Comercial
+
+Módulo do painel para a equipe de vendas e marketing (script `database/modulo-comercial.sql`).
+
+**De onde vêm os dados**
+
+- O site registra três tipos de evento: **busca** (o termo e quantos cursos ela encontrou), **curso aberto** e **curso posto no carrinho**.
+- A busca só é registrada quando a pessoa para de digitar (1,2 s), e cada termo conta uma vez por visita, para não contar "c", "ci", "cie"...
+- **Visitante sem login é anônimo:** o navegador guarda só um código aleatório de sessão (UUID). Não há nome, e-mail nem IP. Quando a pessoa está logada como aluno, o id dela vem do token (nunca do corpo da requisição).
+- A rota `POST /eventos` é pública, então o servidor confere tudo: tipo, formato do código de sessão, se o curso existe e o tamanho do termo. Esses eventos não entram no Histórico de alterações.
+- Se o servidor estiver fora do ar, o site segue funcionando normalmente (os envios são "de fundo").
+
+**Visão geral (7, 30 ou 90 dias)**
+
+- Indicadores: visitantes, novos cadastros, inscrições, matrículas, **conversão** (visitantes que se matricularam) e **buscas sem resultado**.
+- **Funil de vendas:** visitaram o site → abriram um curso → puseram no carrinho → fizeram inscrição → matricularam, com a perda (%) entre uma etapa e outra.
+- **Compras para recuperar:** quantas pessoas pararam em cada etapa e o valor parado em pagamentos pendentes e carrinhos.
+- Gráfico de **visitantes por dia** (com dica ao passar o mouse e versão em tabela).
+
+**Leads**
+
+- Uma linha por aluno ativo que começou a comprar e não terminou, na etapa mais avançada a que chegou:
+  - **Pagamento pendente:** fez a inscrição e não pagou;
+  - **Carrinho abandonado:** pôs cursos no carrinho e não finalizou;
+  - **Só cadastro:** criou a conta e nunca comprou (com os cursos que abriu no site nos últimos 90 dias).
+- Etiqueta **"Já é aluno"** para quem já tem matrícula (bom para oferecer um segundo curso).
+- Filtros por etapa, busca (nome, e-mail, telefone ou curso), tempo parado, "só quem aceita ofertas" e "esconder quem não tem interesse".
+- **Mensagem pronta** para cada etapa, com botão para abrir no **WhatsApp** ou no e-mail.
+- **Registro de contatos:** canal (WhatsApp, telefone, e-mail), resultado (não respondeu, interessado, pediu retorno depois, sem interesse, matriculou) e observação. A lista mostra o último contato e quem fez.
+- **Exportar planilha** (CSV que abre direto no Excel) com os leads filtrados.
+
+**Interesse nos cursos**
+
+- Cursos ordenados pelo interesse: pessoas que abriram (visitantes x alunos logados), carrinho, inscrições e conversão. Cursos que ninguém abriu aparecem em cinza.
+- **Termos mais buscados** e **"procuraram e não encontraram"**: ideias de cursos novos ou de palavras para usar nos nomes e descrições.
+
+**LGPD**
+
+- No cadastro, a pessoa marca (opcional, começa desmarcado) se quer receber novidades e ofertas. No painel, a secretaria pode desmarcar quando o aluno pedir.
+- Lembrete sobre uma compra parada pode ser feito com qualquer aluno; campanhas, só para quem aceitou.
+- O nível **Comercial** (criado pelo script) vê só este módulo: os dados pessoais dos leads são sensíveis, então até para consultar é preciso ter o módulo liberado.
 
 ---
 
@@ -666,9 +711,10 @@ O que é testado:
 
 | Quem | Pode acessar |
 |---|---|
-| **Visitante** | Ver cursos e turmas disponíveis, cadastrar-se (com o certificado), fazer login e validar um certificado |
+| **Visitante** | Ver cursos e turmas disponíveis, cadastrar-se (com o certificado), fazer login, validar um certificado e registrar (de forma anônima) buscas e cursos vistos |
 | **Aluno** | O próprio carrinho, a criação de inscrições, "Minhas inscrições" (com as próprias parcelas e documentos), a troca de turma das próprias inscrições e a sala de aula das turmas em que está matriculado |
-| **Funcionário** | Os módulos liberados pelo seu nível de acesso (consultas são livres, exceto Funcionários e Sistema) |
+| **Funcionário** | Os módulos liberados pelo seu nível de acesso (consultas são livres, exceto Funcionários, Histórico, Financeiro, Comercial e Sistema) |
+| **Comercial** | Só o módulo Comercial e os Treinamentos (quem tem apenas esse módulo não tem a consulta livre aos cadastros) |
 | **Master** | Todas as rotas, inclusive o módulo Sistema |
 
 - **Cada aluno só vê e altera o que é dele** (carrinho e inscrições). A identidade vem do token assinado pelo servidor, não de dados enviados pelo navegador. Se um aluno tentar trocar a turma da inscrição de outra pessoa, a API responde como se ela não existisse.
@@ -774,6 +820,9 @@ O comando gera a versão de produção e publica a pasta `dist` na branch `gh-pa
 - Cadastrar a imagem do curso pelo painel admin, em vez de deixá-la no código.
 - QR Code no certificado, levando direto para a página de validação.
 - Importar também arquivos do Excel (.xlsx) direto, sem precisar salvar como CSV.
+- Comercial: o próprio aluno ligar e desligar o aceite de ofertas na área dele.
+- Comercial: e-mail automático de lembrete para carrinho abandonado depois de alguns dias.
+- Comercial: apagar automaticamente os eventos de navegação com mais de 12 meses.
 
 ---
 

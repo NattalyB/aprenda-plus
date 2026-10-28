@@ -41,6 +41,7 @@ import ValidarCertificado from './pages/ValidarCertificado';
 import AdminSalaDeAula from './pages/admin/AdminSalaDeAula';
 import AdminTreinamentos from './pages/admin/AdminTreinamentos';
 import AdminHistorico from './pages/admin/AdminHistorico';
+import AdminComercial from './pages/admin/AdminComercial';
 import EsqueciSenha from './pages/EsqueciSenha';
 import RedefinirSenha from './pages/RedefinirSenha';
 import MinhasTurmasProfessor from './pages/professor/MinhasTurmasProfessor';
@@ -96,6 +97,7 @@ function App() {
           <Route path="financeiro" element={<RotaModulo modulo="financeiro"><AdminFinanceiro /></RotaModulo>} />
           <Route path="treinamentos" element={<RotaModulo modulo="treinamentos"><AdminTreinamentos /></RotaModulo>} />
           <Route path="historico" element={<RotaModulo modulo="historico"><AdminHistorico /></RotaModulo>} />
+          <Route path="comercial" element={<RotaModulo modulo="comercial"><AdminComercial /></RotaModulo>} />
 
           <Route path="cursos" element={<RotaModulo modulo="cursos"><AdminCursos /></RotaModulo>} />
           <Route path="cursos/novo" element={<RotaModulo modulo="cursos"><AdminCursoForm /></RotaModulo>} />

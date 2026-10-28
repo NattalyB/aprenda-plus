@@ -33,17 +33,27 @@ public class AlunoService {
     public Aluno salvar(Aluno aluno) {
         String senha = aluno.getSenhaHash();
         boolean senhaVazia = senha == null || senha.isBlank();
+        Aluno alunoExistente = null;
 
         if (senhaVazia) {
             // Edição sem senha nova: mantém a senha que já está salva no banco
             if (aluno.getIdAluno() != null) {
-                Aluno alunoExistente = buscarPorId(aluno.getIdAluno());
+                alunoExistente = buscarPorId(aluno.getIdAluno());
                 aluno.setSenhaHash(alunoExistente.getSenhaHash());
             }
         } else if (!senha.startsWith("$2")) {
             // Senha nova digitada: criptografa
             // (se já começar com "$2", ela já é um hash BCrypt e não criptografa de novo)
             aluno.setSenhaHash(encoder.encode(senha));
+        }
+
+        // Consentimento para ofertas (Comercial): se o pedido não informou, mantém o que já estava salvo.
+        // Cadastro novo sem resposta conta como "não aceitou".
+        if (aluno.getAceitaMarketing() == null) {
+            if (alunoExistente == null && aluno.getIdAluno() != null) {
+                alunoExistente = alunoRepository.findById(aluno.getIdAluno()).orElse(null);
+            }
+            aluno.setAceitaMarketing(alunoExistente != null && Boolean.TRUE.equals(alunoExistente.getAceitaMarketing()));
         }
 
         return alunoRepository.save(aluno);

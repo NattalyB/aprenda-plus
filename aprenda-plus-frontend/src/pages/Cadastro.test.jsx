@@ -223,3 +223,23 @@ describe('senha', () => {
     expect(enviado.telefone).toBe('(51) 99999-9999');
   });
 });
+
+test('a pessoa escolhe se quer receber ofertas (começa desmarcado)', async () => {
+  cadastrarAlunoComDocumento.mockResolvedValue({ data: { idAluno: 1 } });
+  renderizar(<Cadastro />, { rota: '/cadastro' });
+
+  const consentimento = screen.getByRole('checkbox', { name: /Quero receber novidades/ });
+  expect(consentimento).not.toBeChecked();
+  expect(consentimento).not.toBeRequired();
+  fireEvent.click(consentimento);
+  expect(consentimento).toBeChecked();
+
+  preencherEEnviar();
+
+  await waitFor(() =>
+    expect(cadastrarAlunoComDocumento).toHaveBeenCalledWith(
+      expect.objectContaining({ aceitaMarketing: true }),
+      expect.anything()
+    )
+  );
+});

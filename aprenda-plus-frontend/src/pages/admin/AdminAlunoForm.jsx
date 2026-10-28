@@ -39,6 +39,7 @@ function AdminAlunoForm() {
     cidade: '',
     estado: '',
     status: 'ativo',
+    aceitaMarketing: false,
   });
   const [erro, setErro] = useState(null);
   const [enviando, setEnviando] = useState(false);
@@ -53,7 +54,8 @@ function AdminAlunoForm() {
   }, [id]);
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, type, checked, value } = e.target;
+    setForm({ ...form, [name]: type === 'checkbox' ? checked : value });
   };
 
   const handleSubmit = (e) => {
@@ -209,6 +211,18 @@ function AdminAlunoForm() {
                   />
                 </div>
               </div>
+              <label className="form-consentimento">
+                <input
+                  type="checkbox"
+                  name="aceitaMarketing"
+                  checked={Boolean(form.aceitaMarketing)}
+                  onChange={handleChange}
+                />
+                <span>
+                  Aceita receber ofertas e campanhas (e-mail e WhatsApp)
+                  <small>Só marque se o próprio aluno pediu. Desmarque quando ele pedir para não receber mais.</small>
+                </span>
+              </label>
             </div>
 
             <div className="form-acoes">

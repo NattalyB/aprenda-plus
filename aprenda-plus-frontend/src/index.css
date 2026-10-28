@@ -6630,3 +6630,360 @@ img {
     grid-template-columns: minmax(90px, 1fr) 1fr auto;
   }
 }
+
+/* ===================== CONSENTIMENTO PARA OFERTAS (cadastro) ===================== */
+.form-consentimento {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  margin: 1.25rem 0 0.25rem;
+  font-size: 0.9rem;
+  color: #374151;
+  cursor: pointer;
+  line-height: 1.4;
+}
+
+.form-consentimento input {
+  width: 18px;
+  height: 18px;
+  margin-top: 0.1rem;
+  flex-shrink: 0;
+  accent-color: #0077b6;
+}
+
+.form-consentimento small {
+  display: block;
+  color: #6b7280;
+  font-size: 0.8rem;
+}
+
+/* ===================== MÓDULO COMERCIAL (painel) ===================== */
+.comercial-nota {
+  color: #6b7280;
+  font-size: 0.82rem;
+  margin: 0.75rem 0 0;
+}
+
+/* Funil: nome, barra, quantidade + %, perda desde a etapa anterior */
+.comercial-funil {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.comercial-funil li {
+  display: grid;
+  grid-template-columns: minmax(130px, 1.2fr) 2fr 6.5rem 3.6rem;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.85rem;
+}
+
+.comercial-funil-nome {
+  color: #374151;
+}
+
+.comercial-funil-valor {
+  color: #0b2239;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.comercial-funil-valor small {
+  color: #6b7280;
+  margin-left: 0.35rem;
+}
+
+.comercial-funil-perda {
+  color: #b91c1c;
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* Etiquetas da etapa em que a pessoa parou (sempre com texto, nunca só a cor) */
+.comercial-etapa {
+  display: inline-block;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.comercial-etapa-inscricao {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.comercial-etapa-carrinho {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.comercial-etapa-cadastro {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.comercial-tag {
+  display: inline-block;
+  margin: 0.25rem 0.25rem 0 0;
+  padding: 0.1rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  background: #dcfce7;
+  color: #166534;
+  white-space: nowrap;
+}
+
+.comercial-tag-neutra {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
+.comercial-tag-alerta {
+  background: #fee2e2;
+  color: #991b1b;
+  margin: 0 0.4rem;
+}
+
+/* Resumo dos leads na visão geral (cada etapa é um atalho para a lista) */
+.comercial-resumo-leads {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.comercial-resumo-leads button {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas: 'etapa numero' 'texto numero';
+  align-items: center;
+  gap: 0.2rem 0.75rem;
+  text-align: left;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 0.65rem 0.85rem;
+  font: inherit;
+  cursor: pointer;
+}
+
+.comercial-resumo-leads button:hover,
+.comercial-resumo-leads button:focus-visible {
+  border-color: #00b4d8;
+  background: #fff;
+}
+
+.comercial-resumo-leads .comercial-etapa {
+  grid-area: etapa;
+  justify-self: start;
+}
+
+.comercial-resumo-leads strong {
+  grid-area: numero;
+  justify-self: end;
+  font-size: 1.4rem;
+  color: #0b2239;
+  font-variant-numeric: tabular-nums;
+}
+
+.comercial-resumo-leads small {
+  grid-area: texto;
+  color: #6b7280;
+  font-size: 0.8rem;
+}
+
+/* Lista de leads */
+.comercial-opcoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  margin: 0 0 0.9rem;
+  font-size: 0.85rem;
+  color: #374151;
+}
+
+.comercial-opcoes label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+}
+
+.comercial-opcoes input {
+  accent-color: #0077b6;
+}
+
+.comercial-tabela td {
+  vertical-align: top;
+}
+
+.comercial-detalhe {
+  display: block;
+  color: #6b7280;
+  font-size: 0.78rem;
+  margin-top: 0.1rem;
+}
+
+.comercial-numero {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.comercial-linha-apagada td {
+  color: #9ca3af;
+}
+
+/* Termos buscados */
+.comercial-termos {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  font-size: 0.88rem;
+}
+
+ul.comercial-termos {
+  list-style: none;
+  padding-left: 0;
+}
+
+.comercial-termo {
+  font-weight: 600;
+  color: #0b2239;
+}
+
+.comercial-termos .comercial-detalhe {
+  display: inline;
+  margin-left: 0.4rem;
+}
+
+/* Painel lateral de contatos com um lead */
+.comercial-painel h3 {
+  font-size: 0.95rem;
+  color: #0b2239;
+  margin: 0 0 0.5rem;
+}
+
+.comercial-painel .doc-painel-topo p {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.comercial-dados {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.6rem 1rem;
+  margin: 0 0 1rem;
+  font-size: 0.86rem;
+}
+
+.comercial-dados dt {
+  color: #6b7280;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.comercial-dados dd {
+  margin: 0.1rem 0 0;
+  color: #1f2937;
+  overflow-wrap: anywhere;
+}
+
+.comercial-mensagem {
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+  margin-bottom: 1.1rem;
+}
+
+.comercial-mensagem p {
+  margin: 0 0 0.7rem;
+  font-size: 0.88rem;
+  color: #1f2937;
+  line-height: 1.45;
+}
+
+.comercial-mensagem-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.comercial-form-contato {
+  border-top: 1px solid #e5e7eb;
+  padding-top: 1rem;
+  margin-bottom: 1.1rem;
+}
+
+.comercial-form-contato .form-btn {
+  margin-top: 0.75rem;
+}
+
+.comercial-subtitulo {
+  border-top: 1px solid #e5e7eb;
+  padding-top: 1rem;
+}
+
+.comercial-historico {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.comercial-historico li {
+  border-left: 3px solid #00b4d8;
+  padding: 0.15rem 0 0.15rem 0.7rem;
+  font-size: 0.85rem;
+}
+
+.comercial-historico span {
+  display: block;
+  color: #6b7280;
+  font-size: 0.78rem;
+}
+
+.comercial-historico p {
+  margin: 0.25rem 0 0;
+  color: #374151;
+}
+
+@media (max-width: 640px) {
+  .comercial-funil li {
+    grid-template-columns: 1fr 5.5rem;
+  }
+
+  .comercial-funil .barras-trilho {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .comercial-funil-perda {
+    text-align: left;
+  }
+}
+
+/* Comercial: seis indicadores cabem numa linha em telas largas */
+.comercial .financeiro-indicadores {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}

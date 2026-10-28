@@ -19,6 +19,11 @@ public class ItemCarrinho {
     @JoinColumn(name = "curso_id", nullable = false)
     private Curso curso;
 
+    // Quando o curso entrou no carrinho (preenchido pelo banco).
+    // O Comercial usa para saber há quanto tempo a compra está parada.
+    @Column(name = "adicionado_em", insertable = false, updatable = false)
+    private java.time.LocalDateTime adicionadoEm;
+
     // Getters e Setters
 
     public Integer getIdItem() { return idItem; }
@@ -29,4 +34,7 @@ public class ItemCarrinho {
 
     public Curso getCurso() { return curso; }
     public void setCurso(Curso curso) { this.curso = curso; }
+
+    public java.time.LocalDateTime getAdicionadoEm() { return adicionadoEm; }
+    public void setAdicionadoEm(java.time.LocalDateTime adicionadoEm) { this.adicionadoEm = adicionadoEm; }
 }

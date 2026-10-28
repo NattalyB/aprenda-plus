@@ -26,6 +26,16 @@ class AtividadeTextoTest {
     }
 
     @Test
+    void eventosDoSiteNaoEntramEContatoDoComercialEntra() {
+        assertNull(d("POST", "/eventos"));
+
+        Descricao contato = d("POST", "/comercial/contatos");
+        assertEquals("Comercial", contato.modulo());
+        assertEquals("cadastrou", contato.acao());
+        assertEquals("Registrou contato com aluno", contato.texto());
+    }
+
+    @Test
     void regraGeralCadastrarAlterarExcluir() {
         Descricao novo = d("POST", "/alunos");
         assertEquals("Alunos", novo.modulo());

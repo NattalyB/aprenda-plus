@@ -3,10 +3,11 @@ import { MODULOS, MODULOS_LIBERAVEIS, moduloPorChave, podeUsar, modulosLiberados
 test('são os módulos do back-end; Sistema e Treinamentos não entram na liberação', () => {
   expect(MODULOS.map((m) => m.chave)).toEqual([
     'alunos', 'professores', 'cursos', 'disciplinas', 'periodos',
-    'turmas', 'aulas', 'inscricoes', 'matriculas', 'financeiro', 'funcionarios',
+    'turmas', 'aulas', 'inscricoes', 'matriculas', 'financeiro', 'comercial', 'funcionarios',
     'treinamentos', 'historico', 'sistema',
   ]);
-  expect(MODULOS_LIBERAVEIS).toHaveLength(12);
+  expect(MODULOS_LIBERAVEIS).toHaveLength(13);
+  expect(MODULOS_LIBERAVEIS.map((m) => m.chave)).toContain('comercial');
   expect(MODULOS_LIBERAVEIS.map((m) => m.chave)).not.toContain('treinamentos');
   expect(MODULOS_LIBERAVEIS.map((m) => m.chave)).toContain('historico');
   expect(MODULOS_LIBERAVEIS.map((m) => m.chave)).not.toContain('sistema');
@@ -36,4 +37,12 @@ test('lista os módulos liberados na ordem do menu', () => {
     'alunos', 'matriculas', 'treinamentos',
   ]);
   expect(modulosLiberados(null)).toEqual([]);
+});
+
+test('o nível Comercial vê só o Comercial e os Treinamentos', () => {
+  expect(modulosLiberados({ master: false, modulos: ['comercial'] }).map((m) => m.chave)).toEqual([
+    'comercial', 'treinamentos',
+  ]);
+  expect(podeUsar({ master: false, modulos: ['comercial'] }, 'alunos')).toBe(false);
+  expect(moduloPorChave('comercial').rota).toBe('/admin/comercial');
 });

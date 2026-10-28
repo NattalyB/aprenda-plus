@@ -168,4 +168,59 @@ class AlunoServiceTest {
                 () -> alunoService.cadastrarComDocumento(new Aluno(), "x.exe", new byte[]{1}));
         verify(alunoRepository, never()).save(any());
     }
+
+    // ===== Consentimento para ofertas (módulo Comercial) =====
+
+    @Test
+    void cadastroNovoSemRespostaNaoAceitaOfertas() {
+        Aluno aluno = new Aluno();
+        aluno.setSenhaHash("123456");
+        saveDevolveOProprioAluno();
+
+        assertFalse(alunoService.salvar(aluno).getAceitaMarketing());
+    }
+
+    @Test
+    void cadastroNovoGuardaQuemAceitouOfertas() {
+        Aluno aluno = new Aluno();
+        aluno.setSenhaHash("123456");
+        aluno.setAceitaMarketing(true);
+        saveDevolveOProprioAluno();
+
+        assertTrue(alunoService.salvar(aluno).getAceitaMarketing());
+    }
+
+    @Test
+    void edicaoSemOCampoMantemOConsentimentoSalvo() {
+        Aluno salvo = new Aluno();
+        salvo.setIdAluno(5);
+        salvo.setSenhaHash("$2a$10$hashantigo");
+        salvo.setAceitaMarketing(true);
+        when(alunoRepository.findById(5)).thenReturn(Optional.of(salvo));
+        saveDevolveOProprioAluno();
+
+        Aluno edicao = new Aluno();
+        edicao.setIdAluno(5);
+        assertTrue(alunoService.salvar(edicao).getAceitaMarketing());
+
+        Aluno comSenhaNova = new Aluno();
+        comSenhaNova.setIdAluno(5);
+        comSenhaNova.setSenhaHash("novaSenha");
+        assertTrue(alunoService.salvar(comSenhaNova).getAceitaMarketing());
+    }
+
+    @Test
+    void edicaoPodeRetirarOConsentimento() {
+        Aluno salvo = new Aluno();
+        salvo.setIdAluno(5);
+        salvo.setSenhaHash("$2a$10$hashantigo");
+        salvo.setAceitaMarketing(true);
+        when(alunoRepository.findById(5)).thenReturn(Optional.of(salvo));
+        saveDevolveOProprioAluno();
+
+        Aluno edicao = new Aluno();
+        edicao.setIdAluno(5);
+        edicao.setAceitaMarketing(false);
+        assertFalse(alunoService.salvar(edicao).getAceitaMarketing());
+    }
 }

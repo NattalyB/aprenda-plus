@@ -10,6 +10,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -97,6 +98,11 @@ public class Aluno {
     @Column(name = "status", nullable = false, length = 20)
     private String status = "ativo";
 
+    // Consentimento (LGPD) para receber ofertas e campanhas do Comercial.
+    // null no pedido = "não informado": na edição o AlunoService mantém o que já estava salvo.
+    @Column(name = "aceita_marketing", nullable = false)
+    private Boolean aceitaMarketing;
+
     // Colunas controladas pelo banco (DEFAULT NOW() e trigger) —
     // não deixamos o Java escrever nelas, só ler de volta
     @Column(name = "criado_em", insertable = false, updatable = false)
@@ -151,6 +157,17 @@ public class Aluno {
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+
+    public Boolean getAceitaMarketing() { return aceitaMarketing; }
+    public void setAceitaMarketing(Boolean aceitaMarketing) { this.aceitaMarketing = aceitaMarketing; }
+
+    // Cadastro novo sem a resposta (ex.: importação por planilha): conta como "não aceitou"
+    @PrePersist
+    void antesDeCadastrar() {
+        if (aceitaMarketing == null) {
+            aceitaMarketing = false;
+        }
+    }
 
     public LocalDateTime getCriadoEm() { return criadoEm; }
     public LocalDateTime getAtualizadoEm() { return atualizadoEm; }

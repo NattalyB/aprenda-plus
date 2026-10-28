@@ -22,6 +22,8 @@ public final class Modulos {
     public static final String FUNCIONARIOS = "funcionarios";
     // Histórico de alterações: o Master libera para quem ele quiser (ex.: Proprietário)
     public static final String HISTORICO = "historico";
+    // Comercial: leads, funil de vendas e interesse dos visitantes (tem dados pessoais: é sensível)
+    public static final String COMERCIAL = "comercial";
     // Configuração dos níveis de acesso: exclusivo do Master
     public static final String SISTEMA = "sistema";
     // Treinamentos: toda a equipe consulta, só o Master cadastra (não é liberável para outros níveis)
@@ -30,7 +32,7 @@ public final class Modulos {
     // Módulos que o Master pode liberar para os outros níveis (o "sistema" não entra)
     public static final List<String> LIBERAVEIS = List.of(
             ALUNOS, PROFESSORES, CURSOS, DISCIPLINAS, PERIODOS, TURMAS, AULAS, INSCRICOES, MATRICULAS, FINANCEIRO, FUNCIONARIOS,
-            HISTORICO);
+            HISTORICO, COMERCIAL);
 
     // Todos os módulos (o que o Master tem)
     public static final List<String> TODOS;
@@ -66,7 +68,8 @@ public final class Modulos {
             Map.entry("/funcionarios", FUNCIONARIOS),
             Map.entry("/niveis-acesso", SISTEMA),
             Map.entry("/atividades", HISTORICO),        // histórico de alterações
-            Map.entry("/treinamentos", TREINAMENTOS));
+            Map.entry("/treinamentos", TREINAMENTOS),
+            Map.entry("/comercial", COMERCIAL));
 
     private Modulos() {
     }
@@ -83,6 +86,13 @@ public final class Modulos {
             }
         }
         return null;
+    }
+
+    // Nível que só tem o Comercial (ex.: o nível "Comercial"): a pessoa usa apenas esse módulo,
+    // sem a consulta livre aos cadastros que o resto da equipe tem.
+    // Se o Master liberar mais algum módulo para o nível, ele volta a consultar como a equipe.
+    public static boolean soComercial(Set<String> liberados) {
+        return liberados != null && liberados.size() == 1 && liberados.contains(COMERCIAL);
     }
 
     // Lê "alunos,cursos" (como fica no banco) e devolve só os módulos válidos e liberáveis

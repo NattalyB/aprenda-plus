@@ -58,6 +58,20 @@ class ModulosTest {
         assertEquals(Modulos.HISTORICO, Modulos.doCaminho("/atividades"));
         assertTrue(Modulos.LIBERAVEIS.contains(Modulos.HISTORICO));
         assertEquals(List.of("alunos", "professores", "cursos", "disciplinas", "periodos", "turmas", "aulas",
-                "inscricoes", "matriculas", "financeiro", "funcionarios", "historico"), Modulos.LIBERAVEIS);
+                "inscricoes", "matriculas", "financeiro", "funcionarios", "historico", "comercial"), Modulos.LIBERAVEIS);
+    }
+
+    @Test
+    void comercialTemRotaPropriaESoComercialEhONivelComApenasEleLiberado() {
+        assertEquals(Modulos.COMERCIAL, Modulos.doCaminho("/comercial/leads"));
+        assertEquals(Modulos.COMERCIAL, Modulos.doCaminho("/comercial"));
+        assertNull(Modulos.doCaminho("/eventos"));
+        assertEquals("comercial", Modulos.escrever(List.of("comercial")));
+
+        assertTrue(Modulos.soComercial(Set.of("comercial")));
+        assertFalse(Modulos.soComercial(Set.of("comercial", "alunos")));
+        assertFalse(Modulos.soComercial(Set.of("alunos")));
+        assertFalse(Modulos.soComercial(Set.of()));
+        assertFalse(Modulos.soComercial(null));
     }
 }

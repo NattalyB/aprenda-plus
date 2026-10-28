@@ -185,6 +185,8 @@ class AuthInterceptorTest {
         case 2 -> java.util.Set.of("alunos", "cursos", "funcionarios");
         case 3 -> java.util.Set.of("inscricoes", "matriculas");
         case 5 -> java.util.Set.of("aulas");
+        case 6 -> java.util.Set.of("comercial");
+        case 7 -> java.util.Set.of("comercial", "inscricoes");
         default -> null;
     };
 
@@ -330,6 +332,53 @@ class AuthInterceptorTest {
         assertTrue(doFuncionario(2, "GET", "/atividades/ultima"));
         assertFalse(doFuncionario(2, "DELETE", "/atividades/ultima"));
         assertFalse(requisicao("GET", "/atividades/ultima", tokenAluno));
+    }
+
+    // ===== Módulo Comercial =====
+
+    @Test
+    void visitanteEAlunoRegistramEventosDeNavegacao() throws Exception {
+        assertTrue(requisicao("POST", "/eventos", null));
+        assertTrue(requisicao("POST", "/eventos", tokenAluno));
+        assertFalse(requisicao("GET", "/eventos", null));
+        assertEquals(401, response.getStatus());
+        assertFalse(requisicao("POST", "/eventos/1", null));
+    }
+
+    @Test
+    void nivelComercialUsaSoOModuloDeleEOsTreinamentos() throws Exception {
+        assertTrue(doFuncionario(6, "GET", "/comercial/painel"));
+        assertTrue(doFuncionario(6, "GET", "/comercial/leads"));
+        assertTrue(doFuncionario(6, "POST", "/comercial/contatos"));
+        assertTrue(doFuncionario(6, "GET", "/treinamentos"));
+        assertTrue(doFuncionario(6, "GET", "/niveis-acesso/meu"));
+        assertTrue(doFuncionario(6, "GET", "/cursos"));        // vitrine pública
+
+        assertFalse(doFuncionario(6, "GET", "/alunos"));
+        assertEquals(403, response.getStatus());
+        assertFalse(doFuncionario(6, "GET", "/inscricoes"));
+        assertFalse(doFuncionario(6, "GET", "/matriculas/3"));
+        assertFalse(doFuncionario(6, "POST", "/treinamentos"));
+        assertFalse(doFuncionario(6, "GET", "/financeiro/resumo"));
+        assertFalse(doFuncionario(6, "GET", "/atividades"));
+    }
+
+    @Test
+    void comercialEhSensivelParaOsOutrosNiveis() throws Exception {
+        assertFalse(doFuncionario(3, "GET", "/comercial/leads"));
+        assertEquals(403, response.getStatus());
+        assertFalse(doFuncionario(2, "GET", "/comercial/painel"));
+        assertTrue(doFuncionario(1, "GET", "/comercial/leads"));
+        assertFalse(requisicao("GET", "/comercial/leads", tokenAluno));
+        assertFalse(requisicao("GET", "/comercial/painel", null));
+    }
+
+    @Test
+    void comercialComOutroModuloVoltaATerAConsultaLivre() throws Exception {
+        assertTrue(doFuncionario(7, "GET", "/comercial/leads"));
+        assertTrue(doFuncionario(7, "GET", "/alunos"));
+        assertTrue(doFuncionario(7, "PUT", "/inscricoes/2"));
+        assertFalse(doFuncionario(7, "POST", "/alunos"));
     }
 
     // ===== Assistente virtual (chat) =====

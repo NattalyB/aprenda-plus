@@ -50,8 +50,8 @@ test('Master vê o menu completo, o nome, o nível e a página atual', () => {
 
   expect(screen.getByText('Olá, Admin Teste')).toBeInTheDocument();
   expect(screen.getByText('Master')).toBeInTheDocument();
-  // Início + 14 módulos (incluindo Sala de aula, Financeiro, Treinamentos, Histórico e Sistema)
-  expect(within(menu()).getAllByRole('link')).toHaveLength(15);
+  // Início + 15 módulos (incluindo Sala de aula, Financeiro, Comercial, Treinamentos, Histórico e Sistema)
+  expect(within(menu()).getAllByRole('link')).toHaveLength(16);
   expect(screen.getByText('Histórico de alterações')).toBeInTheDocument();
   expect(screen.getByText('Funcionários do painel')).toBeInTheDocument();
   expect(screen.getByText('Sistema')).toBeInTheDocument();
