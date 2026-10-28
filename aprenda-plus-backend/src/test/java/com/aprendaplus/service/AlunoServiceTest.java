@@ -102,6 +102,8 @@ class AlunoServiceTest {
         Aluno edicao = new Aluno();
         edicao.setIdAluno(1);
         edicao.setSenhaHash("novaSenha123");
+        // O formulário do painel sempre manda o aceite de ofertas junto
+        edicao.setAceitaMarketing(false);
 
         Aluno resultado = alunoService.salvar(edicao);
 

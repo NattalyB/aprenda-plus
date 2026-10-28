@@ -46,7 +46,8 @@ class NivelAcessoControllerTest {
         mockMvc.perform(get("/niveis-acesso"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].master").value(true))
-                .andExpect(jsonPath("$[0].modulos[12]").value("sistema"))
+                .andExpect(jsonPath("$[0].modulos[12]").value("comercial"))
+                .andExpect(jsonPath("$[0].modulos[13]").value("sistema"))
                 .andExpect(jsonPath("$[1].nome").value("Financeiro"))
                 .andExpect(jsonPath("$[1].modulos[1]").value("matriculas"))
                 .andExpect(jsonPath("$[1].modulosTexto").doesNotExist());

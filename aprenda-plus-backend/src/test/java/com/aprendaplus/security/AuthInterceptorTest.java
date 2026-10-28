@@ -378,7 +378,7 @@ class AuthInterceptorTest {
         assertTrue(doFuncionario(7, "GET", "/comercial/leads"));
         assertTrue(doFuncionario(7, "GET", "/alunos"));
         assertTrue(doFuncionario(7, "PUT", "/inscricoes/2"));
-        assertFalse(doFuncionario(7, "POST", "/alunos"));
+        assertFalse(doFuncionario(7, "PUT", "/alunos/3"));   // alterar aluno continua exigindo o módulo Alunos
     }
 
     // ===== Assistente virtual (chat) =====
