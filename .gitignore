@@ -11,4 +11,5 @@ aprenda-plus-frontend/dist/
 .vscode/
 
 # Configs sensíveis
-aprenda-plus-backend/src/main/resources/application-local.properties
+aprenda-plus-backend/src/main/resources/application-local.properties*.dump
+*.dump

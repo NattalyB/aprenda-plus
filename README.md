@@ -91,6 +91,12 @@ Projeto final do curso **Desenvolvimento Full Stack** do programa **+PraTi / Cod
 - **Certificado de conclusão** liberado ao terminar todas as aulas, pronto para imprimir ou salvar em PDF, com **código de verificação**.
 - **Validar certificado:** qualquer pessoa digita o código no site (link no rodapé) e confere se o certificado é verdadeiro.
 
+**Assistente virtual**
+
+- **Chat com IA** no canto do site (Google Gemini, plano gratuito), que responde dúvidas sobre os cursos, a inscrição e os pagamentos, e sugere cursos que a pessoa pode abrir direto da conversa.
+- Sem a chave da IA configurada, o chat continua funcionando no **modo básico**, com respostas prontas.
+- Quando a pessoa quer falar com alguém da equipe, o chat oferece o WhatsApp e o e-mail do atendimento.
+
 **Geral**
 
 - **Avisos visuais (toasts)** de sucesso, erro e alerta.
@@ -421,7 +427,7 @@ Para cadastrar muita coisa de uma vez (uma turma inteira de alunos, os professor
 |---|---|
 | **Java 25** | Linguagem |
 | **Spring Boot 4.1** | Framework da API REST (Web MVC, Data JPA, Validation, Actuator) |
-| **PostgreSQL 17** | Banco de dados |
+| **PostgreSQL 17 / 18** | Banco de dados (17 no desenvolvimento local, 18 em produção) |
 | **Hibernate / JPA** | Mapeamento objeto-relacional |
 | **JJWT 0.12** | Geração e validação dos tokens JWT |
 | **BCrypt** (Spring Security Crypto) | Criptografia das senhas |
@@ -447,9 +453,11 @@ Para cadastrar muita coisa de uma vez (uma turma inteira de alunos, os professor
 
 | Serviço | Uso |
 |---|---|
-| **Render** | Hospedagem do back-end e do banco PostgreSQL |
+| **Render** | Hospedagem do back-end |
+| **Neon** | Banco de dados PostgreSQL 18 em produção (plano gratuito) |
 | **GitHub Pages** | Hospedagem do front-end |
 | **Brevo** | Envio dos e-mails automáticos (matrícula, vaga liberada, documento recusado) |
+| **Google Gemini** | IA do assistente virtual do site (plano gratuito) |
 | **GitHub** | Versionamento e organização das tarefas |
 
 ---
@@ -461,7 +469,7 @@ O sistema é dividido em duas aplicações independentes, que se comunicam por u
 ```
 ┌────────────────────────┐         HTTPS + JSON          ┌────────────────────────┐        ┌──────────────┐
 │   Front-end (React)    │  ───────────────────────────▶ │  Back-end (Spring Boot)│ ─────▶ │  PostgreSQL  │
-│   GitHub Pages         │  ◀───────────────────────────  │  Render                │ ◀───── │  Render      │
+│   GitHub Pages         │  ◀───────────────────────────  │  Render                │ ◀───── │  Neon        │
 │                        │   token JWT no cabeçalho      │                        │        │              │
 └────────────────────────┘   Authorization: Bearer ...   └────────────────────────┘        └──────────────┘
 ```
@@ -780,11 +788,18 @@ O serviço `aprenda-plus-backend` é atualizado automaticamente a cada `git push
 |---|---|
 | `JWT_SECRET` | Chave secreta que assina os tokens |
 | `BREVO_API_KEY` | Chave da API do Brevo, para enviar os e-mails |
+| `GEMINI_API_KEY` | Chave da IA do assistente virtual (opcional; sem ela, o chat funciona no modo básico) |
 | `EMAIL_REMETENTE` | E-mail que aparece como remetente (precisa estar verificado no Brevo) |
 | `EMAIL_SITE` | Endereço do site usado nos botões dos e-mails (opcional; o padrão é o GitHub Pages) |
-| Dados de conexão do banco | Endereço, usuário e senha do PostgreSQL do Render |
+| `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD` | Conexão com o banco PostgreSQL no Neon |
 
-> Quando uma atualização muda a estrutura do banco, o script SQL correspondente da pasta `database` é executado também no banco do Render, antes do deploy.
+### Banco de dados (Neon)
+
+O banco de produção fica no **Neon** (PostgreSQL 18, plano gratuito). Ele começou no Render, mas o PostgreSQL gratuito do Render expira depois de 30 dias, então os dados foram migrados com `pg_dump` e `pg_restore`, e as variáveis `SPRING_DATASOURCE_*` do back-end passaram a apontar para o Neon.
+
+- No plano gratuito, o banco "dorme" depois de alguns minutos sem uso. A primeira consulta depois disso pode demorar um pouco mais.
+- Quando uma atualização muda a estrutura do banco, o script SQL correspondente da pasta `database` é executado no Neon **antes** do deploy do back-end (o Spring está com `ddl-auto=validate` e não sobe se faltar tabela ou coluna).
+- Os backups (`*.dump`) têm dados pessoais e ficam fora do repositório (estão no `.gitignore`).
 
 ### Front-end (GitHub Pages)
 
@@ -828,14 +843,13 @@ O comando gera a versão de produção e publica a pasta `dist` na branch `gh-pa
 
 ## 👥 Equipe
 
-> ✏️ **A preencher pelo grupo**
-
 | Nome | GitHub | Principais contribuições |
 |---|---|---|
-| Nattaly Buralde Queiroz | [@NattalyB](https://github.com/NattalyB) | _preencher_ |
-| _Nome_ | [@usuario](https://github.com/usuario) | _preencher_ |
-| _Nome_ | [@usuario](https://github.com/usuario) | _preencher_ |
-| _Nome_ | [@usuario](https://github.com/usuario) | _preencher_ |
+| Nattaly Buralde Queiroz | [@NattalyB](https://github.com/NattalyB) | Levantamento de requisitos, desenvolvimento do front-end e do back-end (com apoio do Claude, assistente de IA da Anthropic), banco de dados, deploy e testes |
+| Eliane da Silva Barboza | [@ElianeBTech](https://github.com/ElianeBTech) | Logo do AprendaPlus, favicon, layout da tela de cadastro e do cabeçalho com a barra de pesquisa (front-end) e testes |
+| Raquel dos Santos | [@raquel0807](https://github.com/raquel0807) | Ideia do projeto, documento inicial com a especificação do sistema e testes |
+| Marcelo Yuri | [@MarceloYuri](https://github.com/MarceloYuri) | Layout base do site (front-end) e testes |
+| Karina _(sobrenome)_ | [@usuario](https://github.com/usuario) | Ideia do projeto e revisão do sistema |
 
 ---
 
