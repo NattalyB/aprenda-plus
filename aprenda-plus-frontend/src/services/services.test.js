@@ -101,6 +101,18 @@ describe('service de inscrições', () => {
     });
   });
 
+  test('no pagamento dividido, envia também as duas formas', () => {
+    const partes = [
+      { forma: 'cartao', parcelas: 10, valor: 1500 },
+      { forma: 'cartao', parcelas: 5, valor: 2300 },
+    ];
+    inscricaoService.criarInscricao(7, 2, 3800, 'Cartão + Cartão', partes);
+
+    expect(api.post.mock.calls[0][1].pagamentoDividido).toEqual(partes);
+    inscricaoService.criarInscricao(7, 2, 3800, 'Pix', []);
+    expect(api.post.mock.calls[1][1]).not.toHaveProperty('pagamentoDividido');
+  });
+
   test('sem forma de pagamento, envia "A definir"', () => {
     inscricaoService.criarInscricao(7, 2, 100);
     expect(api.post.mock.calls[0][1].formaPagamento).toBe('A definir');

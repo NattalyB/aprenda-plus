@@ -1,16 +1,19 @@
 package com.aprendaplus.service;
 
 import com.aprendaplus.dto.MinhaInscricao;
+import com.aprendaplus.dto.PartePagamento;
 import com.aprendaplus.entity.Aluno;
 import com.aprendaplus.entity.Carrinho;
 import com.aprendaplus.entity.ItemCarrinho;
 import com.aprendaplus.entity.Curso;
 import com.aprendaplus.entity.Inscricao;
+import com.aprendaplus.entity.InscricaoPagamento;
 import com.aprendaplus.entity.Matricula;
 import com.aprendaplus.entity.Turma;
 import com.aprendaplus.exception.RegraDeNegocioException;
 import com.aprendaplus.repository.AlunoRepository;
 import com.aprendaplus.repository.CarrinhoRepository;
+import com.aprendaplus.repository.InscricaoPagamentoRepository;
 import com.aprendaplus.repository.InscricaoRepository;
 import com.aprendaplus.repository.ItemCarrinhoRepository;
 import com.aprendaplus.repository.MatriculaRepository;
@@ -64,6 +67,9 @@ class InscricaoServiceTest {
 
     @Mock
     private EmailService emailService;
+
+    @Mock
+    private InscricaoPagamentoRepository inscricaoPagamentoRepository;
 
     @InjectMocks
     private InscricaoService inscricaoService;
@@ -833,8 +839,11 @@ class InscricaoServiceTest {
         assertEquals(3, criada.getTurma().getIdTurma());
         assertEquals("ativa", criada.getStatus());
         assertEquals("Cartão de crédito · 3x", criada.getPlanoPagamento());
-        // E as parcelas são geradas com o valor e a forma de pagamento da inscrição
-        verify(financeiroService).prepararParcelas(criada, new BigDecimal("950.00"), "Cartão de crédito · 3x");
+        // E as parcelas são geradas a partir da inscrição (valor e forma de pagamento)
+        ArgumentCaptor<Inscricao> daInscricao = ArgumentCaptor.forClass(Inscricao.class);
+        verify(financeiroService).prepararParcelas(eq(criada), daInscricao.capture());
+        assertEquals(new BigDecimal("950.00"), daInscricao.getValue().getValorTotal());
+        assertEquals("Cartão de crédito · 3x", daInscricao.getValue().getFormaPagamento());
         // Aluno não encontrado para o e-mail: nada é enviado (e nada quebra)
         verify(emailService, never()).matriculaConfirmada(any(), any(), any(), any());
     }
@@ -1114,5 +1123,179 @@ class InscricaoServiceTest {
         inscricaoService.atualizarPeloAdmin(10, dados);
 
         verifyNoInteractions(matriculaRepository);
+    }
+
+    // ===== Pagamento dividido em duas formas (ex.: dois cartões) =====
+
+    private Inscricao pedidoDividido(PartePagamento... partes) {
+        Inscricao dados = pedido("Combinado");
+        dados.setPagamentoDividido(List.of(partes));
+        return dados;
+    }
+
+    // O banco devolve a inscrição já com id (para ligar as partes a ela)
+    private void saveDaOIdDaInscricao() {
+        when(inscricaoRepository.save(any(Inscricao.class))).thenAnswer(invocation -> {
+            Inscricao nova = invocation.getArgument(0);
+            nova.setIdInscricao(77);
+            return nova;
+        });
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<InscricaoPagamento> partesSalvas() {
+        ArgumentCaptor<List<InscricaoPagamento>> captor = ArgumentCaptor.forClass(List.class);
+        verify(inscricaoPagamentoRepository).saveAll(captor.capture());
+        return captor.getValue();
+    }
+
+    @Test
+    void doisCartoesComORestanteNoSegundoSalvamAsDuasPartes() {
+        turmaDoCurso("3800.00", 12);
+        saveDaOIdDaInscricao();
+
+        Inscricao salva = inscricaoService.criarInscricaoDoAluno(pedidoDividido(
+                new PartePagamento("cartao", 10, new BigDecimal("1500")),
+                new PartePagamento("Cartão de crédito", 5, new BigDecimal("2300.00"))), 7);
+
+        assertEquals(new BigDecimal("3800.00"), salva.getValorTotal());
+        assertEquals("Cartão de crédito · 10x (R$ 1.500,00) + Cartão de crédito · 5x (R$ 2.300,00)",
+                salva.getFormaPagamento());
+        List<InscricaoPagamento> partes = partesSalvas();
+        assertEquals(2, partes.size());
+        assertEquals(77, partes.get(0).getInscricaoId());
+        assertEquals(1, partes.get(0).getOrdem());
+        assertEquals("cartao", partes.get(0).getForma());
+        assertEquals(10, partes.get(0).getParcelas());
+        assertEquals(new BigDecimal("1500.00"), partes.get(0).getValor());
+        assertEquals(2, partes.get(1).getOrdem());
+        assertEquals(5, partes.get(1).getParcelas());
+        assertEquals(new BigDecimal("2300.00"), partes.get(1).getValor());
+    }
+
+    @Test
+    void noPagamentoDivididoODescontoDoPixValeSoParaAPartePix() {
+        turmaDoCurso("2500.00", 12);
+        saveDaOIdDaInscricao();
+
+        Inscricao salva = inscricaoService.criarInscricaoDoAluno(pedidoDividido(
+                new PartePagamento("pix", 7, new BigDecimal("1000")),
+                new PartePagamento("boleto", 3, new BigDecimal("1500"))), 7);
+
+        // R$ 1.000 no Pix vira R$ 950; o boleto continua cheio
+        assertEquals(new BigDecimal("2450.00"), salva.getValorTotal());
+        assertEquals("Pix à vista (R$ 950,00) + Boleto bancário · 3x (R$ 1.500,00)", salva.getFormaPagamento());
+        List<InscricaoPagamento> partes = partesSalvas();
+        assertEquals(1, partes.get(0).getParcelas(), "Pix é sempre à vista");
+        assertEquals(new BigDecimal("950.00"), partes.get(0).getValor());
+    }
+
+    @Test
+    void comVariosCursosCadaUmPagaSuaParteProporcional() {
+        // Pedido de R$ 3.800: este curso (R$ 2.500) + outro (R$ 1.300) no carrinho
+        Curso esteCurso = new Curso();
+        esteCurso.setIdCurso(1);
+        esteCurso.setValor(new BigDecimal("2500.00"));
+        esteCurso.setNumeroParcelas(12);
+        Turma turma = new Turma();
+        turma.setIdTurma(3);
+        turma.setCurso(esteCurso);
+        when(turmaRepository.findById(3)).thenReturn(Optional.of(turma));
+        Curso outro = new Curso();
+        outro.setIdCurso(2);
+        outro.setValor(new BigDecimal("1300.00"));
+        Carrinho carrinho = new Carrinho();
+        carrinho.setIdCarrinho(30);
+        when(carrinhoRepository.findFirstByAluno_IdAluno(7)).thenReturn(Optional.of(carrinho));
+        ItemCarrinho item1 = new ItemCarrinho();
+        item1.setCurso(esteCurso);
+        ItemCarrinho item2 = new ItemCarrinho();
+        item2.setCurso(outro);
+        when(itemCarrinhoRepository.findByCarrinho_IdCarrinho(30)).thenReturn(List.of(item1, item2));
+        saveDaOIdDaInscricao();
+
+        Inscricao salva = inscricaoService.criarInscricaoDoAluno(pedidoDividido(
+                new PartePagamento("cartao", 10, new BigDecimal("1500")),
+                new PartePagamento("cartao", 5, new BigDecimal("2300"))), 7);
+
+        // 1500 x 2500 / 3800 = 986,84 no primeiro cartão; o resto do curso no segundo
+        assertEquals(new BigDecimal("2500.00"), salva.getValorTotal());
+        List<InscricaoPagamento> partes = partesSalvas();
+        assertEquals(new BigDecimal("986.84"), partes.get(0).getValor());
+        assertEquals(new BigDecimal("1513.16"), partes.get(1).getValor());
+    }
+
+    private void divisaoRecusada(String mensagem, PartePagamento... partes) {
+        RegraDeNegocioException erro = assertThrows(RegraDeNegocioException.class,
+                () -> inscricaoService.criarInscricaoDoAluno(pedidoDividido(partes), 7));
+        assertEquals(mensagem, erro.getMessage());
+    }
+
+    @Test
+    void divisaoInvalidaEhRecusadaSemGravarNada() {
+        turmaDoCurso("3800.00", 12);
+
+        divisaoRecusada("A soma das formas de pagamento (R$ 3.500,00) precisa ser igual ao total do pedido (R$ 3.800,00).",
+                new PartePagamento("cartao", 10, new BigDecimal("1500")),
+                new PartePagamento("cartao", 5, new BigDecimal("2000")));
+        divisaoRecusada("Este pedido pode ser parcelado em no máximo 12x.",
+                new PartePagamento("cartao", 13, new BigDecimal("1500")),
+                new PartePagamento("cartao", 5, new BigDecimal("2300")));
+        divisaoRecusada("Este pedido pode ser parcelado em no máximo 12x.",
+                new PartePagamento("boleto", 0, new BigDecimal("1500")),
+                new PartePagamento("cartao", 5, new BigDecimal("2300")));
+        divisaoRecusada("Escolha uma forma de pagamento válida: Pix, cartão ou boleto.",
+                new PartePagamento("cheque", 1, new BigDecimal("1500")),
+                new PartePagamento("cartao", 5, new BigDecimal("2300")));
+        divisaoRecusada("Informe um valor maior que zero em cada forma de pagamento.",
+                new PartePagamento("cartao", 1, BigDecimal.ZERO),
+                new PartePagamento("cartao", 5, new BigDecimal("3800")));
+        divisaoRecusada("Informe um valor maior que zero em cada forma de pagamento.",
+                new PartePagamento("cartao", 1, null),
+                new PartePagamento("cartao", 5, new BigDecimal("3800")));
+        divisaoRecusada("Para dividir o pagamento, escolha 2 formas de pagamento.",
+                new PartePagamento("cartao", 1, new BigDecimal("3800")));
+        verify(inscricaoRepository, never()).save(any());
+        verify(inscricaoPagamentoRepository, never()).saveAll(any());
+    }
+
+    @Test
+    void parteNulaEhRecusada() {
+        turmaDoCurso("3800.00", 12);
+        Inscricao dados = pedido("Combinado");
+        dados.setPagamentoDividido(Arrays.asList(null, new PartePagamento("cartao", 5, new BigDecimal("3800"))));
+
+        assertThrows(RegraDeNegocioException.class, () -> inscricaoService.criarInscricaoDoAluno(dados, 7));
+    }
+
+    @Test
+    void cartaoSemParcelasNoPagamentoDivididoEhAVista() {
+        turmaDoCurso("1000.00", 12);
+        saveDaOIdDaInscricao();
+
+        Inscricao salva = inscricaoService.criarInscricaoDoAluno(pedidoDividido(
+                new PartePagamento("cartao", null, new BigDecimal("400")),
+                new PartePagamento("cartao", 2, new BigDecimal("600"))), 7);
+
+        assertEquals("Cartão de crédito · 1x (R$ 400,00) + Cartão de crédito · 2x (R$ 600,00)", salva.getFormaPagamento());
+    }
+
+    @Test
+    void listaVaziaDePartesUsaAFormaUnica() {
+        turmaDoCurso("1000.00", 12);
+        saveDevolveAPropriaInscricao();
+        Inscricao dados = pedido("Boleto bancário · 2x");
+        dados.setPagamentoDividido(List.of());
+
+        Inscricao salva = inscricaoService.criarInscricaoDoAluno(dados, 7);
+
+        assertEquals("Boleto bancário · 2x", salva.getFormaPagamento());
+        verify(inscricaoPagamentoRepository, never()).saveAll(any());
+    }
+
+    @Test
+    void escreveValoresEmReais() {
+        assertEquals("R$ 1.234.567,89", InscricaoService.reais(new BigDecimal("1234567.891")));
+        assertEquals("R$ 0,50", InscricaoService.reais(new BigDecimal("0.5")));
     }
 }

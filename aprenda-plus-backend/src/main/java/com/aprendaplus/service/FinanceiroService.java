@@ -10,11 +10,13 @@ import com.aprendaplus.entity.Aluno;
 import com.aprendaplus.entity.ConfiguracaoFinanceira;
 import com.aprendaplus.entity.Curso;
 import com.aprendaplus.entity.Inscricao;
+import com.aprendaplus.entity.InscricaoPagamento;
 import com.aprendaplus.entity.Matricula;
 import com.aprendaplus.entity.Pagamento;
 import com.aprendaplus.entity.Turma;
 import com.aprendaplus.exception.RegraDeNegocioException;
 import com.aprendaplus.repository.ConfiguracaoFinanceiraRepository;
+import com.aprendaplus.repository.InscricaoPagamentoRepository;
 import com.aprendaplus.repository.InscricaoRepository;
 import com.aprendaplus.repository.MatriculaRepository;
 import com.aprendaplus.repository.PagamentoRepository;
@@ -37,6 +39,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -73,6 +76,10 @@ public class FinanceiroService {
     @Autowired
     private ConfiguracaoFinanceiraRepository configuracaoRepository;
 
+    // Partes do pagamento das inscrições pagas com mais de uma forma
+    @Autowired
+    private InscricaoPagamentoRepository inscricaoPagamentoRepository;
+
     LocalDate hoje() {
         return LocalDate.now(ZONA);
     }
@@ -95,11 +102,86 @@ public class FinanceiroService {
             gerarParcelas(matricula, valorTotal, formaPagamento, hoje);
             return;
         }
+        reabrirCanceladas(existentes, hoje);
+    }
+
+    // Mesmo que o de cima, a partir da inscrição confirmada.
+    // Se ela foi paga com mais de uma forma (ex.: dois cartões), gera as parcelas de cada forma.
+    @Transactional
+    public void prepararParcelas(Matricula matricula, Inscricao inscricao) {
+        prepararParcelas(matricula, inscricao, hoje());
+    }
+
+    void prepararParcelas(Matricula matricula, Inscricao inscricao, LocalDate hoje) {
+        List<InscricaoPagamento> partes = partesDe(inscricao);
+        if (partes.size() < 2) {
+            prepararParcelas(matricula, inscricao == null ? null : inscricao.getValorTotal(),
+                    inscricao == null ? null : inscricao.getFormaPagamento(), hoje);
+            return;
+        }
+        if (matricula == null || matricula.getIdMatricula() == null) {
+            return;
+        }
+        List<Pagamento> existentes =
+                pagamentoRepository.findByMatricula_IdMatriculaOrderByNumeroParcelaAsc(matricula.getIdMatricula());
+        if (existentes.isEmpty()) {
+            gerarParcelasDivididas(matricula, partes, hoje);
+            return;
+        }
+        reabrirCanceladas(existentes, hoje);
+    }
+
+    // Matrícula que volta a valer: as parcelas canceladas voltam a ser cobradas
+    private void reabrirCanceladas(List<Pagamento> existentes, LocalDate hoje) {
         List<Pagamento> reabertas = existentes.stream().filter(p -> CANCELADO.equals(p.getStatus())).toList();
         reabertas.forEach(p -> p.setStatus(p.getDataVencimento().isBefore(hoje) ? ATRASADO : PENDENTE));
         if (!reabertas.isEmpty()) {
             pagamentoRepository.saveAll(reabertas);
         }
+    }
+
+    // Pagamento dividido: as parcelas de cada forma, numeradas em sequência
+    // (ex.: cartão 1 em 10x = parcelas 1 a 10; cartão 2 em 5x = parcelas 11 a 15).
+    // Cada forma tem seu próprio calendário: Pix já pago hoje; cartão e boleto começam em 7 dias.
+    List<Pagamento> gerarParcelasDivididas(Matricula matricula, List<InscricaoPagamento> partes, LocalDate hoje) {
+        List<Pagamento> parcelas = new ArrayList<>();
+        int numero = 1;
+        for (InscricaoPagamento parte : partes) {
+            if (parte.getValor() == null || parte.getValor().signum() <= 0) {
+                continue;
+            }
+            boolean pix = InscricaoPagamento.PIX.equals(parte.getForma());
+            int quantidade = parte.quantidadeDeParcelas();
+            BigDecimal total = parte.getValor().setScale(2, RoundingMode.HALF_UP);
+            BigDecimal valorParcela = total.divide(BigDecimal.valueOf(quantidade), 2, RoundingMode.DOWN);
+            BigDecimal ultima = total.subtract(valorParcela.multiply(BigDecimal.valueOf(quantidade - 1L)));
+            for (int i = 1; i <= quantidade; i++, numero++) {
+                Pagamento parcela = new Pagamento();
+                parcela.setMatricula(matricula);
+                parcela.setNumeroParcela(numero);
+                parcela.setValorParcela(i == quantidade ? ultima : valorParcela);
+                parcela.setFormaPagamento(parte.nomeDaForma());
+                if (pix) {
+                    parcela.setDataVencimento(hoje);
+                    parcela.setDataPagamento(hoje);
+                    parcela.setStatus(PAGO);
+                } else {
+                    parcela.setDataVencimento(hoje.plusDays(DIAS_ATE_PRIMEIRA_PARCELA).plusMonths(i - 1L));
+                    parcela.setStatus(PENDENTE);
+                }
+                parcelas.add(parcela);
+            }
+        }
+        return parcelas.isEmpty() ? List.of() : pagamentoRepository.saveAll(parcelas);
+    }
+
+    private List<InscricaoPagamento> partesDe(Inscricao inscricao) {
+        if (inscricao == null || inscricao.getIdInscricao() == null) {
+            return List.of();
+        }
+        List<InscricaoPagamento> partes =
+                inscricaoPagamentoRepository.findByInscricaoIdOrderByOrdemAsc(inscricao.getIdInscricao());
+        return partes == null ? List.of() : partes;
     }
 
     // Pix: 1 parcela já paga. Cartão ou boleto em Nx: N parcelas mensais.
@@ -170,7 +252,11 @@ public class FinanceiroService {
             if (inscricao == null) {
                 continue;
             }
-            if (!gerarParcelas(matricula, inscricao.getValorTotal(), inscricao.getFormaPagamento(), hoje).isEmpty()) {
+            List<InscricaoPagamento> partes = partesDe(inscricao);
+            List<Pagamento> novas = partes.size() >= 2
+                    ? gerarParcelasDivididas(matricula, partes, hoje)
+                    : gerarParcelas(matricula, inscricao.getValorTotal(), inscricao.getFormaPagamento(), hoje);
+            if (!novas.isEmpty()) {
                 geradas++;
             }
         }
@@ -301,7 +387,7 @@ public class FinanceiroService {
 
     AlertasFinanceiros alertas(LocalDate hoje) {
         atualizarAtrasadas(hoje);
-        Map<String, Inscricao> formas = formasDasInscricoes();
+        Map<String, FormaDaCompra> formas = formasDasInscricoes();
         // Só boleto gera aviso: Pix e cartão o financeiro não precisa acompanhar
         List<Pagamento> boletos = pagamentoRepository.findAll().stream()
                 .filter(p -> !cobrancaAutomatica(formaCombinada(p, formas)))
@@ -364,7 +450,7 @@ public class FinanceiroService {
     void atualizarAtrasadas(LocalDate hoje) {
         List<Pagamento> chegaram = pagamentoRepository.findByStatusInAndDataVencimentoLessThanEqual(EM_ABERTO, hoje);
         if (!chegaram.isEmpty()) {
-            Map<String, Inscricao> formas = formasDasInscricoes();
+            Map<String, FormaDaCompra> formas = formasDasInscricoes();
             List<Pagamento> automaticas = chegaram.stream()
                     .filter(p -> cobrancaAutomatica(formaCombinada(p, formas)))
                     .toList();
@@ -402,7 +488,7 @@ public class FinanceiroService {
     }
 
     private List<ParcelaFinanceira> paraParcelas(List<Pagamento> parcelas) {
-        Map<String, Inscricao> formas = parcelas.isEmpty() ? Map.of() : formasDasInscricoes();
+        Map<String, FormaDaCompra> formas = parcelas.isEmpty() ? Map.of() : formasDasInscricoes();
         ConfiguracaoFinanceira regras = parcelas.isEmpty() ? null : regras();
         LocalDate hoje = hoje();
         Map<Integer, Integer> totalPorMatricula = new HashMap<>();
@@ -469,27 +555,59 @@ public class FinanceiroService {
         return "Pix".equals(familia) || "Cartão de crédito".equals(familia);
     }
 
+    // Como o aluno combinou pagar: a forma da inscrição e, no pagamento dividido, as partes
+    record FormaDaCompra(String forma, List<InscricaoPagamento> partes) {
+
+        // Forma de uma parcela. No pagamento dividido, as parcelas de cada parte vêm em sequência
+        // (cartão 1 em 10x = parcelas 1 a 10; a parte seguinte começa na 11).
+        String familiaDaParcela(Integer numero) {
+            if (partes.size() < 2 || numero == null) {
+                return familia(forma);
+            }
+            int ultimaDaParte = 0;
+            for (InscricaoPagamento parte : partes) {
+                if (parte.getValor() == null || parte.getValor().signum() <= 0) {
+                    continue;
+                }
+                ultimaDaParte += parte.quantidadeDeParcelas();
+                if (numero <= ultimaDaParte) {
+                    return parte.nomeDaForma();
+                }
+            }
+            return familia(forma);
+        }
+    }
+
     // Inscrição confirmada mais recente de cada aluno+turma (é ela que diz como o aluno escolheu pagar)
-    private Map<String, Inscricao> formasDasInscricoes() {
-        Map<String, Inscricao> formas = new HashMap<>();
+    private Map<String, FormaDaCompra> formasDasInscricoes() {
+        Map<String, Inscricao> inscricoes = new HashMap<>();
         for (Inscricao i : inscricaoRepository.findAll()) {
             if (!"confirmada".equals(i.getStatus()) || i.getAluno() == null || i.getTurma() == null
                     || i.getFormaPagamento() == null || i.getFormaPagamento().isBlank()) {
                 continue;
             }
-            formas.merge(chave(i.getAluno().getIdAluno(), i.getTurma().getIdTurma()), i,
+            inscricoes.merge(chave(i.getAluno().getIdAluno(), i.getTurma().getIdTurma()), i,
                     (a, b) -> idOuZero(b) > idOuZero(a) ? b : a);
         }
+        Map<Integer, List<InscricaoPagamento>> partes = inscricoes.isEmpty() ? Map.of()
+                : inscricaoPagamentoRepository.findAll().stream()
+                        .filter(parte -> parte.getInscricaoId() != null)
+                        .sorted(Comparator.comparing(InscricaoPagamento::getOrdem,
+                                Comparator.nullsLast(Comparator.naturalOrder())))
+                        .collect(Collectors.groupingBy(InscricaoPagamento::getInscricaoId));
+        Map<String, FormaDaCompra> formas = new HashMap<>();
+        inscricoes.forEach((chave, i) -> formas.put(chave,
+                new FormaDaCompra(i.getFormaPagamento(), partes.getOrDefault(i.getIdInscricao(), List.of()))));
         return formas;
     }
 
     // Forma de pagamento escolhida na compra; sem inscrição, vale a que está na parcela
-    private String formaCombinada(Pagamento p, Map<String, Inscricao> formas) {
+    private String formaCombinada(Pagamento p, Map<String, FormaDaCompra> formas) {
         Matricula m = p.getMatricula();
         if (m != null && m.getAluno() != null && m.getTurma() != null) {
-            Inscricao inscricao = formas.get(chave(m.getAluno().getIdAluno(), m.getTurma().getIdTurma()));
-            if (inscricao != null) {
-                return familia(inscricao.getFormaPagamento());
+            FormaDaCompra compra = formas.get(chave(m.getAluno().getIdAluno(), m.getTurma().getIdTurma()));
+            if (compra != null) {
+                return compra.familiaDaParcela(p.getNumeroParcela());
             }
         }
         return familia(p.getFormaPagamento());

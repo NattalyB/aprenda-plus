@@ -30,7 +30,7 @@ public class Matricula {
     @Column(name = "contrato_url", length = 255)
     private String contratoUrl;
 
-    @Column(name = "plano_pagamento", length = 50)
+    @Column(name = "plano_pagamento", length = 255)
     private String planoPagamento;
 
     @Column(name = "criado_em", insertable = false, updatable = false)

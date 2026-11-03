@@ -69,6 +69,7 @@ Projeto final do curso **Desenvolvimento Full Stack** do programa **+PraTi / Cod
 - **Formas de pagamento:**
   - **Pix** à vista com **5% de desconto**;
   - **Cartão de crédito** e **boleto**, parcelados sem juros. Na compra de vários cursos juntos, vale o **maior** limite de parcelas entre os cursos do carrinho.
+- **Pagamento dividido em duas formas:** o aluno pode pagar parte em um cartão e o resto em outro (ou combinar Pix, cartão e boleto). Ele digita o valor da 1ª forma e a 2ª recebe o restante sozinha; cada forma tem o próprio número de parcelas, e o desconto do Pix vale só para a parte paga no Pix. O servidor confere se a soma bate com o total do pedido, divide o valor entre os cursos e o Financeiro gera as parcelas de cada forma (script `database/pagamento-dividido.sql`).
 - **Lembrete do certificado:** quem ainda não enviou o certificado de conclusão (ou teve o documento recusado) vê um aviso no carrinho e pode anexar o arquivo ali mesmo, antes de concluir a compra.
 - **Conclusão da inscrição:** cria uma inscrição para cada curso na primeira turma aberta **com vaga**. Se todas as turmas abertas estiverem cheias, o aluno entra na **lista de espera** (veja o [fluxo](#-fluxo-da-inscrição-até-a-matrícula)). O valor de cada inscrição é **calculado pelo servidor** a partir do preço do curso, e não pelo navegador.
 

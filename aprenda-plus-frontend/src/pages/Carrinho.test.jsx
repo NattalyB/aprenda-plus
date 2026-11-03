@@ -327,3 +327,105 @@ describe('concluir inscrição', () => {
     expect(await screen.findByText('Não foi possível concluir a inscrição.')).toBeInTheDocument();
   });
 });
+
+describe('pagamento dividido em duas formas', () => {
+  const dividir = async () => {
+    logarAluno();
+    renderizar(<Carrinho />);
+    await screen.findByText('Meu carrinho');
+    fireEvent.click(screen.getByText('Pagar com duas formas (ex.: dois cartões)'));
+  };
+  const formasDa = (parte) => within(screen.getByRole('group', { name: `Forma de pagamento da ${parte}` }));
+  const digitarValor = (valor) => fireEvent.change(screen.getByLabelText('Valor'), { target: { value: valor } });
+
+  test('dois cartões: o restante vai sozinho para o segundo', async () => {
+    await dividir();
+    const concluir = screen.getByText('CONCLUIR INSCRIÇÃO');
+    expect(concluir).toBeDisabled();
+
+    digitarValor('1500');
+    // Pedido de R$ 18.000: R$ 16.500 no segundo cartão
+    expect(textoSemEspacoEspecial(screen.getByLabelText('Restante'))).toBe('R$ 16.500,00');
+    const [parcelas1, parcelas2] = screen.getAllByLabelText('Parcelas');
+    fireEvent.change(parcelas1, { target: { value: '10' } });
+    fireEvent.change(parcelas2, { target: { value: '5' } });
+    expect(textoSemEspacoEspecial(resumo().getByLabelText('Como fica o pagamento'))).toContain('Cartão · 10x de R$ 150,00');
+    expect(concluir).toBeEnabled();
+
+    fireEvent.click(concluir);
+
+    expect(await screen.findByText('Inscrição concluída!')).toBeInTheDocument();
+    const partes = [
+      { forma: 'cartao', parcelas: 10, valor: 1500 },
+      { forma: 'cartao', parcelas: 5, valor: 16500 },
+    ];
+    expect(criarInscricao).toHaveBeenCalledWith('7', 100, 12000, expect.stringContaining('Cartão de crédito · 10x'), partes);
+    expect(criarInscricao).toHaveBeenCalledWith('7', 200, 6000, expect.any(String), partes);
+    expect(screen.getByText('Pagamento dividido em duas formas')).toBeInTheDocument();
+    expect(textoSemEspacoEspecial(screen.getByText(/5x de/).closest('li'))).toContain('Cartão · 5x de R$ 3.300,00');
+    expect(screen.getAllByText(/cobrança no cartão/)).toHaveLength(1);
+  });
+
+  test('parte no Pix ganha o desconto só nela', async () => {
+    await dividir();
+
+    fireEvent.click(formasDa('1ª forma').getByText('Pix'));
+    fireEvent.click(formasDa('2ª forma').getByText('Boleto'));
+    digitarValor('1000');
+
+    expect(screen.getByText(/Com 5% de desconto no Pix/)).toBeInTheDocument();
+    expect(textoSemEspacoEspecial(resumo().getByText('Desconto Pix (5%)').parentElement)).toContain('- R$ 50,00');
+    expect(textoSemEspacoEspecial(resumo().getByText('Total').parentElement)).toContain('R$ 17.950,00');
+    // O Pix é à vista: só o boleto tem parcelas
+    expect(screen.getAllByLabelText('Parcelas')).toHaveLength(1);
+
+    fireEvent.click(screen.getByText('CONCLUIR INSCRIÇÃO'));
+
+    expect(await screen.findByText('Inscrição concluída!')).toBeInTheDocument();
+    expect(criarInscricao).toHaveBeenCalledWith('7', 100, expect.any(Number), expect.stringContaining('Pix à vista'), [
+      { forma: 'pix', parcelas: 1, valor: 1000 },
+      { forma: 'boleto', parcelas: 24, valor: 17000 },
+    ]);
+    expect(screen.getByText(/código Pix/)).toBeInTheDocument();
+    expect(screen.getByText(/boletos serão enviados/)).toBeInTheDocument();
+    expect(screen.getByText(/Pix · à vista/)).toBeInTheDocument();
+  });
+
+  test('valor que não serve bloqueia a conclusão e dá para voltar para uma forma só', async () => {
+    await dividir();
+
+    digitarValor('18000');
+    expect(screen.getByRole('alert')).toHaveTextContent('precisa ser menor que o total do pedido');
+    expect(screen.getByText('CONCLUIR INSCRIÇÃO')).toBeDisabled();
+    expect(screen.getByText('—')).toBeInTheDocument();
+
+    digitarValor('0');
+    expect(screen.getByRole('alert')).toHaveTextContent('maior que zero');
+
+    fireEvent.click(screen.getByText('Voltar para uma forma só'));
+    expect(screen.getByText('Escolha uma opção para continuar.')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Valor')).not.toBeInTheDocument();
+    expect(criarInscricao).not.toHaveBeenCalled();
+  });
+
+  test('sem valor digitado, só a dica aparece (sem mensagem de erro)', async () => {
+    await dividir();
+
+    expect(screen.getByText(/O restante vai para a 2ª automaticamente/)).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(screen.getAllByRole('option', { name: '24x' }).length).toBeGreaterThan(0);
+  });
+
+  test('ao remover um curso, as parcelas da divisão respeitam o novo limite', async () => {
+    await dividir();
+    digitarValor('1000');
+    const [parcelas1] = screen.getAllByLabelText('Parcelas');
+    expect(parcelas1).toHaveValue('24');
+
+    listarItensDoCarrinho.mockResolvedValue([itens[1]]);
+    fireEvent.click(screen.getAllByText('Remover')[0]);
+
+    await waitFor(() => expect(screen.getAllByLabelText('Parcelas')[0]).toHaveValue('12'));
+  });
+});
+

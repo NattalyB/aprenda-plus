@@ -9,6 +9,14 @@ import { getImagemCurso } from '../utils/imagensCursos';
 import { formatarValor, arredondar, DESCONTO_PIX } from '../utils/precoCurso';
 import PrecoCurso from '../components/PrecoCurso';
 import MeuDocumento from '../components/MeuDocumento';
+import DivisaoPagamento from '../components/DivisaoPagamento';
+import {
+  calcularDivisao,
+  descreverDivisao,
+  divisaoInicial,
+  FORMAS,
+  partesParaEnvio,
+} from '../utils/pagamentoDividido';
 
 const PERCENTUAL_PIX = Math.round(DESCONTO_PIX * 100);
 
@@ -19,6 +27,16 @@ const PROXIMOS_PASSOS = {
   boleto: 'Os boletos serão enviados para o seu e-mail.',
 };
 
+// Pagamento dividido: as mensagens de cada forma usada, sem repetir
+const proximosPassosDivididos = (partes) =>
+  [...new Set(partes.map((parte) => parte.forma))].map((forma) => PROXIMOS_PASSOS[forma]).join(' ');
+
+// "Cartão · 10x de R$ 150,00" / "Pix · à vista"
+const resumoDaParte = (parte) =>
+  parte.parcelas > 1
+    ? `${FORMAS[parte.forma].rotulo} · ${parte.parcelas}x de ${formatarValor(parte.valorParcela)}`
+    : `${FORMAS[parte.forma].rotulo} · à vista`;
+
 function Carrinho() {
   const [itens, setItens] = useState([]);
   const [carregando, setCarregando] = useState(true);
@@ -28,6 +46,9 @@ function Carrinho() {
   const [formaPagamento, setFormaPagamento] = useState(null); // 'pix' | 'cartao' | 'boleto'
   const [parcelasEscolhidas, setParcelasEscolhidas] = useState(1);
   const [pedidoConcluido, setPedidoConcluido] = useState(null);
+  // Pagamento dividido em duas formas (ex.: dois cartões)
+  const [dividido, setDividido] = useState(false);
+  const [divisao, setDivisao] = useState(() => divisaoInicial(1));
   const logado = estaLogado();
 
   // Máximo de parcelas: o MAIOR limite entre os cursos do carrinho
@@ -48,6 +69,9 @@ function Carrinho() {
         setItens(dados);
         // Se a quantidade de parcelas escolhida ficou acima do novo limite, ajusta
         setParcelasEscolhidas((atual) => Math.min(atual, getMaxParcelas(dados)));
+        setDivisao((atual) =>
+          atual.map((parte) => ({ ...parte, parcelas: Math.min(parte.parcelas, getMaxParcelas(dados)) }))
+        );
         setCarregando(false);
       })
       .catch(() => {
@@ -81,13 +105,26 @@ function Carrinho() {
     }
   };
 
+  // Liga a divisão: as duas formas começam no cartão, no máximo de parcelas
+  const dividirPagamento = () => {
+    setDivisao(divisaoInicial(getMaxParcelas(itens)));
+    setDividido(true);
+  };
+
   // ===== Cálculos do pedido =====
   const maxParcelas = getMaxParcelas(itens);
   const valorTotal = itens.reduce((soma, item) => soma + Number(item.curso.valor), 0);
-  const descontoPix = arredondar(valorTotal * DESCONTO_PIX);
-  const totalFinal = formaPagamento === 'pix' ? valorTotal - descontoPix : valorTotal;
+  const calculoDivisao = dividido ? calcularDivisao(valorTotal, divisao) : null;
+  const descontoPix = dividido ? calculoDivisao.desconto : arredondar(valorTotal * DESCONTO_PIX);
+  const temDescontoPix = dividido ? descontoPix > 0 : formaPagamento === 'pix';
+  const totalFinal = dividido
+    ? calculoDivisao.totalAPagar
+    : formaPagamento === 'pix'
+      ? valorTotal - descontoPix
+      : valorTotal;
   const parcelas = formaPagamento === 'pix' ? 1 : parcelasEscolhidas;
   const valorParcela = totalFinal / parcelas;
+  const podeConcluir = dividido ? !calculoDivisao.erro : Boolean(formaPagamento);
 
   const descreverPagamento = () => {
     if (formaPagamento === 'pix') return `Pix à vista (${PERCENTUAL_PIX}% de desconto)`;
@@ -97,7 +134,11 @@ function Carrinho() {
   };
 
   const handleConcluirInscricao = () => {
-    if (!formaPagamento) {
+    if (dividido && calculoDivisao.erro) {
+      mostrarAviso(calculoDivisao.erro, 'aviso');
+      return;
+    }
+    if (!dividido && !formaPagamento) {
       mostrarAviso('Escolha a forma de pagamento para concluir.', 'aviso');
       return;
     }
@@ -105,24 +146,28 @@ function Carrinho() {
     setFinalizando(true);
     setErro(null);
     const idAluno = localStorage.getItem('idAluno');
-    const descricao = descreverPagamento();
+    const descricao = dividido ? descreverDivisao(calculoDivisao.partes) : descreverPagamento();
+    const partesDivididas = dividido ? partesParaEnvio(calculoDivisao.partes) : null;
 
     // Pra cada item do carrinho, coloca o aluno na primeira turma aberta COM VAGA do curso.
     // Se todas as turmas abertas estiverem cheias, ele entra na LISTA DE ESPERA da primeira
     // (o servidor marca a inscrição como "aguardando vaga").
     // Depois ele pode escolher outra turma em "Minhas inscrições".
     const promessas = itens.map((item) => {
-      const valorItem =
-        formaPagamento === 'pix'
-          ? arredondar(Number(item.curso.valor) * (1 - DESCONTO_PIX))
-          : Number(item.curso.valor);
+      // No pagamento dividido, cada curso paga a sua parte proporcional (o servidor refaz a conta)
+      let valorItem = Number(item.curso.valor);
+      if (dividido) valorItem = arredondar((valorItem * totalFinal) / valorTotal);
+      else if (formaPagamento === 'pix') valorItem = arredondar(valorItem * (1 - DESCONTO_PIX));
 
       return listarTurmasDisponiveis(item.curso.idCurso).then((turmas) => {
         const turma = turmas.find((t) => t.vagasRestantes > 0) || turmas[0];
         if (!turma) {
           throw new Error(`O curso "${item.curso.nome}" não tem turmas com inscrições abertas no momento.`);
         }
-        return criarInscricao(idAluno, turma.idTurma, valorItem, descricao).then((response) => ({
+        const envio = partesDivididas
+          ? criarInscricao(idAluno, turma.idTurma, valorItem, descricao, partesDivididas)
+          : criarInscricao(idAluno, turma.idTurma, valorItem, descricao);
+        return envio.then((response) => ({
           curso: item.curso.nome,
           naFila: response?.data?.status === 'aguardando_vaga',
         }));
@@ -143,6 +188,7 @@ function Carrinho() {
           total: totalFinal,
           parcelas,
           valorParcela,
+          partes: dividido ? calculoDivisao.partes : null,
           listaDeEspera,
           todosNaFila: listaDeEspera.length === itens.length,
         });
@@ -190,19 +236,35 @@ function Carrinho() {
           <span className="carrinho-estado-icone">{pedidoConcluido.todosNaFila ? '⏳' : '🎉'}</span>
           <h2>{pedidoConcluido.todosNaFila ? 'Você está na lista de espera!' : 'Inscrição concluída!'}</h2>
 
-          <div className="carrinho-sucesso-pagamento">
-            <strong>{pedidoConcluido.descricao}</strong>
-            <br />
-            {pedidoConcluido.parcelas > 1
-              ? `${pedidoConcluido.parcelas}x de ${formatarValor(pedidoConcluido.valorParcela)} · total de ${formatarValor(pedidoConcluido.total)}`
-              : `Total: ${formatarValor(pedidoConcluido.total)}`}
-          </div>
+          {pedidoConcluido.partes ? (
+            <div className="carrinho-sucesso-pagamento">
+              <strong>Pagamento dividido em duas formas</strong>
+              <ul className="carrinho-sucesso-partes">
+                {pedidoConcluido.partes.map((parte, indice) => (
+                  <li key={indice}>
+                    {resumoDaParte(parte)} <span>({formatarValor(parte.aPagar)})</span>
+                  </li>
+                ))}
+              </ul>
+              Total: {formatarValor(pedidoConcluido.total)}
+            </div>
+          ) : (
+            <div className="carrinho-sucesso-pagamento">
+              <strong>{pedidoConcluido.descricao}</strong>
+              <br />
+              {pedidoConcluido.parcelas > 1
+                ? `${pedidoConcluido.parcelas}x de ${formatarValor(pedidoConcluido.valorParcela)} · total de ${formatarValor(pedidoConcluido.total)}`
+                : `Total: ${formatarValor(pedidoConcluido.total)}`}
+            </div>
+          )}
 
           {!pedidoConcluido.todosNaFila && (
             <>
               <p>
                 Sua inscrição foi registrada com status <strong>pendente de pagamento</strong>.{' '}
-                {PROXIMOS_PASSOS[pedidoConcluido.forma]}
+                {pedidoConcluido.partes
+                  ? proximosPassosDivididos(pedidoConcluido.partes)
+                  : PROXIMOS_PASSOS[pedidoConcluido.forma]}
               </p>
               <p>
                 Reservamos uma vaga para você na primeira turma disponível. Se preferir outro turno ou horário, é só
@@ -330,54 +392,91 @@ function Carrinho() {
           <div className="pagamento-secao">
             <h3>Forma de pagamento</h3>
 
-            <div className="pagamento-opcoes">
-              {opcoesPagamento.map((opcao) => (
+            {dividido ? (
+              <>
+                <DivisaoPagamento
+                  partes={divisao}
+                  calculo={calculoDivisao}
+                  maxParcelas={maxParcelas}
+                  onChange={setDivisao}
+                  desabilitado={finalizando}
+                />
                 <button
-                  key={opcao.valor}
                   type="button"
-                  className={formaPagamento === opcao.valor ? 'pagamento-opcao ativa' : 'pagamento-opcao'}
-                  onClick={() => selecionarForma(opcao.valor)}
+                  className="pagamento-dividir"
+                  onClick={() => setDividido(false)}
                   disabled={finalizando}
                 >
-                  <span className="pagamento-opcao-icone">{opcao.icone}</span>
-                  <span className="pagamento-opcao-titulo">{opcao.titulo}</span>
-                  <span className="pagamento-opcao-sub">{opcao.sub}</span>
+                  Voltar para uma forma só
                 </button>
-              ))}
-            </div>
-
-            {(formaPagamento === 'cartao' || formaPagamento === 'boleto') && (
-              <div className="form-field pagamento-parcelas">
-                <label htmlFor="parcelas">Número de parcelas</label>
-                <select
-                  id="parcelas"
-                  name="parcelas"
-                  value={parcelasEscolhidas}
-                  onChange={(e) => setParcelasEscolhidas(Number(e.target.value))}
-                  disabled={finalizando}
-                >
-                  {Array.from({ length: maxParcelas }, (_, i) => i + 1).map((n) => (
-                    <option key={n} value={n}>
-                      {n}x de {formatarValor(valorTotal / n)}{n === 1 ? ' (à vista)' : ' sem juros'}
-                    </option>
+              </>
+            ) : (
+              <>
+                <div className="pagamento-opcoes">
+                  {opcoesPagamento.map((opcao) => (
+                    <button
+                      key={opcao.valor}
+                      type="button"
+                      className={formaPagamento === opcao.valor ? 'pagamento-opcao ativa' : 'pagamento-opcao'}
+                      onClick={() => selecionarForma(opcao.valor)}
+                      disabled={finalizando}
+                    >
+                      <span className="pagamento-opcao-icone">{opcao.icone}</span>
+                      <span className="pagamento-opcao-titulo">{opcao.titulo}</span>
+                      <span className="pagamento-opcao-sub">{opcao.sub}</span>
+                    </button>
                   ))}
-                </select>
-              </div>
-            )}
+                </div>
 
-            {!formaPagamento && (
-              <p className="carrinho-pagamento-dica">Escolha uma opção para continuar.</p>
+                {(formaPagamento === 'cartao' || formaPagamento === 'boleto') && (
+                  <div className="form-field pagamento-parcelas">
+                    <label htmlFor="parcelas">Número de parcelas</label>
+                    <select
+                      id="parcelas"
+                      name="parcelas"
+                      value={parcelasEscolhidas}
+                      onChange={(e) => setParcelasEscolhidas(Number(e.target.value))}
+                      disabled={finalizando}
+                    >
+                      {Array.from({ length: maxParcelas }, (_, i) => i + 1).map((n) => (
+                        <option key={n} value={n}>
+                          {n}x de {formatarValor(valorTotal / n)}{n === 1 ? ' (à vista)' : ' sem juros'}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {!formaPagamento && (
+                  <p className="carrinho-pagamento-dica">Escolha uma opção para continuar.</p>
+                )}
+
+                <button type="button" className="pagamento-dividir" onClick={dividirPagamento} disabled={finalizando}>
+                  Pagar com duas formas (ex.: dois cartões)
+                </button>
+              </>
             )}
           </div>
 
-          {formaPagamento === 'pix' && (
+          {temDescontoPix && (
             <div className="carrinho-resumo-desconto">
               <span>Desconto Pix ({PERCENTUAL_PIX}%)</span>
               <span>- {formatarValor(descontoPix)}</span>
             </div>
           )}
 
-          {formaPagamento && parcelas > 1 && (
+          {dividido && !calculoDivisao.erro && (
+            <ul className="carrinho-resumo-partes" aria-label="Como fica o pagamento">
+              {calculoDivisao.partes.map((parte, indice) => (
+                <li key={indice}>
+                  <span>{resumoDaParte(parte)}</span>
+                  <span>{formatarValor(parte.aPagar)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {!dividido && formaPagamento && parcelas > 1 && (
             <div className="carrinho-resumo-mensal">
               <span>{parcelas}x de</span>
               <span className="carrinho-resumo-mensal-valor">
@@ -394,7 +493,7 @@ function Carrinho() {
           <button
             className="carrinho-btn-concluir"
             onClick={handleConcluirInscricao}
-            disabled={finalizando || !formaPagamento}
+            disabled={finalizando || !podeConcluir}
           >
             {finalizando ? 'PROCESSANDO...' : 'CONCLUIR INSCRIÇÃO'}
           </button>

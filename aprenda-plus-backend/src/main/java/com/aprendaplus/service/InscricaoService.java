@@ -1,15 +1,18 @@
 package com.aprendaplus.service;
 
 import com.aprendaplus.dto.MinhaInscricao;
+import com.aprendaplus.dto.PartePagamento;
 import com.aprendaplus.entity.Aluno;
 import com.aprendaplus.entity.Curso;
 import com.aprendaplus.entity.Inscricao;
+import com.aprendaplus.entity.InscricaoPagamento;
 import com.aprendaplus.entity.Matricula;
 import com.aprendaplus.entity.Turma;
 import com.aprendaplus.exception.RegraDeNegocioException;
 import com.aprendaplus.repository.AlunoRepository;
 import com.aprendaplus.entity.ItemCarrinho;
 import com.aprendaplus.repository.CarrinhoRepository;
+import com.aprendaplus.repository.InscricaoPagamentoRepository;
 import com.aprendaplus.repository.InscricaoRepository;
 import com.aprendaplus.repository.ItemCarrinhoRepository;
 import com.aprendaplus.repository.MatriculaRepository;
@@ -22,7 +25,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.Normalizer;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -43,6 +48,9 @@ public class InscricaoService {
     public static final String AGUARDANDO_VAGA = "aguardando_vaga";
     public static final String CANCELADA = "cancelada";
     public static final String CONCLUIDA = "concluida";
+
+    // Pagamento dividido: em quantas formas o aluno pode dividir o pedido (ex.: dois cartões)
+    public static final int FORMAS_NO_PAGAMENTO_DIVIDIDO = 2;
 
     // Encontra o número de parcelas em textos como "Cartão de crédito · 10x"
     private static final Pattern PARCELAS = Pattern.compile("(\\d{1,3})\\s*x");
@@ -76,6 +84,9 @@ public class InscricaoService {
 
     @Autowired
     private EmailService emailService;
+
+    @Autowired
+    private InscricaoPagamentoRepository inscricaoPagamentoRepository;
 
     public List<Inscricao> listarTodos() {
         return inscricaoRepository.findAll();
@@ -134,7 +145,12 @@ public class InscricaoService {
 
         // Quem compra vários cursos juntos pode parcelar até o MAIOR limite entre eles
         int maximoDoPedido = Math.max(maximoDeParcelas(curso), maximoDoCarrinho(idAluno));
-        Pagamento pagamento = calcularPagamento(curso, dados.getFormaPagamento(), maximoDoPedido);
+        // Pagamento dividido (ex.: dois cartões): cada parte é conferida e o curso paga a sua fatia de cada uma
+        boolean dividido = dados.getPagamentoDividido() != null && !dados.getPagamentoDividido().isEmpty();
+        Pagamento pagamento = dividido
+                ? calcularPagamentoDividido(curso, dados.getPagamentoDividido(), maximoDoPedido,
+                        totalDoPedido(idAluno, curso))
+                : calcularPagamento(curso, dados.getFormaPagamento(), maximoDoPedido);
 
         Aluno aluno = new Aluno();
         aluno.setIdAluno(idAluno);
@@ -154,7 +170,12 @@ public class InscricaoService {
         inscricao.setValorTotal(pagamento.valor());
         inscricao.setObservacoes(dados.getObservacoes());
 
-        return inscricaoRepository.save(inscricao);
+        Inscricao salva = inscricaoRepository.save(inscricao);
+        if (!pagamento.partes().isEmpty()) {
+            pagamento.partes().forEach(parte -> parte.setInscricaoId(salva.getIdInscricao()));
+            inscricaoPagamentoRepository.saveAll(pagamento.partes());
+        }
+        return salva;
     }
 
     // Ao excluir uma inscrição que ocupava vaga, o primeiro da lista de espera sobe
@@ -274,7 +295,7 @@ public class InscricaoService {
             }
             matricula.setStatus("ativa");
             matriculaRepository.save(matricula);
-            financeiroService.prepararParcelas(matricula, inscricao == null ? null : inscricao.getValorTotal(), formaPagamento);
+            financeiroService.prepararParcelas(matricula, inscricao);
         } else if (CANCELADA.equals(status) && matricula != null) {
             matricula.setStatus("cancelada");
             matriculaRepository.save(matricula);
@@ -420,8 +441,13 @@ public class InscricaoService {
 
     // ===== Cálculo do pagamento =====
 
-    // Resultado do cálculo: o texto salvo na inscrição e o valor final
-    record Pagamento(String descricao, BigDecimal valor) {}
+    // Resultado do cálculo: o texto salvo na inscrição, o valor final
+    // e, no pagamento dividido, as partes que vão para a tabela inscricao_pagamento
+    record Pagamento(String descricao, BigDecimal valor, List<InscricaoPagamento> partes) {
+        Pagamento(String descricao, BigDecimal valor) {
+            this(descricao, valor, List.of());
+        }
+    }
 
     Pagamento calcularPagamento(Curso curso, String formaPagamento, int maximo) {
         String forma = normalizar(formaPagamento);
@@ -450,6 +476,103 @@ public class InscricaoService {
         return new Pagamento(nome + " · " + parcelas + "x", valorCurso);
     }
 
+    // Pagamento dividido em duas formas (ex.: R$ 1.500 em um cartão e o restante em outro).
+    // O navegador manda quanto do PEDIDO vai em cada forma; aqui o servidor:
+    // - confere as formas, as parcelas e se a soma das partes é exatamente o total do pedido;
+    // - calcula a fatia DESTE curso em cada forma, proporcional ao preço dele no pedido
+    //   (os centavos que sobram da divisão ficam na última parte);
+    // - aplica o desconto do Pix só na parte paga no Pix.
+    Pagamento calcularPagamentoDividido(Curso curso, List<PartePagamento> partes, int maximo, BigDecimal totalDoPedido) {
+        if (partes.size() != FORMAS_NO_PAGAMENTO_DIVIDIDO) {
+            throw new RegraDeNegocioException("Para dividir o pagamento, escolha " + FORMAS_NO_PAGAMENTO_DIVIDIDO
+                    + " formas de pagamento.");
+        }
+        BigDecimal total = totalDoPedido.setScale(2, RoundingMode.HALF_UP);
+        BigDecimal soma = BigDecimal.ZERO;
+        List<String> formas = new ArrayList<>();
+        List<Integer> parcelas = new ArrayList<>();
+        for (PartePagamento parte : partes) {
+            if (parte == null) {
+                throw new RegraDeNegocioException("Escolha uma forma de pagamento válida: Pix, cartão ou boleto.");
+            }
+            String forma = codigoDaForma(parte.forma());
+            int quantidade = InscricaoPagamento.PIX.equals(forma) ? 1 : (parte.parcelas() == null ? 1 : parte.parcelas());
+            if (quantidade < 1 || quantidade > maximo) {
+                throw new RegraDeNegocioException("Este pedido pode ser parcelado em no máximo " + maximo + "x.");
+            }
+            if (parte.valor() == null || parte.valor().setScale(2, RoundingMode.HALF_UP).signum() <= 0) {
+                throw new RegraDeNegocioException("Informe um valor maior que zero em cada forma de pagamento.");
+            }
+            formas.add(forma);
+            parcelas.add(quantidade);
+            soma = soma.add(parte.valor().setScale(2, RoundingMode.HALF_UP));
+        }
+        if (soma.compareTo(total) != 0) {
+            throw new RegraDeNegocioException("A soma das formas de pagamento (" + reais(soma)
+                    + ") precisa ser igual ao total do pedido (" + reais(total) + ").");
+        }
+
+        BigDecimal valorCurso = curso.getValor().setScale(2, RoundingMode.HALF_UP);
+        BigDecimal jaRateado = BigDecimal.ZERO;
+        BigDecimal valorFinal = BigDecimal.ZERO;
+        List<InscricaoPagamento> resultado = new ArrayList<>();
+        List<String> textos = new ArrayList<>();
+        for (int i = 0; i < partes.size(); i++) {
+            boolean ultima = i == partes.size() - 1;
+            BigDecimal fatia = ultima
+                    ? valorCurso.subtract(jaRateado)
+                    : partes.get(i).valor().setScale(2, RoundingMode.HALF_UP)
+                            .multiply(valorCurso).divide(total, 2, RoundingMode.HALF_UP);
+            jaRateado = jaRateado.add(fatia);
+            String forma = formas.get(i);
+            if (InscricaoPagamento.PIX.equals(forma)) {
+                fatia = fatia.multiply(BigDecimal.ONE.subtract(DESCONTO_PIX)).setScale(2, RoundingMode.HALF_UP);
+            }
+            InscricaoPagamento linha = new InscricaoPagamento(i + 1, forma, parcelas.get(i), fatia);
+            resultado.add(linha);
+            valorFinal = valorFinal.add(fatia);
+            textos.add(descreverParte(linha));
+        }
+        return new Pagamento(String.join(" + ", textos), valorFinal, resultado);
+    }
+
+    // "Cartão de crédito · 10x (R$ 1.500,00)" / "Pix à vista (R$ 950,00)"
+    private String descreverParte(InscricaoPagamento parte) {
+        String forma = InscricaoPagamento.PIX.equals(parte.getForma())
+                ? "Pix à vista"
+                : parte.nomeDaForma() + " · " + parte.getParcelas() + "x";
+        return forma + " (" + reais(parte.getValor()) + ")";
+    }
+
+    // "Cartão de Crédito" -> "cartao"; forma desconhecida é recusada
+    private String codigoDaForma(String formaPagamento) {
+        String forma = normalizar(formaPagamento);
+        if (forma.startsWith("pix")) return InscricaoPagamento.PIX;
+        if (forma.startsWith("cartao")) return InscricaoPagamento.CARTAO;
+        if (forma.startsWith("boleto")) return InscricaoPagamento.BOLETO;
+        throw new RegraDeNegocioException("Escolha uma forma de pagamento válida: Pix, cartão ou boleto.");
+    }
+
+    // 1500.5 -> "R$ 1.500,50"
+    static String reais(BigDecimal valor) {
+        return "R$ " + String.format(Locale.forLanguageTag("pt-BR"), "%,.2f", valor);
+    }
+
+    // Total do pedido: soma dos cursos do carrinho (sem desconto).
+    // Se este curso não estiver no carrinho, o pedido é só ele.
+    private BigDecimal totalDoPedido(Integer idAluno, Curso curso) {
+        List<Curso> cursos = cursosDoCarrinho(idAluno);
+        boolean estaNoCarrinho = curso.getIdCurso() != null
+                && cursos.stream().anyMatch(c -> curso.getIdCurso().equals(c.getIdCurso()));
+        if (!estaNoCarrinho) {
+            return curso.getValor();
+        }
+        return cursos.stream()
+                .map(Curso::getValor)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
     // Sem número de parcelas no texto, considera pagamento à vista (1x)
     private int lerParcelas(String forma) {
         Matcher m = PARCELAS.matcher(forma);
@@ -459,15 +582,20 @@ public class InscricaoService {
     // Maior limite de parcelas entre os cursos que estão no carrinho do aluno
     // (o carrinho só é esvaziado depois que todas as inscrições são criadas)
     private int maximoDoCarrinho(Integer idAluno) {
+        return cursosDoCarrinho(idAluno).stream()
+                .mapToInt(this::maximoDeParcelas)
+                .max()
+                .orElse(1);
+    }
+
+    private List<Curso> cursosDoCarrinho(Integer idAluno) {
         return carrinhoRepository.findFirstByAluno_IdAluno(idAluno)
                 .map(carrinho -> itemCarrinhoRepository.findByCarrinho_IdCarrinho(carrinho.getIdCarrinho()))
                 .orElse(List.of())
                 .stream()
                 .map(ItemCarrinho::getCurso)
-                .filter(cursoDoItem -> cursoDoItem != null)
-                .mapToInt(this::maximoDeParcelas)
-                .max()
-                .orElse(1);
+                .filter(Objects::nonNull)
+                .toList();
     }
 
     // Curso sem limite cadastrado só pode ser pago à vista

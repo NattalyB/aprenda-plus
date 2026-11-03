@@ -6987,3 +6987,174 @@ ul.comercial-termos {
 .comercial .financeiro-indicadores {
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
 }
+
+/* ===================== PAGAMENTO DIVIDIDO EM DUAS FORMAS (carrinho) ===================== */
+.pagamento-dividir {
+  display: block;
+  margin: 0.85rem auto 0;
+  background: none;
+  border: none;
+  padding: 0.25rem;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #0077b6;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.pagamento-dividir:hover:not(:disabled) {
+  color: #005f8f;
+}
+
+.pagamento-dividir:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.pagamento-dividir:focus-visible,
+.divisao-forma:focus-visible {
+  outline: 2px solid #0077b6;
+  outline-offset: 2px;
+}
+
+.divisao {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.divisao-dica {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.divisao-parte {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 0.65rem 0.75rem 0.75rem;
+  margin: 0;
+  min-width: 0;
+}
+
+.divisao-parte legend {
+  padding: 0 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #001e42;
+}
+
+.divisao-formas {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.35rem;
+  margin-bottom: 0.6rem;
+}
+
+.divisao-forma {
+  padding: 0.4rem 0.25rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #1f2937;
+  cursor: pointer;
+}
+
+.divisao-forma:hover:not(:disabled) {
+  border-color: #9ca3af;
+}
+
+.divisao-forma.ativa {
+  border-color: #0f8f6a;
+  background: #f0fdf4;
+  color: #0f6b50;
+}
+
+.divisao-forma:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Um campo embaixo do outro: a coluna do resumo é estreita e o texto das parcelas é comprido */
+.divisao-campos {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+}
+
+.divisao-campos .form-field {
+  margin: 0;
+  min-width: 0;
+}
+
+.divisao-rotulo {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.35rem;
+}
+
+.divisao-restante {
+  display: block;
+  padding: 0.6rem 0.75rem;
+  border-radius: 8px;
+  background: #f3f4f6;
+  color: #1f2937;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.divisao-pix {
+  margin: 0.5rem 0 0;
+  font-size: 0.8rem;
+  color: #0f6b50;
+}
+
+.divisao-erro {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #b91c1c;
+}
+
+.carrinho-resumo-partes {
+  list-style: none;
+  margin: 0;
+  padding: 1rem 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.88rem;
+  color: #1f2937;
+}
+
+.carrinho-resumo-partes li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.carrinho-resumo-partes li span:last-child {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.carrinho-sucesso-partes {
+  list-style: none;
+  margin: 0.35rem 0;
+  padding: 0;
+}
+
+.carrinho-sucesso-partes span {
+  color: #15803d;
+}
+
+.carrinho-resumo-desconto span:last-child {
+  white-space: nowrap;
+}

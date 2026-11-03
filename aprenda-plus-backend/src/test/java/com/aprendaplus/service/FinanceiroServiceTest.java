@@ -8,11 +8,13 @@ import com.aprendaplus.entity.Aluno;
 import com.aprendaplus.entity.ConfiguracaoFinanceira;
 import com.aprendaplus.entity.Curso;
 import com.aprendaplus.entity.Inscricao;
+import com.aprendaplus.entity.InscricaoPagamento;
 import com.aprendaplus.entity.Matricula;
 import com.aprendaplus.entity.Pagamento;
 import com.aprendaplus.entity.Turma;
 import com.aprendaplus.exception.RegraDeNegocioException;
 import com.aprendaplus.repository.ConfiguracaoFinanceiraRepository;
+import com.aprendaplus.repository.InscricaoPagamentoRepository;
 import com.aprendaplus.repository.InscricaoRepository;
 import com.aprendaplus.repository.MatriculaRepository;
 import com.aprendaplus.repository.PagamentoRepository;
@@ -50,6 +52,9 @@ class FinanceiroServiceTest {
 
     @Mock
     private ConfiguracaoFinanceiraRepository configuracaoRepository;
+
+    @Mock
+    private InscricaoPagamentoRepository inscricaoPagamentoRepository;
 
     @InjectMocks
     private FinanceiroService financeiroService;
@@ -719,5 +724,154 @@ class FinanceiroServiceTest {
         assertEquals(15L, c.diasAtraso());
         assertEquals("Esta parcela não está em aberto.", assertThrows(RegraDeNegocioException.class,
                 () -> financeiroService.calcular(6, HOJE, false, null)).getMessage());
+    }
+
+    // ===== Pagamento dividido em duas formas =====
+
+    private static InscricaoPagamento parte(int ordem, String forma, int parcelas, String valor) {
+        InscricaoPagamento parte = new InscricaoPagamento(ordem, forma, parcelas, new BigDecimal(valor));
+        parte.setInscricaoId(2);
+        return parte;
+    }
+
+    private static Inscricao inscricaoDividida() {
+        Inscricao i = new Inscricao();
+        i.setIdInscricao(2);
+        i.setValorTotal(new BigDecimal("3800.00"));
+        i.setFormaPagamento("Cartão de crédito · 10x (R$ 1.500,00) + Boleto bancário · 3x (R$ 2.300,00)");
+        return i;
+    }
+
+    @Test
+    void doisCartoesGeramAsParcelasDeCadaUmEmSequencia() {
+        Matricula m = matricula(10, "Redes");
+        when(pagamentoRepository.findByMatricula_IdMatriculaOrderByNumeroParcelaAsc(10)).thenReturn(List.of());
+        when(inscricaoPagamentoRepository.findByInscricaoIdOrderByOrdemAsc(2)).thenReturn(List.of(
+                parte(1, "cartao", 10, "1500.00"), parte(2, "cartao", 5, "2300.00")));
+
+        financeiroService.prepararParcelas(m, inscricaoDividida(), HOJE);
+
+        List<Pagamento> parcelas = parcelasSalvas();
+        assertEquals(15, parcelas.size());
+        assertEquals(new BigDecimal("150.00"), parcelas.get(0).getValorParcela());
+        assertEquals(LocalDate.of(2026, 10, 19), parcelas.get(0).getDataVencimento());
+        // O segundo cartão começa na parcela 11, com o próprio calendário
+        assertEquals(11, parcelas.get(10).getNumeroParcela());
+        assertEquals(new BigDecimal("460.00"), parcelas.get(10).getValorParcela());
+        assertEquals(LocalDate.of(2026, 10, 19), parcelas.get(10).getDataVencimento());
+        assertEquals(LocalDate.of(2027, 2, 19), parcelas.get(14).getDataVencimento());
+        assertEquals(new BigDecimal("3800.00"), parcelas.stream().map(Pagamento::getValorParcela)
+                .reduce(BigDecimal.ZERO, BigDecimal::add));
+        assertTrue(parcelas.stream().allMatch(p -> "Cartão de crédito".equals(p.getFormaPagamento())));
+    }
+
+    @Test
+    void parteNoPixJaNascePaga() {
+        Matricula m = matricula(10, "Redes");
+        when(pagamentoRepository.findByMatricula_IdMatriculaOrderByNumeroParcelaAsc(10)).thenReturn(List.of());
+        when(inscricaoPagamentoRepository.findByInscricaoIdOrderByOrdemAsc(2)).thenReturn(List.of(
+                parte(1, "pix", 1, "950.00"), parte(2, "boleto", 3, "1000.00"), parte(3, "cartao", 2, "0.00")));
+
+        financeiroService.prepararParcelas(m, inscricaoDividida(), HOJE);
+
+        List<Pagamento> parcelas = parcelasSalvas();
+        assertEquals(4, parcelas.size(), "parte com valor zero não gera parcela");
+        assertEquals("Pix", parcelas.get(0).getFormaPagamento());
+        assertEquals("pago", parcelas.get(0).getStatus());
+        assertEquals(HOJE, parcelas.get(0).getDataPagamento());
+        assertEquals("Boleto bancário", parcelas.get(1).getFormaPagamento());
+        assertEquals(new BigDecimal("333.34"), parcelas.get(3).getValorParcela());
+        assertEquals(4, parcelas.get(3).getNumeroParcela());
+    }
+
+    @Test
+    void inscricaoSemPartesUsaAFormaUnica() {
+        Matricula m = matricula(10, "Redes");
+        when(pagamentoRepository.findByMatricula_IdMatriculaOrderByNumeroParcelaAsc(10)).thenReturn(List.of());
+        Inscricao unica = new Inscricao();
+        unica.setIdInscricao(5);
+        unica.setValorTotal(new BigDecimal("1000"));
+        unica.setFormaPagamento("Boleto bancário · 2x");
+
+        financeiroService.prepararParcelas(m, unica);
+
+        assertEquals(2, parcelasSalvas().size());
+        verify(inscricaoPagamentoRepository).findByInscricaoIdOrderByOrdemAsc(5);
+    }
+
+    @Test
+    void semInscricaoOuSemMatriculaNaoGeraNada() {
+        financeiroService.prepararParcelas(matricula(10, "Redes"), (Inscricao) null, HOJE);
+        when(inscricaoPagamentoRepository.findByInscricaoIdOrderByOrdemAsc(2)).thenReturn(List.of(
+                parte(1, "cartao", 2, "100.00"), parte(2, "cartao", 2, "100.00")));
+        financeiroService.prepararParcelas(null, inscricaoDividida(), HOJE);
+        financeiroService.prepararParcelas(new Matricula(), inscricaoDividida(), HOJE);
+
+        verify(pagamentoRepository, never()).saveAll(anyList());
+    }
+
+    @Test
+    void matriculaDivididaReativadaReabreAsParcelas() {
+        Matricula m = matricula(10, "Redes");
+        Pagamento cancelada = parcela(1, m, 1, "100", HOJE.minusDays(2), "cancelado");
+        when(pagamentoRepository.findByMatricula_IdMatriculaOrderByNumeroParcelaAsc(10)).thenReturn(List.of(cancelada));
+        when(inscricaoPagamentoRepository.findByInscricaoIdOrderByOrdemAsc(2)).thenReturn(List.of(
+                parte(1, "cartao", 2, "100.00"), parte(2, "boleto", 2, "100.00")));
+
+        financeiroService.prepararParcelas(m, inscricaoDividida(), HOJE);
+
+        assertEquals("atrasado", cancelada.getStatus());
+    }
+
+    @Test
+    void noPagamentoDivididoCadaParcelaSabeSeCaiSozinha() {
+        Matricula m = matricula(99, "Redes");
+        Inscricao confirmada = inscricaoDividida();
+        confirmada.setAluno(m.getAluno());
+        confirmada.setTurma(m.getTurma());
+        confirmada.setStatus("confirmada");
+        when(inscricaoRepository.findAll()).thenReturn(List.of(confirmada));
+        when(inscricaoPagamentoRepository.findAll()).thenReturn(List.of(
+                parte(2, "boleto", 3, "2300.00"), parte(1, "cartao", 10, "1500.00")));
+        // Parcela 10 = último mês do cartão; parcela 11 = primeiro boleto
+        Pagamento doCartao = parcela(1, m, 10, "150", HOJE, "pendente");
+        Pagamento doBoleto = parcela(2, m, 11, "766.66", HOJE.minusDays(1), "pendente");
+        when(pagamentoRepository.findByStatusInAndDataVencimentoLessThanEqual(any(), eq(HOJE)))
+                .thenReturn(List.of(doCartao, doBoleto));
+        when(pagamentoRepository.findByStatusAndDataVencimentoBefore(any(), any())).thenReturn(List.of(doBoleto));
+
+        financeiroService.atualizarAtrasadas(HOJE);
+
+        assertEquals("pago", doCartao.getStatus());
+        assertEquals("Cartão de crédito", doCartao.getFormaPagamento());
+        assertEquals("atrasado", doBoleto.getStatus());
+    }
+
+    @Test
+    void formaDaCompraPorParcela() {
+        FinanceiroService.FormaDaCompra dividida = new FinanceiroService.FormaDaCompra("Combinado", List.of(
+                parte(1, "pix", 1, "950.00"), parte(2, "cartao", 0, "0.00"), parte(3, "boleto", 2, "100.00")));
+        assertEquals("Pix", dividida.familiaDaParcela(1));
+        assertEquals("Boleto bancário", dividida.familiaDaParcela(2));
+        assertEquals("Boleto bancário", dividida.familiaDaParcela(3));
+        // Número fora das partes ou sem número: vale o texto da inscrição
+        assertEquals("Combinado", dividida.familiaDaParcela(9));
+        assertEquals("Combinado", dividida.familiaDaParcela(null));
+        FinanceiroService.FormaDaCompra unica = new FinanceiroService.FormaDaCompra("Pix à vista", List.of());
+        assertEquals("Pix", unica.familiaDaParcela(1));
+    }
+
+    @Test
+    void geraAsParcelasQueFaltamDeUmaInscricaoDividida() {
+        Matricula m = matricula(10, "Redes");
+        when(matriculaRepository.findAll()).thenReturn(List.of(m));
+        when(pagamentoRepository.findByMatricula_IdMatriculaOrderByNumeroParcelaAsc(10)).thenReturn(List.of());
+        when(inscricaoRepository.findFirstByAluno_IdAlunoAndTurma_IdTurmaAndStatusOrderByIdInscricaoDesc(7, 3, "confirmada"))
+                .thenReturn(Optional.of(inscricaoDividida()));
+        when(inscricaoPagamentoRepository.findByInscricaoIdOrderByOrdemAsc(2)).thenReturn(List.of(
+                parte(1, "cartao", 2, "100.00"), parte(2, "boleto", 1, "50.00")));
+
+        assertEquals(1, financeiroService.gerarParcelasQueFaltam());
+        assertEquals(3, parcelasSalvas().size());
     }
 }
