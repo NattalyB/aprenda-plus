@@ -846,12 +846,12 @@ O comando gera a versão de produção e publica a pasta `dist` na branch `gh-pa
 
 | Nome | GitHub | Principais contribuições |
 |---|---|---|
-| Nattaly Buralde Queiroz | [@NattalyB](https://github.com/NattalyB) | Levantamento de requisitos, desenvolvimento do front-end e do back-end (com apoio do Claude, assistente de IA da Anthropic), banco de dados, deploy e testes |
-| Eliane da Silva Barboza | [@ElianeBTech](https://github.com/ElianeBTech) | Logo do AprendaPlus, favicon, layout da tela de cadastro e do cabeçalho com a barra de pesquisa (front-end) e testes |
-| Raquel dos Santos | [@raquel0807](https://github.com/raquel0807) | Ideia do projeto, documento inicial com a especificação do sistema e testes |
-| Marcelo Yuri | [@MarceloYuri](https://github.com/MarceloYuri) | Layout base do site (front-end) e testes |
-| Karina _(sobrenome)_ | [@usuario](https://github.com/usuario) | Ideia do projeto e revisão do sistema |
 
+| Eliane da Silva Barboza | [@ElianeBTech](https://github.com/ElianeBTech) | Logo do AprendaPlus, favicon, layout da tela de cadastro e do cabeçalho com a barra de pesquisa (front-end) e testes |
+| Karina Pinto Vitoria | [@karinapintovitoria-cloud](https://github.com/karinapintovitoria-cloud) | Ideia do projeto e revisão do sistema |
+| Marcelo Yuri | [@MarceloYuri](https://github.com/MarceloYuri) | Layout base do site (front-end) e testes |
+| Nattaly Buralde Queiroz | [@NattalyB](https://github.com/NattalyB) | Levantamento de requisitos, desenvolvimento do front-end e do back-end (com apoio do Claude, assistente de IA da Anthropic), banco de dados, deploy e testes |
+| Raquel dos Santos | [@raquel0807](https://github.com/raquel0807) | Ideia do projeto, documento inicial com a especificação do sistema e testes |
 ---
 
 Projeto desenvolvido para fins acadêmicos no programa **+PraTi / Codifica**, 2026.
