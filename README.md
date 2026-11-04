@@ -22,10 +22,12 @@ Projeto final do curso **Desenvolvimento Full Stack** do programa **+PraTi / Cod
 - [Comercial](#-comercial)
 - [Documento de escolaridade e e-mails](#-documento-de-escolaridade-e-e-mails)
 - [Sala de aula EAD](#-sala-de-aula-ead)
+- [Portal do Professor](#-portal-do-professor)
 - [Recuperação de senha](#-recuperação-de-senha)
 - [Importação por planilha](#-importação-por-planilha)
 - [Tecnologias](#-tecnologias)
 - [Arquitetura](#-arquitetura)
+- [Modelagem do banco de dados](#-modelagem-do-banco-de-dados)
 - [Estrutura de pastas](#-estrutura-de-pastas)
 - [Como rodar localmente](#-como-rodar-localmente)
 - [Testes e cobertura](#-testes-e-cobertura)
@@ -168,6 +170,22 @@ Projeto final do curso **Desenvolvimento Full Stack** do programa **+PraTi / Cod
 
 - Painel com indicadores e gráficos de receita.
 - Lista de todas as parcelas, com baixa dos boletos, estorno, exportação para planilha e impressão. Pix e cartão de crédito são **cobrança automática**: não precisam de baixa.
+- **Multa, juros e desconto** configuráveis, com prévia do valor na hora da baixa.
+- **Contas a pagar**, **fluxo de caixa** e **pagamento dos professores por hora-aula**.
+
+**Comercial** (detalhes na seção [Comercial](#-comercial))
+
+- Funil de vendas, leads de quem não concluiu a compra (com mensagem pronta para o WhatsApp) e os cursos e termos mais procurados no site.
+
+**Treinamentos**
+
+- Vídeos e manuais em PDF que ensinam a equipe a usar o sistema. **Toda a equipe** consulta; só o **Master** cadastra, edita e exclui.
+
+**Histórico de alterações**
+
+- Registra **quem cadastrou, alterou ou excluiu** cada informação, e quando (ex.: *"Carla alterou o aluno #12 em 27/10/2026 às 18:45"*), com filtros por módulo, ação, tipo de usuário, período e busca.
+- Os formulários de edição mostram no topo **quem cadastrou e quem alterou por último** o registro.
+- O Master libera o histórico para quem quiser (ex.: o proprietário). Para quem não é Master, as ações das contas Master aparecem como *"Suporte do sistema"*.
 
 **Importação por planilha** (detalhes na seção [Importação por planilha](#-importação-por-planilha))
 
@@ -182,6 +200,7 @@ Projeto final do curso **Desenvolvimento Full Stack** do programa **+PraTi / Cod
 - **Ordenação em todas as listas:** basta clicar no nome da coluna (ID, nome de A-Z ou Z-A, valor, data, status...). Clicando de novo, a ordem inverte.
 - **Mensagens de erro detalhadas:** quando o back-end recusa um dado, o formulário mostra exatamente qual campo está errado.
 - **Exclusão segura:** não é possível excluir um registro que ainda está em uso (por exemplo, uma turma com inscrições). O painel explica o motivo, em vez de apagar e deixar dados "órfãos".
+- **Abas nos cadastros:** o cadastro do aluno tem as abas *Dados pessoais*, *Inscrições* e *Matrículas* (e o curso, as suas), mostrando só as que o nível de acesso pode ver. A aba aberta fica no endereço, então dá para voltar direto nela depois de salvar.
 
 ---
 
@@ -236,6 +255,7 @@ O módulo Financeiro usa a tabela `pagamento`, que já estava no modelo do banco
 - **Boleto** que passa do vencimento sem pagamento vira **atrasado** automaticamente.
 - Cancelar a inscrição cancela as parcelas em aberto (as pagas continuam no histórico). Se a inscrição for confirmada de novo, elas são reabertas.
 - Para matrículas que já existiam antes do módulo, o botão **"Gerar parcelas que faltam"** cria as parcelas a partir da inscrição confirmada.
+- **Pagamento dividido em duas formas:** as parcelas de cada forma são geradas em sequência, cada uma com o próprio calendário. Por exemplo, um cartão em 10x gera as parcelas 1 a 10 e o segundo cartão em 5x, as parcelas 11 a 15. O sistema sabe, parcela por parcela, quais caem sozinhas (Pix e cartão) e quais precisam de baixa (boleto).
 
 **Visão geral (indicadores e gráficos)**
 
@@ -258,6 +278,27 @@ O módulo Financeiro usa a tabela `pagamento`, que já estava no modelo do banco
   - **Pagas** e **Canceladas**.
 - **Registrar pagamento** (boletos): informa a data (não pode ser no futuro) e a forma. Uma baixa feita por engano pode ser **desfeita**.
 - **Exportar planilha** (CSV que o Excel abre direto) e **imprimir** a lista.
+
+**Multa, juros e desconto** (aba *Regras de cobrança*)
+
+- O financeiro define a **multa** (cobrada uma vez), os **juros de mora** ao mês (cobrados por dia de atraso), o **desconto de pontualidade** e os **dias de carência**. A multa respeita o limite de 2% do Código de Defesa do Consumidor.
+- Pagou até o vencimento: ganha o desconto. Pagou dentro da carência: não paga encargos, mas também não ganha o desconto. Pagou depois: multa + juros proporcionais aos dias de atraso.
+- Na baixa de um boleto, uma **prévia** mostra o valor na data escolhida (valor + multa + juros − desconto). Dá para **isentar os encargos** (ex.: negociação) ou digitar um desconto combinado. A parcela guarda a multa, os juros, o desconto e o valor que entrou de fato.
+
+**Contas a pagar**
+
+- Despesas da escola (aluguel, luz, internet, impostos...), com categoria, fornecedor, vencimento e baixa.
+- Contas fixas podem ser **repetidas todo mês**: o sistema cria uma conta para cada mês, com *(1/12)*, *(2/12)*...
+
+**Fluxo de caixa**
+
+- Por mês, o que **entrou** (parcelas recebidas) e o que **saiu** (contas pagas), e o que ainda está **previsto** de cada lado. O que venceu e não foi pago fica previsto para o mês atual.
+- Despesas do mês por categoria.
+
+**Pagamento dos professores** (hora-aula)
+
+- O financeiro define o **valor da hora-aula** de cada professor e lança as horas do mês (o sistema sugere as horas do último mês lançado).
+- O pagamento (horas × valor da hora) vira uma **conta a pagar** na categoria *Professores*, vencendo no dia 5 do mês seguinte.
 
 **Para o aluno:** em "Minhas inscrições", cada curso mostra as parcelas e o recibo das que foram pagas.
 
@@ -375,6 +416,15 @@ A sala de aula é o "Moodle" do AprendaPlus: cada turma tem a sua, montada pela 
 | `certificado` | certificados emitidos, com código único |
 
 As tabelas `plano_de_aula` e `aula` já existiam no modelo do banco: a sala de aula de cada turma é o plano de aula dela.
+
+---
+
+## 🏫 Portal do Professor
+
+- O professor entra pelo **mesmo login do site**, na aba **"Sou professor"**.
+- O acesso é criado pela secretaria: no cadastro do professor, o botão de acesso envia por e-mail um link para ele **criar a própria senha**. O link também aparece na tela, para a secretaria copiar e mandar por outro meio se o e-mail não chegar.
+- O professor vê **só as turmas dele** (as que ele é o responsável pela sala de aula ou em que foi vinculado no cadastro) e, em cada uma, cuida das **aulas EAD**, do **mural de avisos** e acompanha o **andamento dos alunos**, como na sala de aula do painel.
+- Professor não entra no painel administrativo, e o servidor confere em cada requisição se a turma é mesmo dele.
 
 ---
 
@@ -517,6 +567,28 @@ Requisição ─▶ AuthInterceptor ─▶ Controller ─▶ Service ─▶ Repo
 
 ---
 
+## 🗄 Modelagem do banco de dados
+
+![Diagrama entidade-relacionamento do AprendaPlus](docs/der-aprendaplus.png)
+
+O banco tem **33 tabelas**, organizadas em 7 áreas (no diagrama, cada área tem uma cor e aparecem só as colunas de chave):
+
+| Área | Tabelas |
+|---|---|
+| **Pessoas e acesso** | `aluno`, `professor`, `funcionario`, `nivel_acesso`, `redefinicao_senha` |
+| **Estrutura acadêmica** | `curso`, `disciplina`, `periodo_letivo`, `turma` e as ligações N:N `curso_disciplina`, `periodo_letivo_curso`, `curso_professor`, `disciplina_professor`, `turma_professor` |
+| **Vendas e matrícula** | `carrinho`, `item_carrinho`, `inscricao`, `inscricao_pagamento`, `documento_aluno`, `matricula` |
+| **Financeiro** | `pagamento` (parcelas), `configuracao_financeira`, `conta_pagar`, `professor_hora_aula` |
+| **Sala de aula EAD** | `plano_de_aula`, `aula`, `aula_concluida`, `aviso_turma`, `certificado` |
+| **Comercial** | `evento_navegacao`, `contato_comercial` |
+| **Sistema** | `registro_atividade` (histórico de alterações), `treinamento` |
+
+- **Notação pé de galinha:** a linha sai do `id` da tabela "mãe" e chega na chave estrangeira da tabela "filha".
+- **38 chaves estrangeiras**, com a regra de exclusão escolhida caso a caso: `CASCADE` onde o registro filho não faz sentido sozinho (ex.: itens do carrinho, partes do pagamento), `SET NULL` onde o histórico deve continuar (ex.: o contato comercial de um funcionário que saiu) e bloqueio onde excluir apagaria dados importantes (ex.: turma com inscrições).
+- **39 regras de validação (`CHECK`)** no próprio banco: status permitidos, CPF com 11 números, valores maiores que zero, data final depois da inicial, tamanho máximo dos arquivos, multa de no máximo 2%...
+
+---
+
 ## 📁 Estrutura de pastas
 
 ```
@@ -563,7 +635,7 @@ aprenda-plus/
 
 - **Java 25** (ou superior)
 - **Node.js 22** (ou superior) e npm
-- **PostgreSQL 17**
+- **PostgreSQL 17** (ou superior)
 - **Git**
 
 ### 1. Clonar o repositório
@@ -576,7 +648,27 @@ cd aprenda-plus
 ### 2. Criar o banco de dados
 
 1. Crie um banco chamado `aprenda_plus` no PostgreSQL.
-2. Execute os scripts da pasta `aprenda-plus-backend/database`. Eles criam as tabelas, os valores padrão e os gatilhos, e também aplicam as atualizações feitas ao longo do projeto. Por exemplo, com o `psql`:
+2. Execute os scripts da pasta `aprenda-plus-backend/database`, **nesta ordem**. O primeiro cria as tabelas, os valores padrão e os gatilhos; os outros aplicam as atualizações feitas ao longo do projeto:
+
+| # | Script | O que faz |
+|---|---|---|
+| 1 | `sistema_vendas_cursos.sql` | Cria o banco: tabelas, valores padrão, gatilhos e índices |
+| 2 | `niveis-de-acesso.sql` | Níveis de acesso do painel |
+| 3 | `cores-dos-niveis.sql` | Cor da etiqueta de cada nível |
+| 4 | `disciplina-varios-cursos.sql` | Disciplina em vários cursos (N:N) |
+| 5 | `disciplina-status.sql` | Disciplina ativa ou inativa |
+| 6 | `documentos-alunos.sql` | Certificado de conclusão do ensino médio |
+| 7 | `recuperacao-de-senha.sql` | "Esqueci minha senha" |
+| 8 | `financeiro.sql` | Libera o módulo Financeiro nos níveis de acesso |
+| 9 | `financeiro-completo.sql` | Multa, juros, contas a pagar e hora-aula |
+| 10 | `matriculas-de-inscricoes-confirmadas.sql` | Cria as matrículas das inscrições já confirmadas |
+| 11 | `portal-do-professor.sql` | Portal do Professor |
+| 12 | `sala-de-aula.sql` | Sala de aula EAD |
+| 13 | `treinamentos-e-historico.sql` | Treinamentos e histórico de alterações |
+| 14 | `modulo-comercial.sql` | Módulo Comercial |
+| 15 | `pagamento-dividido.sql` | Pagamento dividido em duas formas |
+
+Os scripts `dados-demo-*.sql` são opcionais: preenchem o banco com dados de exemplo. Com o `psql`:
 
 ```bash
 psql -U postgres -d aprenda_plus -f aprenda-plus-backend/database/NOME_DO_SCRIPT.sql
@@ -632,8 +724,8 @@ A meta do projeto era **cobertura mínima de 70%**. Os dois lados ficaram bem ac
 
 | | Testes | Cobertura | Ferramentas |
 |---|---|---|---|
-| **Back-end** | **590** | **99%** das instruções, 94% dos desvios (*branches*), 100% dos métodos e das classes | JUnit 5, Mockito, MockMvc, JaCoCo |
-| **Front-end** | **660** | **99,6%** das instruções, 96,5% dos desvios (*branches*), 99,9% das funções | Jest, Testing Library |
+| **Back-end** | **790** | **98%** das instruções, 91% dos desvios (*branches*), 98% dos métodos e 100% das classes | JUnit 5, Mockito, MockMvc, JaCoCo |
+| **Front-end** | **799** | **98,3%** das instruções, 95,2% dos desvios (*branches*), 97% das funções e 99,3% das linhas | Jest, Testing Library |
 
 ### Back-end
 
@@ -647,7 +739,7 @@ O relatório de cobertura é gerado em `target/site/jacoco/index.html`.
 O que é testado:
 
 - **Services:** as regras de negócio. Destaques:
-  - **cálculo do valor da inscrição:** desconto do Pix com arredondamento em centavos, valor cheio no cartão e no boleto, maior limite de parcelas do carrinho e formas de pagamento inválidas;
+  - **cálculo do valor da inscrição:** desconto do Pix com arredondamento em centavos, valor cheio no cartão e no boleto, maior limite de parcelas do carrinho, formas de pagamento inválidas e **pagamento dividido em duas formas** (soma igual ao total do pedido, divisão entre os cursos e desconto do Pix só na parte do Pix);
   - **vagas e lista de espera:** turma cheia leva à lista de espera, e o primeiro da fila sobe quando abre vaga;
   - **troca de turma:** só para turmas do mesmo curso, abertas e com vaga, e só das próprias inscrições do aluno;
   - **matrícula automática:** criada ao confirmar o pagamento, sem duplicar, e acompanhando a inscrição ao cancelar, concluir ou trocar de turma;
@@ -694,7 +786,7 @@ O que é testado:
   - sininho de notificações (avisos por nível e "marcar como lidas") e rota protegida do admin.
 - **Páginas:**
   - Home, login e cadastro;
-  - carrinho: Pix com desconto, cartão, boleto, limite de parcelas, lista de espera e mensagem de erro vinda do servidor;
+  - carrinho: Pix com desconto, cartão, boleto, limite de parcelas, **pagamento dividido em duas formas** (restante automático, desconto do Pix só na parte do Pix e valores inválidos), lista de espera e mensagem de erro vinda do servidor;
   - cadastro com o certificado (tipo, tamanho, arrastar e soltar);
   - "Minhas inscrições": troca de turma, turmas lotadas e o cartão do documento (em análise, aprovado, recusado com motivo e reenvio);
   - sala de aula: lista de turmas, aula aberta (vídeo, texto e material), aulas bloqueadas, concluir e desmarcar, mural, certificado e validação pública;
@@ -750,6 +842,7 @@ O que é testado:
 - **Mensalidade calculada, não digitada.** O admin cadastra o **valor total** e o **número de parcelas** do curso, e o sistema calcula a mensalidade. Assim, ela nunca fica diferente do valor total.
 - **Desconto de 5% no Pix**, como é comum em instituições de ensino. O valor já é gravado com desconto na inscrição.
 - **Parcelamento pelo maior limite do carrinho.** Quem compra vários cursos juntos pode parcelar até o maior limite entre eles. Por exemplo, um curso técnico de até 12x junto com uma graduação de até 36x pode ser pago em 36x.
+- **Pagamento dividido com tabela própria.** As duas formas de um pagamento dividido ficam na tabela `inscricao_pagamento` (forma, parcelas e valor de cada uma), em vez de um texto para o sistema "decifrar" depois. Com vários cursos no carrinho, cada forma é dividida entre os cursos **proporcionalmente ao preço** de cada um, e os centavos que sobram ficam na última parte, para a soma bater sempre com o total do pedido.
 - **O servidor é a fonte da verdade do preço.** O front-end calcula os valores só para mostrar ao aluno. O que vale é o valor calculado pelo back-end com `BigDecimal` (arredondamento em centavos), a partir do preço do curso no banco. Nunca se confia em um valor enviado pelo navegador.
 
 **Inscrição e matrícula**
@@ -815,11 +908,36 @@ O comando gera a versão de produção e publica a pasta `dist` na branch `gh-pa
 
 ## 📋 Metodologia de trabalho
 
-> ✏️ **A preencher pelo grupo:** como a equipe se organizou (reuniões, sprints, divisão de tarefas) e o link do quadro Kanban.
+O grupo trabalhou com **Kanban**: em vez de sprints com data fixa, as tarefas eram puxadas uma de cada vez, conforme a anterior terminava, e as sugestões dos testes viravam novas tarefas. O fluxo de cada funcionalidade foi sempre o mesmo:
 
-- **Metodologia:** _Kanban / Scrum (preencher)_
-- **Quadro de tarefas:** _link do GitHub Projects (preencher)_
-- **Rotina da equipe:** _ex.: reuniões semanais, divisão por funcionalidade... (preencher)_
+**A fazer → Desenvolvendo → Publicado para teste → Ajustes → Concluído**
+
+### Como a equipe se organizou
+
+- **Ponto de partida:** a Raquel enviou o documento inicial com a ideia do sistema. A partir dele, a Nattaly fez o levantamento de requisitos (campos de cada cadastro, regras de inscrição e matrícula, relatórios), que virou a lista de tarefas do projeto.
+- **Identidade visual:** a Eliane criou o logo, o favicon e as telas de cadastro e do cabeçalho; o Marcelo enviou o layout base do site. O front-end foi montado sobre esse visual.
+- **Desenvolvimento:** a Nattaly implementou o front-end e o back-end, com apoio do Claude (assistente de IA da Anthropic), uma funcionalidade por vez, sempre com testes automatizados.
+- **Testes com o grupo:** desde a primeira semana o sistema ficou publicado (front-end no GitHub Pages e back-end no Render). Os colegas testavam pelo site, com o acesso Master do painel, e mandavam os erros e as melhorias no grupo. Cada retorno virava uma tarefa nova.
+- **Comunicação:** WhatsApp no dia a dia e **reuniões pelo Google Meet** a cada três semanas, mais ou menos (3 a 4 no total), para alinhar o andamento e decidir as próximas funcionalidades.
+- **Validação com o professor:** em outubro o grupo apresentou uma prévia ao professor. A sugestão dele, um assistente virtual com IA no site, entrou na lista de tarefas e foi entregue na mesma semana.
+
+### Linha do tempo
+
+| Período | O que foi entregue |
+|---|---|
+| 25/09 a 29/09 | Estrutura do projeto, CRUDs do painel (cursos, alunos, professores, inscrições e matrículas), primeiros testes e deploy (Render + GitHub Pages) |
+| 01/10 a 09/10 | Validações dos cadastros, carrinho com formas de pagamento, segurança da API com JWT, responsividade, testes com cobertura acima de 99% e primeira versão do README |
+| 11/10 a 13/10 | Área do aluno, controle de vagas, níveis de acesso, Financeiro, documento de escolaridade, e-mails automáticos e sala de aula EAD |
+| 16/10 a 22/10 | Recuperação de senha, máscaras, paginação, notificações por nível e importação por planilha |
+| 25/10 a 28/10 | Assistente virtual com IA (sugestão do professor), Treinamentos, Histórico de alterações, Portal do Professor, Financeiro completo, módulo Comercial e migração do banco para o Neon |
+| 03/11 | Pagamento dividido em duas formas (ex.: dois cartões) |
+
+O histórico completo está nos **commits do repositório**: cada funcionalidade entrou em um commit próprio, com mensagem descrevendo a entrega.
+
+### O que aprendemos
+
+- **Publicar cedo** foi o que mais ajudou: com o sistema no ar desde a primeira semana, o grupo inteiro conseguia testar sem instalar nada.
+- O que faltou foi um **quadro visual** de tarefas (como o GitHub Projects): a lista era combinada nas reuniões e no WhatsApp. Em um próximo projeto, o quadro desde o início deixaria mais claro quem está fazendo o quê.
 
 ---
 
@@ -827,7 +945,6 @@ O comando gera a versão de produção e publica a pasta `dist` na branch `gh-pa
 
 - Criar todas as inscrições do carrinho em uma única operação no servidor, para que um erro em um curso não deixe a compra pela metade.
 - Integrar um gateway de pagamento real (Mercado Pago, Stripe...), dando baixa nas parcelas automaticamente quando o pagamento for aprovado.
-- Multa e juros para parcelas em atraso.
 - Avisar por e-mail também quando uma parcela estiver perto de vencer.
 - Permitir que o próprio aluno cancele uma inscrição em "Minhas inscrições".
 - Mostrar também as matrículas na área do aluno.
@@ -839,6 +956,7 @@ O comando gera a versão de produção e publica a pasta `dist` na branch `gh-pa
 - Comercial: o próprio aluno ligar e desligar o aceite de ofertas na área dele.
 - Comercial: e-mail automático de lembrete para carrinho abandonado depois de alguns dias.
 - Comercial: apagar automaticamente os eventos de navegação com mais de 12 meses.
+- Pagamento dividido em mais de duas formas (hoje são duas).
 
 ---
 
@@ -846,12 +964,19 @@ O comando gera a versão de produção e publica a pasta `dist` na branch `gh-pa
 
 | Nome | GitHub | Principais contribuições |
 |---|---|---|
-
 | Eliane da Silva Barboza | [@ElianeBTech](https://github.com/ElianeBTech) | Logo do AprendaPlus, favicon, layout da tela de cadastro e do cabeçalho com a barra de pesquisa (front-end) e testes |
 | Karina Pinto Vitoria | [@karinapintovitoria-cloud](https://github.com/karinapintovitoria-cloud) | Ideia do projeto e revisão do sistema |
 | Marcelo Yuri | [@MarceloYuri](https://github.com/MarceloYuri) | Layout base do site (front-end) e testes |
 | Nattaly Buralde Queiroz | [@NattalyB](https://github.com/NattalyB) | Levantamento de requisitos, desenvolvimento do front-end e do back-end (com apoio do Claude, assistente de IA da Anthropic), banco de dados, deploy e testes |
 | Raquel dos Santos | [@raquel0807](https://github.com/raquel0807) | Ideia do projeto, documento inicial com a especificação do sistema e testes |
+
+---|---|---|
+| Nattaly Buralde Queiroz | [@NattalyB](https://github.com/NattalyB) | Levantamento de requisitos, desenvolvimento do front-end e do back-end (com apoio do Claude, assistente de IA da Anthropic), banco de dados, deploy e testes |
+| Eliane da Silva Barboza | [@ElianeBTech](https://github.com/ElianeBTech) | Logo do AprendaPlus, favicon, layout da tela de cadastro e do cabeçalho com a barra de pesquisa (front-end) e testes |
+| Raquel dos Santos | [@raquel0807](https://github.com/raquel0807) | Ideia do projeto, documento inicial com a especificação do sistema e testes |
+| Marcelo Yuri | [@MarceloYuri](https://github.com/MarceloYuri) | Layout base do site (front-end) e testes |
+| Karina _(sobrenome)_ | [@usuario](https://github.com/usuario) | Ideia do projeto e revisão do sistema |
+
 ---
 
 Projeto desenvolvido para fins acadêmicos no programa **+PraTi / Codifica**, 2026.
