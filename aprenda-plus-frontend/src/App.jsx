@@ -42,10 +42,13 @@ import AdminSalaDeAula from './pages/admin/AdminSalaDeAula';
 import AdminTreinamentos from './pages/admin/AdminTreinamentos';
 import AdminHistorico from './pages/admin/AdminHistorico';
 import AdminComercial from './pages/admin/AdminComercial';
+import AdminChamados from './pages/admin/AdminChamados';
+import AdminSuporte from './pages/admin/AdminSuporte';
 import EsqueciSenha from './pages/EsqueciSenha';
 import RedefinirSenha from './pages/RedefinirSenha';
 import MinhasTurmasProfessor from './pages/professor/MinhasTurmasProfessor';
 import TurmaProfessor from './pages/professor/TurmaProfessor';
+import SuporteProfessor from './pages/professor/SuporteProfessor';
 
 function SitePage({ children }) {
   return (
@@ -77,6 +80,8 @@ function App() {
 
         <Route path="/professor" element={<SitePage><MinhasTurmasProfessor /></SitePage>} />
         <Route path="/professor/turmas/:idTurma" element={<SitePage><TurmaProfessor /></SitePage>} />
+        <Route path="/professor/suporte" element={<SitePage><SuporteProfessor /></SitePage>} />
+        <Route path="/professor/suporte/:idChamado" element={<SitePage><SuporteProfessor /></SitePage>} />
 
         <Route path="/esqueci-senha" element={<SitePage><EsqueciSenha /></SitePage>} />
         <Route path="/redefinir-senha" element={<SitePage><RedefinirSenha /></SitePage>} />
@@ -98,6 +103,10 @@ function App() {
           <Route path="treinamentos" element={<RotaModulo modulo="treinamentos"><AdminTreinamentos /></RotaModulo>} />
           <Route path="historico" element={<RotaModulo modulo="historico"><AdminHistorico /></RotaModulo>} />
           <Route path="comercial" element={<RotaModulo modulo="comercial"><AdminComercial /></RotaModulo>} />
+          <Route path="chamados" element={<RotaModulo modulo="chamados"><AdminChamados /></RotaModulo>} />
+          <Route path="chamados/:idChamado" element={<RotaModulo modulo="chamados"><AdminChamados /></RotaModulo>} />
+          <Route path="suporte" element={<RotaModulo modulo="suporte"><AdminSuporte /></RotaModulo>} />
+          <Route path="suporte/:idChamado" element={<RotaModulo modulo="suporte"><AdminSuporte /></RotaModulo>} />
 
           <Route path="cursos" element={<RotaModulo modulo="cursos"><AdminCursos /></RotaModulo>} />
           <Route path="cursos/novo" element={<RotaModulo modulo="cursos"><AdminCursoForm /></RotaModulo>} />

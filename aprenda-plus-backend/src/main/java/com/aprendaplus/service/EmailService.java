@@ -112,6 +112,21 @@ public class EmailService {
                 "Criar minha senha", link);
     }
 
+    // Resposta do suporte num chamado aberto por funcionário ou professor
+    public void chamadoRespondido(String email, String nome, Integer numero, String assunto, String resposta,
+                                  String situacao, String link) {
+        String texto = resposta == null ? "" : resposta.length() > 800 ? resposta.substring(0, 800) + "..." : resposta;
+        enviarComLink(email, nome, "Chamado #" + numero + " respondido: " + assunto,
+                "Seu chamado foi respondido",
+                "<p>Olá, <strong>" + html(primeiroNome(nome)) + "</strong>!</p>"
+                        + "<p>O suporte respondeu o seu chamado <strong>#" + numero + " · " + html(assunto) + "</strong>"
+                        + (situacao == null ? "" : " (situação: <strong>" + html(situacao) + "</strong>)") + ":</p>"
+                        + "<div style=\"border-left:4px solid #00b4d8;background:#f0f9ff;padding:12px 16px;border-radius:6px\">"
+                        + html(texto).replace("\n", "<br>") + "</div>"
+                        + "<p>Se ainda precisar de ajuda, é só responder pelo próprio chamado.</p>",
+                "Abrir o chamado", link);
+    }
+
     // Endereço completo de uma tela do site (ex.: "#/redefinir-senha?token=...")
     public String linkDoSite(String caminho) {
         String base = site == null ? "" : site;

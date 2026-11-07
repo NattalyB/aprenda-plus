@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
-import logo from '../../assets/logo-aprenda-plus-branco.png';
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import logo from '../../assets/logo-aprenda-plus-branco-transparente.png';
 import {
   buscarMeuAcesso,
   getAcessoAdmin,
@@ -11,6 +11,7 @@ import {
 import { modulosLiberados, podeUsar } from '../../utils/modulosAdmin';
 import NotificacoesInscricoes from './NotificacoesInscricoes';
 import EtiquetaNivel from './EtiquetaNivel';
+import SeletorTema from '../SeletorTema';
 
 const CHAVE_RECOLHIDO = 'menuAdminRecolhido';
 
@@ -24,6 +25,7 @@ const lerRecolhido = () => {
 
 function AdminLayout() {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const [acesso, setAcesso] = useState(getAcessoAdmin);
   const [recolhido, setRecolhido] = useState(lerRecolhido);
   // Nome do item quando o menu está recolhido e o mouse passa por cima
@@ -103,13 +105,15 @@ function AdminLayout() {
           </button>
         </div>
 
-        {/* Cada um só é avisado do que o seu nível pode resolver */}
-        {['inscricoes', 'alunos', 'financeiro'].some((modulo) => podeUsar(acesso, modulo)) && (
+        {/* Cada um só é avisado do que o seu nível pode resolver (e todos, das respostas aos seus chamados) */}
+        {acesso && (
           <NotificacoesInscricoes
             key={acesso?.nivel || 'sem-nivel'}
             inscricoes={podeUsar(acesso, 'inscricoes')}
             documentos={podeUsar(acesso, 'alunos')}
             financeiro={podeUsar(acesso, 'financeiro')}
+            chamados={podeUsar(acesso, 'chamados')}
+            meusChamados
           />
         )}
 
@@ -119,6 +123,7 @@ function AdminLayout() {
               key={item.chave}
               to={item.rota}
               end={item.fim}
+              state={{ de: pathname }}
               className={({ isActive }) => (isActive ? 'admin-nav-link ativo' : 'admin-nav-link')}
               {...propsDoItem(item.menu)}
             >
@@ -129,6 +134,7 @@ function AdminLayout() {
         </nav>
 
         <div className="admin-sidebar-footer">
+          <SeletorTema compacto className="admin-seletor-tema" />
           <span className="admin-usuario">
             <span aria-hidden="true">👤</span>
             <span className="admin-usuario-texto">

@@ -48,7 +48,7 @@ function CertificadoConclusao() {
   }
 
   return (
-    <div className="certificado-pagina">
+    <div className="certificado-pagina" data-tema="claro">
       <div className="certificado-acoes">
         <Link to={`/sala/${idTurma}`} className="admin-btn admin-btn-secundario">← Voltar para a sala</Link>
         <button type="button" className="admin-btn admin-btn-primary" onClick={() => window.print()}>

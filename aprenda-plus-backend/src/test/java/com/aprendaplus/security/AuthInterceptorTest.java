@@ -451,4 +451,39 @@ class AuthInterceptorTest {
         assertTrue(doFuncionario(1, "POST", "/planos-de-aula/turma/5/aulas"));
         assertTrue(doFuncionario(5, "PUT", "/planos-de-aula/aulas/3/mover"));
     }
+
+    // ===== Chamados de suporte =====
+
+    @Test
+    void qualquerFuncionarioAbreOsPropriosChamados() throws Exception {
+        assertTrue(doFuncionario(3, "GET", "/meus-chamados"));
+        assertTrue(doFuncionario(3, "POST", "/meus-chamados"));
+        assertTrue(doFuncionario(6, "POST", "/meus-chamados/4/mensagens"));   // até quem só tem o Comercial
+        assertTrue(doFuncionario(5, "PUT", "/meus-chamados/4/fechar"));
+        assertTrue(doFuncionario(2, "GET", "/meus-chamados/4/mensagens/2/anexo"));
+        assertFalse(doFuncionario(4, "GET", "/meus-chamados"));              // conta bloqueada
+        assertEquals(401, response.getStatus());
+    }
+
+    @Test
+    void atenderChamadosExigeOModuloAteParaConsultar() throws Exception {
+        assertFalse(doFuncionario(2, "GET", "/chamados"));
+        assertEquals(403, response.getStatus());
+        assertFalse(doFuncionario(3, "POST", "/chamados/4/mensagens"));
+        assertTrue(doFuncionario(1, "GET", "/chamados"));
+        assertTrue(doFuncionario(1, "PUT", "/chamados/4"));
+    }
+
+    @Test
+    void professorAbreChamadoPeloPortalEAlunoNaoAbre() throws Exception {
+        String tokenProfessor = jwtUtil.gerarToken("prof@teste.com", 3, "PROFESSOR");
+        assertTrue(requisicao("POST", "/docente/chamados", tokenProfessor));
+        assertTrue(requisicao("GET", "/docente/chamados/4", tokenProfessor));
+        assertFalse(requisicao("GET", "/meus-chamados", tokenProfessor));
+        assertFalse(requisicao("GET", "/chamados", tokenProfessor));
+        assertFalse(requisicao("POST", "/meus-chamados", tokenAluno));
+        assertFalse(requisicao("GET", "/chamados", tokenAluno));
+        assertFalse(requisicao("GET", "/meus-chamados", null));
+        assertEquals(401, response.getStatus());
+    }
 }

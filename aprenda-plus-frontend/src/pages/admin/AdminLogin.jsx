@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import CampoSenha from '../../components/CampoSenha';
 import { useNavigate, Link } from 'react-router-dom';
-import logo from '../../assets/logo-aprenda-plus-branco.png';
+import logo from '../../assets/logo-aprenda-plus-branco-transparente.png';
+import SeletorTema from '../../components/SeletorTema';
 import { loginFuncionario, salvarSessaoAdmin } from '../../services/authAdminService';
 
 function AdminLogin() {
@@ -39,6 +40,7 @@ function AdminLogin() {
 
   return (
     <div className="admin-login-page">
+      <SeletorTema compacto className="seletor-tema-flutuante" />
       <img src={logo} alt="Aprenda Plus" className="admin-login-logo" />
 
       <div className="form-card form-card-sm">

@@ -7,9 +7,14 @@ import { listarInscricoes } from '../../services/inscricaoService';
 import { buscarMeuAcesso } from '../../services/authAdminService';
 import { buscarAlertasFinanceiros } from '../../services/financeiroService';
 import { situacaoDosDocumentos } from '../../services/documentoService';
+import { listarChamados, listarMeusChamados } from '../../services/chamadoService';
 
 jest.mock('../../services/inscricaoService');
 jest.mock('../../services/financeiroService');
+jest.mock('../../services/chamadoService', () => ({
+  listarChamados: jest.fn(() => Promise.resolve([])),
+  listarMeusChamados: jest.fn(() => Promise.resolve([])),
+}));
 jest.mock('../../services/documentoService', () => ({
   ...jest.requireActual('../../services/documentoService'),
   situacaoDosDocumentos: jest.fn(),
@@ -50,8 +55,9 @@ test('Master vê o menu completo, o nome, o nível e a página atual', () => {
 
   expect(screen.getByText('Olá, Admin Teste')).toBeInTheDocument();
   expect(screen.getByText('Master')).toBeInTheDocument();
-  // Início + 15 módulos (incluindo Sala de aula, Financeiro, Comercial, Treinamentos, Histórico e Sistema)
-  expect(within(menu()).getAllByRole('link')).toHaveLength(16);
+  // Início + 17 itens (incluindo Sala de aula, Financeiro, Comercial, Chamados, Treinamentos, Suporte, Histórico e Sistema)
+  expect(within(menu()).getAllByRole('link')).toHaveLength(18);
+  expect(screen.getByText('Chamados')).toBeInTheDocument();
   expect(screen.getByText('Histórico de alterações')).toBeInTheDocument();
   expect(screen.getByText('Funcionários do painel')).toBeInTheDocument();
   expect(screen.getByText('Sistema')).toBeInTheDocument();
@@ -66,8 +72,8 @@ test('outro nível só vê os módulos liberados', () => {
   montar('/admin');
 
   const textos = within(menu()).getAllByRole('link').map((link) => link.textContent);
-  // Treinamentos aparece para toda a equipe
-  expect(textos).toEqual(['🏠Início', '🧾Inscrições', '✅Matrículas', '📚Treinamentos']);
+  // Treinamentos e Suporte aparecem para toda a equipe
+  expect(textos).toEqual(['🏠Início', '🧾Inscrições', '✅Matrículas', '📚Treinamentos', '🆘Suporte']);
   expect(screen.getByText('Início do painel')).toBeInTheDocument();
 });
 
@@ -79,11 +85,15 @@ test('só com o financeiro, o sininho aparece para os avisos de parcelas', () =>
   expect(screen.getByText('Financeiro')).toBeInTheDocument();
 });
 
-test('sem inscrições, alunos nem financeiro, o sininho não aparece', () => {
+test('sem inscrições, alunos nem financeiro, o sininho só confere as respostas dos próprios chamados', async () => {
+  jest.clearAllMocks();
   logarAdmin('Davi', { nivel: 'Cursos', master: false, modulos: ['cursos', 'turmas'] });
   montar('/admin');
 
-  expect(screen.queryByRole('button', { name: /Notificações/ })).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: /Notificações/ })).toBeInTheDocument();
+  await waitFor(() => expect(listarMeusChamados).toHaveBeenCalledWith('funcionario'));
+  expect(listarChamados).not.toHaveBeenCalled();
+  expect(listarInscricoes).not.toHaveBeenCalled();
 });
 
 test('cada nível só é avisado do que é dele: documentos para quem cuida de alunos', async () => {

@@ -1,4 +1,4 @@
-import logoBranco from '../assets/logo-aprenda-plus-branco.png';
+import logoBranco from '../assets/logo-aprenda-plus-branco-transparente.png';
 
 function Footer() {
   return (

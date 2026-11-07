@@ -4,9 +4,11 @@ import { renderizar } from '../../testUtils';
 import { listarInscricoes } from '../../services/inscricaoService';
 import { buscarAlertasFinanceiros } from '../../services/financeiroService';
 import { situacaoDosDocumentos } from '../../services/documentoService';
+import { listarChamados, listarMeusChamados } from '../../services/chamadoService';
 
 jest.mock('../../services/inscricaoService');
 jest.mock('../../services/financeiroService');
+jest.mock('../../services/chamadoService', () => ({ listarChamados: jest.fn(), listarMeusChamados: jest.fn() }));
 jest.mock('../../services/documentoService', () => ({
   ...jest.requireActual('../../services/documentoService'),
   situacaoDosDocumentos: jest.fn(),
@@ -299,7 +301,12 @@ describe('documentos para analisar (só quem cuida de alunos)', () => {
     fireEvent.click(screen.getByRole('button', { name: '✓ Marcar todas como lidas' }));
 
     expect(botao()).toHaveAccessibleName('Notificações: nenhuma não lida');
-    expect(JSON.parse(localStorage.getItem('notificacoesLidas:1'))).toEqual({ documentos: ['7'], financeiro: ['v3'] });
+    expect(JSON.parse(localStorage.getItem('notificacoesLidas:1'))).toEqual({
+      documentos: ['7'],
+      financeiro: ['v3'],
+      chamados: [],
+      respostas: [],
+    });
   });
 
   test('um documento no singular; falha ou resposta vazia não mostra nada', async () => {
@@ -330,3 +337,72 @@ describe('documentos para analisar (só quem cuida de alunos)', () => {
     expect(situacaoDosDocumentos).not.toHaveBeenCalled();
   });
 });
+
+describe('chamados de suporte', () => {
+  const chamado = (id, dados = {}) => ({
+    idChamado: id, assunto: `Assunto ${id}`, prioridade: 'media', status: 'aberto', ultimaMensagemDe: 'solicitante',
+    atualizadoEm: `2026-11-07T1${id}:00:00`, ...dados,
+  });
+
+  test('quem atende é avisado dos chamados esperando o suporte (e do urgente)', async () => {
+    listarChamados.mockResolvedValue([
+      chamado(1, { prioridade: 'urgente' }),
+      chamado(2, { status: 'em_atendimento', ultimaMensagemDe: 'suporte' }),
+      chamado(3, { status: 'em_atendimento' }),
+    ]);
+    renderizar(<NotificacoesInscricoes inscricoes={false} chamados />);
+
+    await waitFor(() => expect(botao()).toHaveAccessibleName('Notificações: 2 chamados para atender'));
+    fireEvent.click(botao());
+    expect(screen.getByText(/2 chamados esperando/)).toBeInTheDocument();
+    expect(screen.getByText('(tem urgente!)')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Atender chamados' }));
+    expect(screen.getByTestId('endereco')).toHaveTextContent('/admin/chamados');
+    expect(botao()).toHaveAccessibleName('Notificações: nenhuma não lida');
+    expect(JSON.parse(localStorage.getItem('notificacoesLidas:1')).chamados).toEqual([
+      '1:2026-11-07T11:00:00', '3:2026-11-07T13:00:00',
+    ]);
+  });
+
+  test('quem abriu é avisado da resposta do suporte e vai direto para o chamado', async () => {
+    listarMeusChamados.mockResolvedValue([
+      chamado(4, { status: 'resolvido', ultimaMensagemDe: 'suporte' }),
+      chamado(5, { status: 'fechado', ultimaMensagemDe: 'suporte' }),
+    ]);
+    renderizar(<NotificacoesInscricoes inscricoes={false} meusChamados />);
+
+    await waitFor(() => expect(botao()).toHaveAccessibleName('Notificações: 1 resposta do suporte'));
+    expect(listarMeusChamados).toHaveBeenCalledWith('funcionario');
+    fireEvent.click(botao());
+    expect(screen.getByText(/O suporte respondeu o chamado #4/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Ver resposta' }));
+    expect(screen.getByTestId('endereco')).toHaveTextContent('/admin/suporte/4');
+  });
+
+  test('várias respostas levam para a lista; marcar todas como lidas inclui os chamados', async () => {
+    listarMeusChamados.mockResolvedValue([
+      chamado(6, { status: 'em_atendimento', ultimaMensagemDe: 'suporte' }),
+      chamado(7, { status: 'resolvido', ultimaMensagemDe: 'suporte' }),
+    ]);
+    listarChamados.mockResolvedValue([chamado(8)]);
+    renderizar(<NotificacoesInscricoes inscricoes={false} chamados meusChamados />);
+
+    await waitFor(() =>
+      expect(botao()).toHaveAccessibleName('Notificações: 1 chamado para atender e 2 respostas do suporte')
+    );
+    fireEvent.click(botao());
+    fireEvent.click(screen.getByRole('button', { name: /Marcar todas como lidas/ }));
+    expect(botao()).toHaveAccessibleName('Notificações: nenhuma não lida');
+    fireEvent.click(screen.getByRole('button', { name: 'Ver respostas' }));
+    expect(screen.getByTestId('endereco')).toHaveTextContent('/admin/suporte');
+  });
+
+  test('falha na consulta dos chamados não mostra nada', async () => {
+    listarChamados.mockRejectedValue(new Error('offline'));
+    listarMeusChamados.mockRejectedValue(new Error('offline'));
+    renderizar(<NotificacoesInscricoes inscricoes={false} chamados meusChamados />);
+    await waitFor(() => expect(listarMeusChamados).toHaveBeenCalled());
+    expect(botao()).toHaveAccessibleName('Notificações: nenhuma não lida');
+  });
+});
+

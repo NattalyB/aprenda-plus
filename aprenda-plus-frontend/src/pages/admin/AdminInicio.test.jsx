@@ -26,6 +26,7 @@ test('mostra um atalho para cada módulo liberado', () => {
     '/admin/inscricoes',
     '/admin/matriculas',
     '/admin/treinamentos',
+    '/admin/suporte',
   ]);
   expect(screen.queryByText('Nenhum módulo liberado')).not.toBeInTheDocument();
 });
@@ -33,7 +34,7 @@ test('mostra um atalho para cada módulo liberado', () => {
 test('o Master vê todos os atalhos, inclusive Sistema', () => {
   montar({ nivel: 'Master', master: true, modulos: [] });
 
-  expect(screen.getAllByRole('link')).toHaveLength(15);
+  expect(screen.getAllByRole('link')).toHaveLength(17);
   expect(screen.getByText('Sistema')).toBeInTheDocument();
   expect(screen.getByRole('heading', { name: 'Olá!' })).toBeInTheDocument();
 });
@@ -51,11 +52,11 @@ test('sem contexto do layout também não quebra', () => {
   expect(screen.getByText('Nenhum módulo liberado')).toBeInTheDocument();
 });
 
-test('o nível Comercial vê só o Comercial e os Treinamentos', () => {
+test('o nível Comercial vê só o Comercial, os Treinamentos e o Suporte', () => {
   montar({ nivel: 'Comercial', master: false, modulos: ['comercial'] });
 
   const atalhos = screen.getAllByRole('link');
-  expect(atalhos).toHaveLength(2);
+  expect(atalhos).toHaveLength(3);
   expect(atalhos[0]).toHaveAttribute('href', '/admin/comercial');
   expect(screen.queryByText('Alunos')).not.toBeInTheDocument();
   expect(screen.queryByText('Nenhum módulo liberado')).not.toBeInTheDocument();

@@ -4,6 +4,8 @@ import { listarInscricoes } from '../../services/inscricaoService';
 import { buscarAlertasFinanceiros } from '../../services/financeiroService';
 import { situacaoDosDocumentos } from '../../services/documentoService';
 import { formatarValor } from '../../utils/precoCurso';
+import { listarChamados, listarMeusChamados } from '../../services/chamadoService';
+import { aguardaSuporte, chaveDeNovidade, temRespostaDoSuporte } from '../../utils/chamados';
 
 // De quanto em quanto tempo o painel confere se chegou coisa nova
 export const INTERVALO_MS = 60 * 1000;
@@ -20,16 +22,19 @@ const lerUltimaVista = () => {
 
 const salvarUltimaVista = (id) => localStorage.setItem(chaveVistas(), String(id));
 
-// { documentos: ['7', '9'], financeiro: ['v12', 'a15'] }
+// { documentos: ['7', '9'], financeiro: ['v12', 'a15'], chamados: ['4:2026-11-07T19:00'], respostas: [...] }
+const lista = (valor) => (Array.isArray(valor) ? valor : []);
 const lerLidas = () => {
   try {
     const salvo = JSON.parse(localStorage.getItem(chaveLidas()));
     return {
-      documentos: Array.isArray(salvo?.documentos) ? salvo.documentos : [],
-      financeiro: Array.isArray(salvo?.financeiro) ? salvo.financeiro : [],
+      documentos: lista(salvo?.documentos),
+      financeiro: lista(salvo?.financeiro),
+      chamados: lista(salvo?.chamados),
+      respostas: lista(salvo?.respostas),
     };
   } catch {
-    return { documentos: [], financeiro: [] };
+    return { documentos: [], financeiro: [], chamados: [], respostas: [] };
   }
 };
 
@@ -50,18 +55,24 @@ const plural = (n, um, varios) => `${n} ${n === 1 ? um : varios}`;
 // - inscrições novas (módulo Inscrições)
 // - certificados de conclusão para analisar (módulo Alunos)
 // - boletos vencendo ou em atraso (módulo Financeiro)
+// - chamados esperando o suporte (módulo Chamados)
+// - respostas do suporte nos chamados que a própria pessoa abriu (todos)
 // O número no sininho conta só o que ainda não foi lido. Abrir uma área ("Ver ...")
 // ou clicar em "Marcar todas como lidas" zera o número; só volta se chegar algo novo.
 function NotificacoesInscricoes({
   inscricoes: mostrarInscricoes = true,
   documentos: mostrarDocumentos = false,
   financeiro: mostrarFinanceiro = false,
+  chamados: mostrarChamados = false,
+  meusChamados: mostrarMeusChamados = false,
 }) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const [novas, setNovas] = useState([]);
   const [alertas, setAlertas] = useState({ vencendoEmBreve: 0, atrasadas: 0, idsVencendo: [], idsAtrasadas: [] });
   const [documentosPendentes, setDocumentosPendentes] = useState([]);
+  const [chamadosPendentes, setChamadosPendentes] = useState([]);
+  const [respostas, setRespostas] = useState([]);
   const [lidas, setLidas] = useState(lerLidas);
   const [aberto, setAberto] = useState(false);
   const maiorIdRef = useRef(0);
@@ -91,6 +102,20 @@ function NotificacoesInscricoes({
               .map(([idAluno]) => String(idAluno))
           )
         )
+        .catch(() => {
+          // Tenta de novo na próxima verificação
+        });
+    }
+    if (mostrarChamados) {
+      listarChamados()
+        .then((todos) => setChamadosPendentes((todos || []).filter(aguardaSuporte)))
+        .catch(() => {
+          // Tenta de novo na próxima verificação
+        });
+    }
+    if (mostrarMeusChamados) {
+      listarMeusChamados('funcionario')
+        .then((meus) => setRespostas((meus || []).filter(temRespostaDoSuporte)))
         .catch(() => {
           // Tenta de novo na próxima verificação
         });
@@ -152,7 +177,11 @@ function NotificacoesInscricoes({
   const chavesFin = chavesFinanceiras(alertas);
   const finNaoLidos = mostrarFinanceiro ? naoLidas(chavesFin, lidas.financeiro) : 0;
   const docsNaoLidos = mostrarDocumentos ? naoLidas(documentosPendentes, lidas.documentos) : 0;
-  const quantidade = novas.length + docsNaoLidos + finNaoLidos;
+  const chavesChamados = chamadosPendentes.map(chaveDeNovidade);
+  const chavesRespostas = respostas.map(chaveDeNovidade);
+  const chamadosNaoLidos = mostrarChamados ? naoLidas(chavesChamados, lidas.chamados) : 0;
+  const respostasNaoLidas = mostrarMeusChamados ? naoLidas(chavesRespostas, lidas.respostas) : 0;
+  const quantidade = novas.length + docsNaoLidos + finNaoLidos + chamadosNaoLidos + respostasNaoLidas;
 
   const atualizarLidas = (mudanca) => {
     const novasLidas = { ...lidas, ...mudanca };
@@ -166,6 +195,8 @@ function NotificacoesInscricoes({
   };
   const lerDocumentos = () => atualizarLidas({ documentos: documentosPendentes });
   const lerFinanceiro = () => atualizarLidas({ financeiro: chavesFin });
+  const lerChamados = () => atualizarLidas({ chamados: chavesChamados });
+  const lerRespostas = () => atualizarLidas({ respostas: chavesRespostas });
 
   const marcarTodasComoLidas = () => {
     if (mostrarInscricoes) lerInscricoes();
@@ -173,6 +204,8 @@ function NotificacoesInscricoes({
     atualizarLidas({
       ...(mostrarDocumentos ? { documentos: documentosPendentes } : {}),
       ...(mostrarFinanceiro ? { financeiro: chavesFin } : {}),
+      ...(mostrarChamados ? { chamados: chavesChamados } : {}),
+      ...(mostrarMeusChamados ? { respostas: chavesRespostas } : {}),
     });
   };
 
@@ -186,6 +219,8 @@ function NotificacoesInscricoes({
   if (novas.length > 0) partes.push(plural(novas.length, 'inscrição nova', 'inscrições novas'));
   if (docsNaoLidos > 0) partes.push(plural(docsNaoLidos, 'documento para analisar', 'documentos para analisar'));
   if (finNaoLidos > 0) partes.push(plural(finNaoLidos, 'aviso financeiro', 'avisos financeiros'));
+  if (chamadosNaoLidos > 0) partes.push(plural(chamadosNaoLidos, 'chamado para atender', 'chamados para atender'));
+  if (respostasNaoLidas > 0) partes.push(plural(respostasNaoLidas, 'resposta do suporte', 'respostas do suporte'));
   const rotulo = partes.length > 0 ? `Notificações: ${partes.join(' e ')}` : 'Notificações: nenhuma não lida';
 
   const etiquetaNova = (n) =>
@@ -223,6 +258,41 @@ function NotificacoesInscricoes({
               <span className="notificacoes-em-dia">✓ Tudo lido</span>
             )}
           </div>
+
+          {mostrarMeusChamados && respostas.length > 0 && (
+            <div className="notificacoes-chamados">
+              <h2>Seus chamados {etiquetaNova(respostasNaoLidas)}</h2>
+              <ul>
+                {respostas.slice(0, 3).map((c) => (
+                  <li key={c.idChamado}>💬 O suporte respondeu o chamado #{c.idChamado}: {c.assunto}</li>
+                ))}
+              </ul>
+              <button
+                type="button"
+                className="admin-btn admin-btn-sm admin-btn-primary"
+                onClick={() => abrir(lerRespostas, respostas.length === 1 ? `/admin/suporte/${respostas[0].idChamado}` : '/admin/suporte')}
+              >
+                Ver resposta{respostas.length === 1 ? '' : 's'}
+              </button>
+            </div>
+          )}
+
+          {mostrarChamados && chamadosPendentes.length > 0 && (
+            <div className="notificacoes-chamados">
+              <h2>Chamados {etiquetaNova(chamadosNaoLidos)}</h2>
+              <p>
+                🎧 {plural(chamadosPendentes.length, 'chamado esperando', 'chamados esperando')} o suporte
+                {chamadosPendentes.some((c) => c.prioridade === 'urgente') && <strong> (tem urgente!)</strong>}
+              </p>
+              <button
+                type="button"
+                className="admin-btn admin-btn-sm admin-btn-primary"
+                onClick={() => abrir(lerChamados, '/admin/chamados')}
+              >
+                Atender chamados
+              </button>
+            </div>
+          )}
 
           {mostrarFinanceiro && (
             <div className="notificacoes-financeiro">

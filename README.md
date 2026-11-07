@@ -23,6 +23,8 @@ Projeto final do curso **Desenvolvimento Full Stack** do programa **+PraTi / Cod
 - [Documento de escolaridade e e-mails](#-documento-de-escolaridade-e-e-mails)
 - [Sala de aula EAD](#-sala-de-aula-ead)
 - [Portal do Professor](#-portal-do-professor)
+- [Chamados de suporte](#-chamados-de-suporte)
+- [Acessibilidade: tema claro, escuro e alto contraste](#-acessibilidade-tema-claro-escuro-e-alto-contraste)
 - [Recuperação de senha](#-recuperação-de-senha)
 - [Importação por planilha](#-importação-por-planilha)
 - [Tecnologias](#-tecnologias)
@@ -176,6 +178,12 @@ Projeto final do curso **Desenvolvimento Full Stack** do programa **+PraTi / Cod
 **Comercial** (detalhes na seção [Comercial](#-comercial))
 
 - Funil de vendas, leads de quem não concluiu a compra (com mensagem pronta para o WhatsApp) e os cursos e termos mais procurados no site.
+
+**Chamados de suporte e temas** (detalhes em [Chamados de suporte](#-chamados-de-suporte) e [Acessibilidade](#-acessibilidade-tema-claro-escuro-e-alto-contraste))
+
+- **🆘 Suporte:** qualquer funcionário abre um chamado (com print) quando algo não funciona e acompanha a resposta.
+- **🎧 Chamados:** quem tem o módulo atende os chamados da equipe e dos professores, por prioridade.
+- **Tema claro, escuro e alto contraste** no rodapé do menu, também no site e no Portal do Professor.
 
 **Treinamentos**
 
@@ -428,6 +436,47 @@ As tabelas `plano_de_aula` e `aula` já existiam no modelo do banco: a sala de a
 
 ---
 
+## 🎧 Chamados de suporte
+
+Quando algo não funciona, a equipe do painel e os professores **abrem um chamado** em vez de mandar mensagem solta no WhatsApp. Assim nada se perde, e fica registrado o que aconteceu e como foi resolvido (script `database/chamados.sql`).
+
+**Quem abre**
+- **Funcionários do painel (qualquer nível de acesso):** item **🆘 Suporte** no menu lateral.
+- **Professores:** botão **🆘 Suporte** no Portal do Professor.
+- O chamado tem **assunto**, **categoria** (erro no sistema, acesso e senha, dúvida de uso, sugestão, outro), **prioridade** (baixa, média, alta, urgente), a **tela onde aconteceu** (preenchida sozinha com a tela de onde a pessoa veio) e a **descrição**, com um **print ou PDF de até 5 MB** opcional.
+- Depois, a pessoa acompanha a **conversa**, escreve mais detalhes, anexa outros prints e, quando estiver tudo certo, **fecha o chamado**. Cada um só vê os próprios chamados.
+
+**Quem atende**
+- Módulo **🎧 Chamados** no painel. O Master sempre tem e pode liberar para outro nível (ex.: um nível "Suporte") em **Sistema**.
+- A lista começa por **"Aguardando o suporte"**, do mais urgente para o menos urgente, com filtros por situação e prioridade e busca por número, assunto, pessoa ou tela.
+- No chamado, o atendente **responde** (com anexo, se quiser), **responde e já marca como resolvido**, muda a **situação** e a **prioridade** e **assume o chamado** (quem responde primeiro vira o responsável).
+- Quem abriu recebe **cada resposta por e-mail**, com o link direto para o chamado.
+
+**Situações:** Aberto → Em atendimento (na primeira resposta do suporte) → Resolvido → Fechado. Se quem abriu escrever num chamado resolvido, ele **volta para Aberto**. Chamado fechado não recebe mais mensagens: se o problema voltar, abre-se um novo.
+
+**Avisos no sininho:** quem tem o módulo Chamados é avisado dos chamados esperando o suporte (com destaque quando há um urgente), e todo funcionário é avisado quando o suporte responde um chamado seu.
+
+**Segurança:** o servidor confere em cada requisição se o chamado é mesmo de quem está pedindo (para os outros, ele "não existe"); atender exige o módulo Chamados até para consultar; os anexos são conferidos pelo conteúdo do arquivo (não só pela extensão) e ficam guardados no banco, como os documentos dos alunos. Abrir, responder, fechar e atender entram no **Histórico de alterações**.
+
+---
+
+## ♿ Acessibilidade: tema claro, escuro e alto contraste
+
+Em **todos os ambientes** (site, área do aluno, sala de aula, Portal do Professor e painel) há um seletor com três temas:
+
+| Tema | Para quem |
+|---|---|
+| ☀️ **Claro** | O visual padrão. |
+| 🌙 **Escuro** | Fundo escuro, mais confortável à noite e em telas grandes. |
+| 👁️ **Alto contraste** | Para pessoas com baixa visão: fundo preto, texto branco, links e destaques em amarelo, **links sublinhados**, **botões e campos com contorno** e **foco do teclado bem visível**. |
+
+- O seletor fica no topo do site e no rodapé do menu do painel (e na tela de login do painel).
+- A escolha fica salva no navegador e vale para todas as áreas. Na primeira visita, o sistema segue a configuração do aparelho: se ele estiver em **alto contraste** ou em **modo escuro**, o AprendaPlus já abre assim.
+- **Documentos continuam claros:** o certificado, o recibo e tudo o que é impresso saem sempre no tema claro, como papel.
+- **Como foi feito:** as cores fixas do CSS viraram **variáveis de tema** (uma por papel: texto, fundo, borda, sombra e gráfico), e cada tema define os valores delas (arquivo `src/temas.css`). Assim, telas novas já nascem funcionando nos três temas.
+
+---
+
 ## 🔑 Recuperação de senha
 
 Alunos e funcionários do painel podem criar uma nova senha sozinhos, pelo link **"Esqueci minha senha"** na tela de login.
@@ -571,7 +620,7 @@ Requisição ─▶ AuthInterceptor ─▶ Controller ─▶ Service ─▶ Repo
 
 ![Diagrama entidade-relacionamento do AprendaPlus](docs/der-aprendaplus.png)
 
-O banco tem **33 tabelas**, organizadas em 7 áreas (no diagrama, cada área tem uma cor e aparecem só as colunas de chave):
+O banco tem **35 tabelas**, organizadas em 7 áreas (no diagrama, cada área tem uma cor e aparecem só as colunas de chave):
 
 | Área | Tabelas |
 |---|---|
@@ -581,11 +630,11 @@ O banco tem **33 tabelas**, organizadas em 7 áreas (no diagrama, cada área tem
 | **Financeiro** | `pagamento` (parcelas), `configuracao_financeira`, `conta_pagar`, `professor_hora_aula` |
 | **Sala de aula EAD** | `plano_de_aula`, `aula`, `aula_concluida`, `aviso_turma`, `certificado` |
 | **Comercial** | `evento_navegacao`, `contato_comercial` |
-| **Sistema** | `registro_atividade` (histórico de alterações), `treinamento` |
+| **Sistema** | `registro_atividade` (histórico de alterações), `treinamento`, `chamado` e `chamado_mensagem` (chamados de suporte) |
 
 - **Notação pé de galinha:** a linha sai do `id` da tabela "mãe" e chega na chave estrangeira da tabela "filha".
-- **38 chaves estrangeiras**, com a regra de exclusão escolhida caso a caso: `CASCADE` onde o registro filho não faz sentido sozinho (ex.: itens do carrinho, partes do pagamento), `SET NULL` onde o histórico deve continuar (ex.: o contato comercial de um funcionário que saiu) e bloqueio onde excluir apagaria dados importantes (ex.: turma com inscrições).
-- **39 regras de validação (`CHECK`)** no próprio banco: status permitidos, CPF com 11 números, valores maiores que zero, data final depois da inicial, tamanho máximo dos arquivos, multa de no máximo 2%...
+- **42 chaves estrangeiras**, com a regra de exclusão escolhida caso a caso: `CASCADE` onde o registro filho não faz sentido sozinho (ex.: itens do carrinho, partes do pagamento), `SET NULL` onde o histórico deve continuar (ex.: o contato comercial de um funcionário que saiu) e bloqueio onde excluir apagaria dados importantes (ex.: turma com inscrições).
+- **48 regras de validação (`CHECK`)** no próprio banco: status permitidos, CPF com 11 números, valores maiores que zero, data final depois da inicial, tamanho máximo dos arquivos, multa de no máximo 2%...
 
 ---
 
@@ -667,6 +716,7 @@ cd aprenda-plus
 | 13 | `treinamentos-e-historico.sql` | Treinamentos e histórico de alterações |
 | 14 | `modulo-comercial.sql` | Módulo Comercial |
 | 15 | `pagamento-dividido.sql` | Pagamento dividido em duas formas |
+| 16 | `chamados.sql` | Chamados de suporte (equipe e professores) |
 
 Os scripts `dados-demo-*.sql` são opcionais: preenchem o banco com dados de exemplo. Com o `psql`:
 
@@ -725,7 +775,7 @@ A meta do projeto era **cobertura mínima de 70%**. Os dois lados ficaram bem ac
 | | Testes | Cobertura | Ferramentas |
 |---|---|---|---|
 | **Back-end** | **790** | **98%** das instruções, 91% dos desvios (*branches*), 98% dos métodos e 100% das classes | JUnit 5, Mockito, MockMvc, JaCoCo |
-| **Front-end** | **799** | **98,3%** das instruções, 95,2% dos desvios (*branches*), 97% das funções e 99,3% das linhas | Jest, Testing Library |
+| **Front-end** | **838** | **98,4%** das instruções, 95,2% dos desvios (*branches*), 97% das funções e 99,3% das linhas | Jest, Testing Library |
 
 ### Back-end
 
@@ -814,8 +864,9 @@ O que é testado:
 |---|---|
 | **Visitante** | Ver cursos e turmas disponíveis, cadastrar-se (com o certificado), fazer login, validar um certificado e registrar (de forma anônima) buscas e cursos vistos |
 | **Aluno** | O próprio carrinho, a criação de inscrições, "Minhas inscrições" (com as próprias parcelas e documentos), a troca de turma das próprias inscrições e a sala de aula das turmas em que está matriculado |
-| **Funcionário** | Os módulos liberados pelo seu nível de acesso (consultas são livres, exceto Funcionários, Histórico, Financeiro, Comercial e Sistema) |
-| **Comercial** | Só o módulo Comercial e os Treinamentos (quem tem apenas esse módulo não tem a consulta livre aos cadastros) |
+| **Funcionário** | Os módulos liberados pelo seu nível de acesso (consultas são livres, exceto Funcionários, Histórico, Financeiro, Comercial, Chamados e Sistema) e os próprios chamados de suporte |
+| **Professor** | Só o Portal do Professor: as próprias turmas e os próprios chamados de suporte |
+| **Comercial** | Só o módulo Comercial, os Treinamentos e o Suporte (quem tem apenas esse módulo não tem a consulta livre aos cadastros) |
 | **Master** | Todas as rotas, inclusive o módulo Sistema |
 
 - **Cada aluno só vê e altera o que é dele** (carrinho e inscrições). A identidade vem do token assinado pelo servidor, não de dados enviados pelo navegador. Se um aluno tentar trocar a turma da inscrição de outra pessoa, a API responde como se ela não existisse.
@@ -957,6 +1008,9 @@ O histórico completo está nos **commits do repositório**: cada funcionalidade
 - Comercial: e-mail automático de lembrete para carrinho abandonado depois de alguns dias.
 - Comercial: apagar automaticamente os eventos de navegação com mais de 12 meses.
 - Pagamento dividido em mais de duas formas (hoje são duas).
+- Chamados: tempo de atendimento (SLA) por prioridade e um relatório de quanto tempo cada chamado levou para ser resolvido.
+- Chamados também para os alunos, direto na área do aluno.
+- Acessibilidade: botão para aumentar o tamanho da letra.
 
 ---
 

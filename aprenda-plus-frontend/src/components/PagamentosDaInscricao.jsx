@@ -7,7 +7,7 @@ import logo from '../assets/logo-aprenda-plus.png';
 export function Recibo({ parcela, aluno, onFechar }) {
   return (
     <div className="recibo-fundo" role="dialog" aria-modal="true" aria-label="Recibo de pagamento">
-      <div className="recibo">
+      <div className="recibo" data-tema="claro">
         <div className="recibo-topo">
           <img src={logo} alt="Aprenda Plus" />
           <div>

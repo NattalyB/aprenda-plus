@@ -58,7 +58,15 @@ class ModulosTest {
         assertEquals(Modulos.HISTORICO, Modulos.doCaminho("/atividades"));
         assertTrue(Modulos.LIBERAVEIS.contains(Modulos.HISTORICO));
         assertEquals(List.of("alunos", "professores", "cursos", "disciplinas", "periodos", "turmas", "aulas",
-                "inscricoes", "matriculas", "financeiro", "funcionarios", "historico", "comercial"), Modulos.LIBERAVEIS);
+                "inscricoes", "matriculas", "financeiro", "funcionarios", "historico", "comercial", "chamados"), Modulos.LIBERAVEIS);
+    }
+
+    @Test
+    void chamadosTemRotaPropriaEAbrirOProprioChamadoNaoEhDoModulo() {
+        assertEquals(Modulos.CHAMADOS, Modulos.doCaminho("/chamados"));
+        assertEquals(Modulos.CHAMADOS, Modulos.doCaminho("/chamados/4/mensagens"));
+        assertNull(Modulos.doCaminho("/meus-chamados"));
+        assertEquals("comercial,chamados", Modulos.escrever(List.of("chamados", "comercial")));
     }
 
     @Test

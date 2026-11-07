@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import logoBranco from '../assets/logo-aprenda-plus-branco.png';
+import logoBranco from '../assets/logo-aprenda-plus-branco-transparente.png';
 import CampoSenha from '../components/CampoSenha';
 import { redefinirSenha } from '../services/senhaService';
 import { mostrarAviso } from '../services/avisoService';

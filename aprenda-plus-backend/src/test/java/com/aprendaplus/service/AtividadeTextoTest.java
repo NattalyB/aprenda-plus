@@ -168,4 +168,24 @@ class AtividadeTextoTest {
         assertNull(AtividadeTexto.idDaResposta(new ComGetter(), null));
         assertNull(AtividadeTexto.numero("12345678901"));
     }
+
+    @Test
+    void chamadosDeSuporteEntramNoHistorico() {
+        Descricao abriu = d("POST", "/meus-chamados");
+        assertEquals("Chamados", abriu.modulo());
+        assertEquals(AtividadeTexto.CADASTROU, abriu.acao());
+        assertEquals("Abriu chamado de suporte", abriu.texto());
+        assertEquals("Abriu chamado de suporte",
+                AtividadeTexto.descrever("POST", "/docente/chamados", null, "professor").texto());
+        assertEquals("Escreveu no chamado #4",
+                AtividadeTexto.descrever("POST", "/docente/chamados/4/mensagens", null, "professor").texto());
+        assertEquals("Escreveu no chamado #4", d("POST", "/meus-chamados/4/mensagens").texto());
+        assertEquals("Fechou o chamado #4", d("PUT", "/meus-chamados/4/fechar").texto());
+        assertEquals("Respondeu o chamado #4", d("POST", "/chamados/4/mensagens").texto());
+        Descricao atendeu = d("PUT", "/chamados/4");
+        assertEquals(AtividadeTexto.ALTEROU, atendeu.acao());
+        assertEquals("Atualizou o chamado #4 (situação, prioridade ou responsável)", atendeu.texto());
+        // Caminho sem número cai na regra geral
+        assertEquals("Chamados", d("DELETE", "/chamados/x").modulo());
+    }
 }

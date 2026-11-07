@@ -12,7 +12,7 @@ import java.util.Set;
 public class AuthInterceptor implements HandlerInterceptor {
 
     private static final Set<String> MODULOS_SENSIVEIS =
-            Set.of(Modulos.FUNCIONARIOS, Modulos.HISTORICO, Modulos.FINANCEIRO, Modulos.COMERCIAL);
+            Set.of(Modulos.FUNCIONARIOS, Modulos.HISTORICO, Modulos.FINANCEIRO, Modulos.COMERCIAL, Modulos.CHAMADOS);
 
     private final JwtUtil jwtUtil;
 
@@ -145,7 +145,7 @@ public class AuthInterceptor implements HandlerInterceptor {
     // - consultar (GET) é livre para a equipe, porque uma tela usa dados de outras
     //   (ex.: Matrículas precisa listar os alunos);
     // - criar, editar e excluir exige o módulo liberado no nível;
-    // - Funcionários, Histórico, Financeiro, Comercial e Sistema são sensíveis: até para consultar precisa do módulo;
+    // - Funcionários, Histórico, Financeiro, Comercial, Chamados e Sistema são sensíveis: até para consultar precisa do módulo;
     // - quem só tem o Comercial não tem a consulta livre: usa só o módulo dele (e os Treinamentos).
     private boolean funcionarioPodeAcessar(String metodo, String caminho, Set<String> liberados) {
         if (caminho.equals("/niveis-acesso/meu")) {
@@ -153,6 +153,9 @@ public class AuthInterceptor implements HandlerInterceptor {
         }
         if ("GET".equals(metodo) && caminho.equals("/atividades/ultima")) {
             return true; // "última alteração" que aparece nos formulários do painel
+        }
+        if (caminho.equals("/meus-chamados") || caminho.startsWith("/meus-chamados/")) {
+            return true; // qualquer funcionário abre e acompanha os próprios chamados (o dono é conferido no serviço)
         }
 
         String modulo = Modulos.doCaminho(caminho);

@@ -37,9 +37,14 @@ function MinhasTurmasProfessor() {
           <h1>Olá{primeiroNome ? `, ${primeiroNome}` : ''}! 👋</h1>
           <p>Acompanhe o andamento dos alunos e monte as aulas das suas turmas.</p>
         </div>
-        <button type="button" className="admin-btn admin-btn-secundario" onClick={sair}>
-          Sair do portal
-        </button>
+        <div className="portal-prof-topo-acoes">
+          <Link to="/professor/suporte" state={{ de: '/professor' }} className="admin-btn admin-btn-secundario">
+            🆘 Suporte
+          </Link>
+          <button type="button" className="admin-btn admin-btn-secundario" onClick={sair}>
+            Sair do portal
+          </button>
+        </div>
       </div>
 
       {erro && <div className="form-erro">{erro}</div>}

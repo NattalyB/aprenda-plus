@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import logoBranco from '../assets/logo-aprenda-plus-branco.png';
+import logoBranco from '../assets/logo-aprenda-plus-branco-transparente.png';
 import { pedirNovaSenha } from '../services/senhaService';
 
 // Pede o link de nova senha por e-mail. painel = funcionário do painel admin.

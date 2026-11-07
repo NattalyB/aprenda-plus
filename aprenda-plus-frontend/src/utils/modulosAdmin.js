@@ -12,14 +12,16 @@ export const MODULOS = [
   { chave: 'matriculas', rota: '/admin/matriculas', menu: 'Matrículas', titulo: 'Matrículas', icone: '✅', descricao: 'Alunos matriculados nas turmas' },
   { chave: 'financeiro', rota: '/admin/financeiro', menu: 'Financeiro', titulo: 'Financeiro', icone: '💰', descricao: 'Parcelas, recebimentos e indicadores' },
   { chave: 'comercial', rota: '/admin/comercial', menu: 'Comercial', titulo: 'Comercial', icone: '📈', descricao: 'Leads, funil de vendas e interesse nos cursos' },
+  { chave: 'chamados', rota: '/admin/chamados', menu: 'Chamados', titulo: 'Chamados', icone: '🎧', descricao: 'Atender os pedidos de suporte da equipe e dos professores' },
   { chave: 'funcionarios', rota: '/admin/funcionarios', menu: 'Funcionários do painel', titulo: 'Funcionários', icone: '👥', descricao: 'Quem acessa o painel' },
   { chave: 'treinamentos', rota: '/admin/treinamentos', menu: 'Treinamentos', titulo: 'Treinamentos', icone: '📚', descricao: 'Vídeos e manuais de como usar o sistema', todos: true },
+  { chave: 'suporte', rota: '/admin/suporte', menu: 'Suporte', titulo: 'Suporte', icone: '🆘', descricao: 'Algo não funcionou? Abra um chamado', todos: true },
   { chave: 'historico', rota: '/admin/historico', menu: 'Histórico de alterações', titulo: 'Histórico', icone: '🕒', descricao: 'Quem cadastrou e alterou cada informação' },
   { chave: 'sistema', rota: '/admin/sistema', menu: 'Sistema', titulo: 'Sistema', icone: '⚙️', descricao: 'Níveis de acesso e permissões', soMaster: true },
 ];
 
 // Módulos que o Master pode liberar para os outros níveis
-// (Sistema é só do Master; Treinamentos toda a equipe já vê)
+// (Sistema é só do Master; Treinamentos e Suporte toda a equipe já vê)
 export const MODULOS_LIBERAVEIS = MODULOS.filter((m) => !m.soMaster && !m.todos);
 
 export const moduloPorChave = (chave) => MODULOS.find((m) => m.chave === chave);

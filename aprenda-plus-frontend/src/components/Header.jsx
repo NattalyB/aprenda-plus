@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import logo from '../assets/logo-aprenda-plus.png';
+import logoBranco from '../assets/logo-aprenda-plus-branco-transparente.png';
+import SeletorTema from './SeletorTema';
 import { estaLogado, getNomeAluno, logout } from '../services/authService';
 import { professorLogado, getNomeProfessor, sairProfessor } from '../services/docenteService';
 import { listarItensDoCarrinho } from '../services/carrinhoService';
@@ -125,7 +127,8 @@ function Header() {
     <header className="header">
       <div className="logo-container">
         <Link to="/" onClick={voltarAoInicio} aria-label="Ir para a página inicial">
-          <img src={logo} alt="Aprenda Plus" className="logo-img" />
+          <img src={logo} alt="Aprenda Plus" className="logo-img logo-clara" />
+          <img src={logoBranco} alt="Aprenda Plus" className="logo-img logo-escura" />
         </Link>
       </div>
 
@@ -226,6 +229,7 @@ function Header() {
             <Link to="/cadastro"><button className="btn-signup">Cadastro</button></Link>
           </>
         )}
+        <SeletorTema compacto />
       </div>
     </header>
   );

@@ -48,6 +48,8 @@ public final class AtividadeTexto {
             Map.entry("documentos", new Recurso("Alunos", "documento", null)),
             Map.entry("treinamentos", new Recurso("Treinamentos", "treinamento", "IdTreinamento")),
             Map.entry("comercial", new Recurso("Comercial", "contato comercial", null)),
+            Map.entry("chamados", new Recurso("Chamados", "chamado", "IdChamado")),
+            Map.entry("meus-chamados", new Recurso("Chamados", "chamado", "IdChamado")),
             Map.entry("sala", new Recurso("Sala de aula (EAD)", "certificado", null)));
 
     // Nomes das planilhas importadas
@@ -75,7 +77,9 @@ public final class AtividadeTexto {
         if (ignorar(metodo, caminho, query)) return null;
         // Portal do Professor: as mesmas ações da sala de aula do painel
         // (/docente/turmas/5/aulas -> /planos-de-aula/turma/5/aulas)
-        if (caminho.startsWith("/docente/")) {
+        if (caminho.startsWith("/docente/chamados")) {
+            caminho = "/meus-chamados" + caminho.substring("/docente/chamados".length());
+        } else if (caminho.startsWith("/docente/")) {
             caminho = "/planos-de-aula/" + caminho.substring("/docente/".length()).replaceFirst("^turmas/", "turma/");
         }
         String[] p = caminho.replaceAll("^/+|/+$", "").split("/");
@@ -146,6 +150,10 @@ public final class AtividadeTexto {
                     return new Descricao(modulo, CADASTROU, "Registrou contato com aluno", null, null, false);
                 }
             }
+            case "meus-chamados", "chamados" -> {
+                Descricao chamado = chamados(metodo, p, modulo, "chamados".equals(base));
+                if (chamado != null) return chamado;
+            }
             case "sala" -> {
                 if (p.length > 3 && "certificado".equals(p[3])) {
                     return new Descricao(modulo, CADASTROU, "Emitiu certificado da turma #" + p[2], null, null, false);
@@ -169,6 +177,27 @@ public final class AtividadeTexto {
             return new Descricao(modulo, acao, verbo(acao) + " " + recurso.singular() + " #" + num1, base, num1, false);
         }
         return new Descricao(modulo, acao, verbo(acao) + " " + recurso.singular(), null, null, false);
+    }
+
+    // Chamados de suporte: abrir, responder, fechar e (no módulo) atender
+    private static Descricao chamados(String metodo, String[] p, String modulo, boolean suporte) {
+        Integer id = p.length > 1 ? numero(p[1]) : null;
+        if ("POST".equals(metodo) && p.length == 1) {
+            return new Descricao(modulo, CADASTROU, "Abriu chamado de suporte", null, null, false);
+        }
+        if (id == null) return null;
+        if (p.length > 2 && "mensagens".equals(p[2])) {
+            return new Descricao(modulo, CADASTROU, (suporte ? "Respondeu o chamado #" : "Escreveu no chamado #") + id,
+                    null, null, false);
+        }
+        if (p.length > 2 && "fechar".equals(p[2])) {
+            return new Descricao(modulo, ALTEROU, "Fechou o chamado #" + id, null, null, false);
+        }
+        if (suporte && "PUT".equals(metodo) && p.length == 2) {
+            return new Descricao(modulo, ALTEROU, "Atualizou o chamado #" + id + " (situação, prioridade ou responsável)",
+                    null, null, false);
+        }
+        return null;
     }
 
     // Contas a pagar, regras de cobrança e pagamento dos professores (/financeiro/...)
