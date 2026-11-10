@@ -47,7 +47,8 @@ class ModulosTest {
 
     @Test
     void masterTemTodosOsModulosInclusiveSistema() {
-        assertEquals(Modulos.LIBERAVEIS.size() + 2, Modulos.TODOS.size());
+        // Sistema, Treinamentos e Atualizações ficam fora da liberação
+        assertEquals(Modulos.LIBERAVEIS.size() + 3, Modulos.TODOS.size());
         assertTrue(Modulos.TODOS.contains(Modulos.SISTEMA));
         assertFalse(Modulos.LIBERAVEIS.contains(Modulos.SISTEMA));
         // Treinamentos: só o Master edita, então também não é liberável
