@@ -24,6 +24,7 @@ Projeto final do curso **Desenvolvimento Full Stack** do programa **+PraTi / Cod
 - [Sala de aula EAD](#-sala-de-aula-ead)
 - [Portal do Professor](#-portal-do-professor)
 - [Chamados de suporte](#-chamados-de-suporte)
+- [Atualizações do sistema](#-atualizações-do-sistema)
 - [Acessibilidade: tema claro, escuro e alto contraste](#-acessibilidade-tema-claro-escuro-e-alto-contraste)
 - [Recuperação de senha](#-recuperação-de-senha)
 - [Importação por planilha](#-importação-por-planilha)
@@ -184,6 +185,10 @@ Projeto final do curso **Desenvolvimento Full Stack** do programa **+PraTi / Cod
 - **🆘 Suporte:** qualquer funcionário abre um chamado (com print) quando algo não funciona e acompanha a resposta.
 - **🎧 Chamados:** quem tem o módulo atende os chamados da equipe e dos professores, por prioridade.
 - **Tema claro, escuro e alto contraste** no rodapé do menu, também no site e no Portal do Professor.
+
+**Atualizações do sistema** (detalhes em [Atualizações do sistema](#-atualizações-do-sistema))
+
+- **📢 Atualizações:** linha do tempo de tudo o que mudou no sistema (novidades, melhorias, correções) e das **manutenções programadas**, com aviso no sininho, bolinha no menu e faixa no topo do painel e do Portal do Professor. **Toda a equipe** consulta; só o **Master** publica, edita e exclui.
 
 **Treinamentos**
 
@@ -460,6 +465,25 @@ Quando algo não funciona, a equipe do painel e os professores **abrem um chamad
 
 ---
 
+## 📢 Atualizações do sistema
+
+Um lugar só para a equipe saber **o que mudou** no AprendaPlus e **quando o sistema vai parar para manutenção** (script `database/atualizacoes.sql`, que já traz o histórico real do projeto, da v0.9 à v2.0).
+
+**O que aparece**
+- Item **📢 Atualizações** no menu do painel, com a **linha do tempo agrupada por mês**. Cada atualização tem **título**, **tipo** (✨ novidade, ⚡ melhoria, 🛠 correção ou 🔧 manutenção), **versão** (opcional), **data** e **descrição**, com filtro por tipo.
+- No topo da tela, as **manutenções programadas** que ainda não terminaram, com o período ("20/11 das 22:00 às 22:30") e a situação (programada ou em andamento).
+
+**Como a equipe fica sabendo**
+- **Sininho:** cada atualização nova aparece na seção "Atualizações do sistema", com o botão **Ver atualizações**.
+- **Bolinha no menu:** o item 📢 Atualizações ganha uma bolinha laranja até a pessoa abrir a tela. O que chegou desde a última visita fica marcado como **Nova**. Cada funcionário tem a sua marcação, e no primeiro acesso ele começa "em dia" (não é avisado do histórico antigo).
+- **Faixa de manutenção:** do momento em que é publicada até o fim da manutenção, uma faixa aparece no **topo do painel, para toda a equipe**, e no **Portal do Professor**. Laranja quando está programada e vermelha quando está em andamento. Quem já leu pode fechar o aviso.
+
+**Quem pode o quê**
+- **Toda a equipe** consulta (como os Treinamentos), sem precisar liberar nada em Sistema. Os professores veem só as manutenções, pela rota do portal.
+- Só o **Master** publica, edita e exclui. Manutenção exige início e fim, com o fim depois do início. Publicar, editar e excluir entram no **Histórico de alterações**.
+
+---
+
 ## ♿ Acessibilidade: tema claro, escuro e alto contraste
 
 Em **todos os ambientes** (site, área do aluno, sala de aula, Portal do Professor e painel) há um seletor com três temas:
@@ -620,7 +644,7 @@ Requisição ─▶ AuthInterceptor ─▶ Controller ─▶ Service ─▶ Repo
 
 ![Diagrama entidade-relacionamento do AprendaPlus](docs/der-aprendaplus.png)
 
-O banco tem **35 tabelas**, organizadas em 7 áreas (no diagrama, cada área tem uma cor e aparecem só as colunas de chave):
+O banco tem **36 tabelas**, organizadas em 7 áreas (no diagrama, cada área tem uma cor e aparecem só as colunas de chave):
 
 | Área | Tabelas |
 |---|---|
@@ -630,11 +654,11 @@ O banco tem **35 tabelas**, organizadas em 7 áreas (no diagrama, cada área tem
 | **Financeiro** | `pagamento` (parcelas), `configuracao_financeira`, `conta_pagar`, `professor_hora_aula` |
 | **Sala de aula EAD** | `plano_de_aula`, `aula`, `aula_concluida`, `aviso_turma`, `certificado` |
 | **Comercial** | `evento_navegacao`, `contato_comercial` |
-| **Sistema** | `registro_atividade` (histórico de alterações), `treinamento`, `chamado` e `chamado_mensagem` (chamados de suporte) |
+| **Sistema** | `registro_atividade` (histórico de alterações), `treinamento`, `chamado` e `chamado_mensagem` (chamados de suporte), `atualizacao_sistema` (atualizações e manutenções) |
 
 - **Notação pé de galinha:** a linha sai do `id` da tabela "mãe" e chega na chave estrangeira da tabela "filha".
-- **42 chaves estrangeiras**, com a regra de exclusão escolhida caso a caso: `CASCADE` onde o registro filho não faz sentido sozinho (ex.: itens do carrinho, partes do pagamento), `SET NULL` onde o histórico deve continuar (ex.: o contato comercial de um funcionário que saiu) e bloqueio onde excluir apagaria dados importantes (ex.: turma com inscrições).
-- **48 regras de validação (`CHECK`)** no próprio banco: status permitidos, CPF com 11 números, valores maiores que zero, data final depois da inicial, tamanho máximo dos arquivos, multa de no máximo 2%...
+- **43 chaves estrangeiras**, com a regra de exclusão escolhida caso a caso: `CASCADE` onde o registro filho não faz sentido sozinho (ex.: itens do carrinho, partes do pagamento), `SET NULL` onde o histórico deve continuar (ex.: o contato comercial de um funcionário que saiu) e bloqueio onde excluir apagaria dados importantes (ex.: turma com inscrições).
+- **51 regras de validação (`CHECK`)** no próprio banco: status permitidos, CPF com 11 números, valores maiores que zero, data final depois da inicial, tamanho máximo dos arquivos, multa de no máximo 2%...
 
 ---
 
@@ -717,6 +741,7 @@ cd aprenda-plus
 | 14 | `modulo-comercial.sql` | Módulo Comercial |
 | 15 | `pagamento-dividido.sql` | Pagamento dividido em duas formas |
 | 16 | `chamados.sql` | Chamados de suporte (equipe e professores) |
+| 17 | `atualizacoes.sql` | Atualizações do sistema e manutenções programadas (já com o histórico do projeto) |
 
 Os scripts `dados-demo-*.sql` são opcionais: preenchem o banco com dados de exemplo. Com o `psql`:
 
@@ -774,8 +799,8 @@ A meta do projeto era **cobertura mínima de 70%**. Os dois lados ficaram bem ac
 
 | | Testes | Cobertura | Ferramentas |
 |---|---|---|---|
-| **Back-end** | **822** | **98%** das instruções, 91% dos desvios (*branches*), 98% dos métodos e 100% das classes | JUnit 5, Mockito, MockMvc, JaCoCo |
-| **Front-end** | **838** | **98,4%** das instruções, 95,2% dos desvios (*branches*), 97% das funções e 99,3% das linhas | Jest, Testing Library |
+| **Back-end** | **837** | **98%** das instruções, 91% dos desvios (*branches*), 98% dos métodos e 100% das classes | JUnit 5, Mockito, MockMvc, JaCoCo |
+| **Front-end** | **866** | **98,4%** das instruções, 95% dos desvios (*branches*), 97% das funções e 99,3% das linhas | Jest, Testing Library |
 
 ### Back-end
 
@@ -833,7 +858,8 @@ O que é testado:
 - **Componentes:**
   - cabeçalho (busca, sugestões, teclado e contador do carrinho);
   - modal do curso, campo de CEP e avisos;
-  - sininho de notificações (avisos por nível e "marcar como lidas") e rota protegida do admin.
+  - sininho de notificações (avisos por nível, atualizações do sistema e "marcar como lidas") e rota protegida do admin;
+  - faixa de manutenção no painel e no Portal do Professor (programada, em andamento, fechar o aviso).
 - **Páginas:**
   - Home, login e cadastro;
   - carrinho: Pix com desconto, cartão, boleto, limite de parcelas, **pagamento dividido em duas formas** (restante automático, desconto do Pix só na parte do Pix e valores inválidos), lista de espera e mensagem de erro vinda do servidor;
@@ -844,7 +870,8 @@ O que é testado:
   - esqueci minha senha e criar nova senha (aluno e painel), senha com "olho" e confirmação, máscaras de CPF e telefone e paginação das listas;
   - revisão do documento no painel: abrir o arquivo, aprovar, recusar com motivo e filtrar as inscrições pela situação do documento;
   - todas as listas e formulários do painel admin, incluindo ordenação por coluna, erro ao excluir um registro em uso, funcionários e aviso de matrícula criada;
-  - painel por nível de acesso: menu e atalhos de cada nível, tela de acesso restrito, menu recolhível com o nome ao passar o mouse e o módulo Sistema.
+  - painel por nível de acesso: menu e atalhos de cada nível, tela de acesso restrito, menu recolhível com o nome ao passar o mouse e o módulo Sistema;
+  - atualizações do sistema: linha do tempo por mês, filtro por tipo, marcação de "Nova", bolinha no menu e publicar, editar e excluir só para o Master.
 - **Navegação do site:** ordem do topo, "Voltar ao início" e a logo limpando a pesquisa.
 - **Financeiro:** indicadores, gráficos (dica ao passar o mouse e tabela), filtros (com as parcelas automáticas separadas), baixa e estorno de boletos, exportação da planilha, avisos no sininho e, na área do aluno, as parcelas e o recibo.
 - **Importação por planilha:** leitura do CSV (separador `;` ou `,`, aspas, acentos do Excel antigo), colunas obrigatórias, modelo para baixar, prévia, importação, linhas com erro para baixar e o botão em cada lista e na Sala de aula.
@@ -982,6 +1009,7 @@ O grupo trabalhou com **Kanban**: em vez de sprints com data fixa, as tarefas er
 | 16/10 a 22/10 | Recuperação de senha, máscaras, paginação, notificações por nível e importação por planilha |
 | 25/10 a 28/10 | Assistente virtual com IA (sugestão do professor), Treinamentos, Histórico de alterações, Portal do Professor, Financeiro completo, módulo Comercial e migração do banco para o Neon |
 | 03/11 | Pagamento dividido em duas formas (ex.: dois cartões) |
+| 07/11 a 09/11 | Chamados de suporte, tema claro, escuro e alto contraste, e atualizações do sistema |
 
 O histórico completo está nos **commits do repositório**: cada funcionalidade entrou em um commit próprio, com mensagem descrevendo a entrega.
 

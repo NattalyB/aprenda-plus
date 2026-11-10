@@ -188,4 +188,13 @@ class AtividadeTextoTest {
         // Caminho sem número cai na regra geral
         assertEquals("Chamados", d("DELETE", "/chamados/x").modulo());
     }
+
+    @Test
+    void atualizacoesDoSistemaEntramNoHistorico() {
+        Descricao publicou = d("POST", "/atualizacoes");
+        assertEquals("Atualizações", publicou.modulo());
+        assertEquals(AtividadeTexto.CADASTROU, publicou.acao());
+        assertEquals("Atualizações", d("PUT", "/atualizacoes/3").modulo());
+        assertEquals(AtividadeTexto.EXCLUIU, d("DELETE", "/atualizacoes/3").acao());
+    }
 }

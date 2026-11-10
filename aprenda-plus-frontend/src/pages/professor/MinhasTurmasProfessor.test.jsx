@@ -3,6 +3,9 @@ import { renderizar } from '../../testUtils';
 import MinhasTurmasProfessor from './MinhasTurmasProfessor';
 import { minhasTurmas, professorLogado, getNomeProfessor, sairProfessor } from '../../services/docenteService';
 
+jest.mock('../../services/atualizacaoService', () => ({
+  listarManutencoes: jest.fn(() => Promise.resolve([])),
+}));
 jest.mock('../../services/docenteService');
 
 const turmas = [

@@ -406,3 +406,44 @@ describe('chamados de suporte', () => {
   });
 });
 
+
+test('avisa das atualizações do sistema e leva para a tela de atualizações', async () => {
+  const onLerAtualizacoes = jest.fn();
+  const atualizacoes = [
+    { idAtualizacao: 20, tipo: 'manutencao', titulo: 'Troca do servidor' },
+    { idAtualizacao: 19, tipo: 'novidade', titulo: 'Relatório novo' },
+    { idAtualizacao: 18, tipo: 'melhoria', titulo: 'Busca mais rápida' },
+    { idAtualizacao: 17, tipo: 'correcao', titulo: 'Ajuste no login' },
+  ];
+  renderizar(
+    <NotificacoesInscricoes inscricoes={false} atualizacoes={atualizacoes} onLerAtualizacoes={onLerAtualizacoes} />
+  );
+
+  expect(botao()).toHaveAccessibleName('Notificações: 4 atualizações do sistema');
+  fireEvent.click(botao());
+  expect(screen.getByRole('heading', { name: /Atualizações do sistema/ })).toHaveTextContent('4 novas');
+  expect(screen.getByText(/🔧 Troca do servidor/)).toBeInTheDocument();
+  expect(screen.getByText(/📢 Relatório novo/)).toBeInTheDocument();
+  expect(screen.queryByText(/Ajuste no login/)).not.toBeInTheDocument();
+  expect(screen.getByText('e mais 1...')).toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole('button', { name: 'Ver atualizações' }));
+  expect(onLerAtualizacoes).toHaveBeenCalled();
+  expect(screen.getByTestId('endereco')).toHaveTextContent('/admin/atualizacoes');
+});
+
+test('marcar todas como lidas também marca as atualizações', () => {
+  const onLerAtualizacoes = jest.fn();
+  renderizar(
+    <NotificacoesInscricoes
+      inscricoes={false}
+      atualizacoes={[{ idAtualizacao: 1, tipo: 'novidade', titulo: 'Nova tela' }]}
+      onLerAtualizacoes={onLerAtualizacoes}
+    />
+  );
+
+  expect(botao()).toHaveAccessibleName('Notificações: 1 atualização do sistema');
+  fireEvent.click(botao());
+  fireEvent.click(screen.getByRole('button', { name: '✓ Marcar todas como lidas' }));
+  expect(onLerAtualizacoes).toHaveBeenCalledTimes(1);
+});

@@ -3,6 +3,9 @@ import { renderizar } from '../../testUtils';
 import TurmaProfessor from './TurmaProfessor';
 import * as docente from '../../services/docenteService';
 
+jest.mock('../../services/atualizacaoService', () => ({
+  listarManutencoes: jest.fn(() => Promise.resolve([])),
+}));
 jest.mock('../../services/docenteService');
 
 const aula = (id, dados = {}) => ({

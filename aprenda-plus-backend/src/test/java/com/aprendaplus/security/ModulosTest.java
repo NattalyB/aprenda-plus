@@ -66,6 +66,9 @@ class ModulosTest {
         assertEquals(Modulos.CHAMADOS, Modulos.doCaminho("/chamados"));
         assertEquals(Modulos.CHAMADOS, Modulos.doCaminho("/chamados/4/mensagens"));
         assertNull(Modulos.doCaminho("/meus-chamados"));
+        assertEquals(Modulos.ATUALIZACOES, Modulos.doCaminho("/atualizacoes/manutencoes"));
+        assertTrue(Modulos.TODOS.contains(Modulos.ATUALIZACOES));
+        assertFalse(Modulos.LIBERAVEIS.contains(Modulos.ATUALIZACOES));
         assertEquals("comercial,chamados", Modulos.escrever(List.of("chamados", "comercial")));
     }
 

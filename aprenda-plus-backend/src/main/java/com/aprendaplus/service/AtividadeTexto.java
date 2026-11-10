@@ -47,6 +47,7 @@ public final class AtividadeTexto {
             Map.entry("niveis-acesso", new Recurso("Sistema", "nível de acesso", "IdNivel")),
             Map.entry("documentos", new Recurso("Alunos", "documento", null)),
             Map.entry("treinamentos", new Recurso("Treinamentos", "treinamento", "IdTreinamento")),
+            Map.entry("atualizacoes", new Recurso("Atualizações", "atualização do sistema", "IdAtualizacao")),
             Map.entry("comercial", new Recurso("Comercial", "contato comercial", null)),
             Map.entry("chamados", new Recurso("Chamados", "chamado", "IdChamado")),
             Map.entry("meus-chamados", new Recurso("Chamados", "chamado", "IdChamado")),

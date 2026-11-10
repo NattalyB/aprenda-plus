@@ -486,4 +486,26 @@ class AuthInterceptorTest {
         assertFalse(requisicao("GET", "/meus-chamados", null));
         assertEquals(401, response.getStatus());
     }
+
+    // ===== Atualizações do sistema =====
+
+    @Test
+    void todaAEquipeVeAsAtualizacoesESoOMasterPublica() throws Exception {
+        assertTrue(doFuncionario(3, "GET", "/atualizacoes"));
+        assertTrue(doFuncionario(6, "GET", "/atualizacoes/manutencoes"));   // até quem só tem o Comercial
+        assertFalse(doFuncionario(3, "POST", "/atualizacoes"));
+        assertEquals(403, response.getStatus());
+        assertFalse(doFuncionario(2, "PUT", "/atualizacoes/4"));
+        assertFalse(doFuncionario(5, "DELETE", "/atualizacoes/4"));
+        assertTrue(doFuncionario(1, "POST", "/atualizacoes"));
+        assertTrue(doFuncionario(1, "DELETE", "/atualizacoes/4"));
+        assertFalse(requisicao("GET", "/atualizacoes", tokenAluno));
+    }
+
+    @Test
+    void professorVeAsManutencoesPeloPortal() throws Exception {
+        String tokenProfessor = jwtUtil.gerarToken("prof@teste.com", 3, "PROFESSOR");
+        assertTrue(requisicao("GET", "/docente/manutencoes", tokenProfessor));
+        assertFalse(requisicao("GET", "/atualizacoes", tokenProfessor));
+    }
 }

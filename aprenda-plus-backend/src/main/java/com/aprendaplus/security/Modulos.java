@@ -31,6 +31,8 @@ public final class Modulos {
     public static final String SISTEMA = "sistema";
     // Treinamentos: toda a equipe consulta, só o Master cadastra (não é liberável para outros níveis)
     public static final String TREINAMENTOS = "treinamentos";
+    // Atualizações do sistema: toda a equipe consulta, só o Master publica (não é liberável para outros níveis)
+    public static final String ATUALIZACOES = "atualizacoes";
 
     // Módulos que o Master pode liberar para os outros níveis (o "sistema" não entra)
     public static final List<String> LIBERAVEIS = List.of(
@@ -44,6 +46,7 @@ public final class Modulos {
         java.util.ArrayList<String> todos = new java.util.ArrayList<>(LIBERAVEIS);
         todos.add(SISTEMA);
         todos.add(TREINAMENTOS);
+        todos.add(ATUALIZACOES);
         TODOS = List.copyOf(todos);
     }
 
@@ -72,6 +75,7 @@ public final class Modulos {
             Map.entry("/niveis-acesso", SISTEMA),
             Map.entry("/atividades", HISTORICO),        // histórico de alterações
             Map.entry("/treinamentos", TREINAMENTOS),
+            Map.entry("/atualizacoes", ATUALIZACOES),
             Map.entry("/comercial", COMERCIAL),
             Map.entry("/chamados", CHAMADOS));
 

@@ -12,6 +12,10 @@ import { modulosLiberados, podeUsar } from '../../utils/modulosAdmin';
 import NotificacoesInscricoes from './NotificacoesInscricoes';
 import EtiquetaNivel from './EtiquetaNivel';
 import SeletorTema from '../SeletorTema';
+import FaixaManutencao from '../FaixaManutencao';
+import { listarAtualizacoes } from '../../services/atualizacaoService';
+import { atualizacoesNovas, iniciarVistas, manutencoesPendentes, marcarVistas, useVistas } from '../../utils/atualizacoes';
+import { INTERVALO_MS } from './NotificacoesInscricoes';
 
 const CHAVE_RECOLHIDO = 'menuAdminRecolhido';
 
@@ -30,6 +34,9 @@ function AdminLayout() {
   const [recolhido, setRecolhido] = useState(lerRecolhido);
   // Nome do item quando o menu está recolhido e o mouse passa por cima
   const [dica, setDica] = useState(null);
+  // Atualizações do sistema (para a bolinha do menu, o sininho e a faixa de manutenção)
+  const [atualizacoes, setAtualizacoes] = useState([]);
+  const vistas = useVistas();
 
   // Confere no servidor o nível atual (o Master pode ter mudado as permissões ou a cor)
   const recarregarAcesso = () =>
@@ -42,9 +49,24 @@ function AdminLayout() {
         // Sem conexão agora: continua com o que foi salvo no login
       });
 
+  const recarregarAtualizacoes = () =>
+    listarAtualizacoes()
+      .then((lista) => {
+        iniciarVistas(lista || []);
+        setAtualizacoes(lista || []);
+      })
+      .catch(() => {
+        // Sem conexão agora: tenta de novo na próxima verificação
+      });
+
   useEffect(() => {
     recarregarAcesso();
+    recarregarAtualizacoes();
+    const timer = setInterval(recarregarAtualizacoes, INTERVALO_MS);
+    return () => clearInterval(timer);
   }, []);
+
+  const novasAtualizacoes = atualizacoesNovas(atualizacoes, vistas);
 
   const alternarMenu = () => {
     setRecolhido((atual) => {
@@ -114,6 +136,8 @@ function AdminLayout() {
             financeiro={podeUsar(acesso, 'financeiro')}
             chamados={podeUsar(acesso, 'chamados')}
             meusChamados
+            atualizacoes={novasAtualizacoes}
+            onLerAtualizacoes={() => marcarVistas(atualizacoes)}
           />
         )}
 
@@ -129,6 +153,9 @@ function AdminLayout() {
             >
               <span className="admin-nav-icone" aria-hidden="true">{item.icone}</span>
               <span className="admin-nav-texto">{item.menu}</span>
+              {item.chave === 'atualizacoes' && novasAtualizacoes.length > 0 && (
+                <span className="admin-nav-bolinha" aria-label={`${novasAtualizacoes.length} nova(s)`} />
+              )}
             </NavLink>
           ))}
         </nav>
@@ -161,7 +188,8 @@ function AdminLayout() {
       )}
 
       <main className="admin-main">
-        <Outlet context={{ acesso, recarregarAcesso }} />
+        <FaixaManutencao manutencoes={manutencoesPendentes(atualizacoes)} />
+        <Outlet context={{ acesso, recarregarAcesso, recarregarAtualizacoes }} />
       </main>
     </div>
   );

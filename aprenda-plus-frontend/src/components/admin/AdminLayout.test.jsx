@@ -8,12 +8,17 @@ import { buscarMeuAcesso } from '../../services/authAdminService';
 import { buscarAlertasFinanceiros } from '../../services/financeiroService';
 import { situacaoDosDocumentos } from '../../services/documentoService';
 import { listarChamados, listarMeusChamados } from '../../services/chamadoService';
+import { listarAtualizacoes } from '../../services/atualizacaoService';
 
 jest.mock('../../services/inscricaoService');
 jest.mock('../../services/financeiroService');
 jest.mock('../../services/chamadoService', () => ({
   listarChamados: jest.fn(() => Promise.resolve([])),
   listarMeusChamados: jest.fn(() => Promise.resolve([])),
+}));
+jest.mock('../../services/atualizacaoService', () => ({
+  listarAtualizacoes: jest.fn(() => Promise.resolve([])),
+  listarManutencoes: jest.fn(() => Promise.resolve([])),
 }));
 jest.mock('../../services/documentoService', () => ({
   ...jest.requireActual('../../services/documentoService'),
@@ -47,6 +52,7 @@ beforeEach(() => {
   buscarAlertasFinanceiros.mockResolvedValue({ vencendoEmBreve: 0, atrasadas: 0 });
   situacaoDosDocumentos.mockResolvedValue({ data: {} });
   buscarMeuAcesso.mockReturnValue(new Promise(() => {})); // por padrão o servidor não responde
+  listarAtualizacoes.mockResolvedValue([]);
 });
 
 test('Master vê o menu completo, o nome, o nível e a página atual', () => {
@@ -55,8 +61,9 @@ test('Master vê o menu completo, o nome, o nível e a página atual', () => {
 
   expect(screen.getByText('Olá, Admin Teste')).toBeInTheDocument();
   expect(screen.getByText('Master')).toBeInTheDocument();
-  // Início + 17 itens (incluindo Sala de aula, Financeiro, Comercial, Chamados, Treinamentos, Suporte, Histórico e Sistema)
-  expect(within(menu()).getAllByRole('link')).toHaveLength(18);
+  // Início + 18 itens (incluindo Sala de aula, Financeiro, Comercial, Chamados, Treinamentos, Atualizações, Suporte,
+  // Histórico e Sistema)
+  expect(within(menu()).getAllByRole('link')).toHaveLength(19);
   expect(screen.getByText('Chamados')).toBeInTheDocument();
   expect(screen.getByText('Histórico de alterações')).toBeInTheDocument();
   expect(screen.getByText('Funcionários do painel')).toBeInTheDocument();
@@ -72,8 +79,8 @@ test('outro nível só vê os módulos liberados', () => {
   montar('/admin');
 
   const textos = within(menu()).getAllByRole('link').map((link) => link.textContent);
-  // Treinamentos e Suporte aparecem para toda a equipe
-  expect(textos).toEqual(['🏠Início', '🧾Inscrições', '✅Matrículas', '📚Treinamentos', '🆘Suporte']);
+  // Treinamentos, Atualizações e Suporte aparecem para toda a equipe
+  expect(textos).toEqual(['🏠Início', '🧾Inscrições', '✅Matrículas', '📚Treinamentos', '📢Atualizações', '🆘Suporte']);
   expect(screen.getByText('Início do painel')).toBeInTheDocument();
 });
 
@@ -250,4 +257,52 @@ test('RotaModulo fora do layout (sem contexto) bloqueia a tela', () => {
   );
 
   expect(screen.getByText('Acesso restrito')).toBeInTheDocument();
+});
+
+describe('atualizações do sistema', () => {
+  const daquiA = (minutos) => {
+    const d = new Date(Date.now() + minutos * 60000);
+    const p = (n) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:00`;
+  };
+  const LISTA = [
+    { idAtualizacao: 9, tipo: 'manutencao', titulo: 'Troca do servidor', descricao: '',
+      inicioManutencao: daquiA(60), fimManutencao: daquiA(90) },
+    { idAtualizacao: 8, tipo: 'novidade', titulo: 'Relatório novo', descricao: '' },
+  ];
+
+  test('no primeiro acesso começa em dia, mas mostra a faixa de manutenção', async () => {
+    listarAtualizacoes.mockResolvedValue(LISTA);
+    logarAdmin();
+    localStorage.setItem('idFuncionario', '4');
+    montar('/admin');
+
+    expect(await screen.findByText('Manutenção programada:')).toBeInTheDocument();
+    expect(localStorage.getItem('atualizacoesVistas:4')).toBe('9');
+    expect(document.querySelector('.admin-nav-bolinha')).toBeNull();
+  });
+
+  test('o que chegou depois ganha bolinha no menu e aviso no sininho; abrir marca como visto', async () => {
+    listarAtualizacoes.mockResolvedValue(LISTA);
+    logarAdmin('Carla', FINANCEIRO);
+    localStorage.setItem('idFuncionario', '4');
+    localStorage.setItem('atualizacoesVistas:4', '7');
+    montar('/admin');
+
+    expect(await screen.findByLabelText('2 nova(s)')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /2 atualizações do sistema/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Ver atualizações' }));
+
+    expect(localStorage.getItem('atualizacoesVistas:4')).toBe('9');
+    await waitFor(() => expect(screen.queryByLabelText('2 nova(s)')).not.toBeInTheDocument());
+  });
+
+  test('sem conexão não mostra nada nem quebra', async () => {
+    listarAtualizacoes.mockRejectedValue(new Error('offline'));
+    logarAdmin();
+    montar('/admin');
+
+    await waitFor(() => expect(listarAtualizacoes).toHaveBeenCalled());
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  });
 });

@@ -44,6 +44,7 @@ import AdminHistorico from './pages/admin/AdminHistorico';
 import AdminComercial from './pages/admin/AdminComercial';
 import AdminChamados from './pages/admin/AdminChamados';
 import AdminSuporte from './pages/admin/AdminSuporte';
+import AdminAtualizacoes from './pages/admin/AdminAtualizacoes';
 import EsqueciSenha from './pages/EsqueciSenha';
 import RedefinirSenha from './pages/RedefinirSenha';
 import MinhasTurmasProfessor from './pages/professor/MinhasTurmasProfessor';
@@ -105,6 +106,7 @@ function App() {
           <Route path="comercial" element={<RotaModulo modulo="comercial"><AdminComercial /></RotaModulo>} />
           <Route path="chamados" element={<RotaModulo modulo="chamados"><AdminChamados /></RotaModulo>} />
           <Route path="chamados/:idChamado" element={<RotaModulo modulo="chamados"><AdminChamados /></RotaModulo>} />
+          <Route path="atualizacoes" element={<RotaModulo modulo="atualizacoes"><AdminAtualizacoes /></RotaModulo>} />
           <Route path="suporte" element={<RotaModulo modulo="suporte"><AdminSuporte /></RotaModulo>} />
           <Route path="suporte/:idChamado" element={<RotaModulo modulo="suporte"><AdminSuporte /></RotaModulo>} />
 

@@ -170,8 +170,8 @@ public class AuthInterceptor implements HandlerInterceptor {
             return liberados.contains(Modulos.SISTEMA)
                     || (listaDeNiveis && liberados.contains(Modulos.FUNCIONARIOS));
         }
-        // Treinamentos: toda a equipe consulta (só o Master cadastra)
-        if (consulta && Modulos.TREINAMENTOS.equals(modulo)) {
+        // Treinamentos e Atualizações do sistema: toda a equipe consulta (só o Master cadastra)
+        if (consulta && (Modulos.TREINAMENTOS.equals(modulo) || Modulos.ATUALIZACOES.equals(modulo))) {
             return true;
         }
         // Funcionários, Histórico, Financeiro e Comercial (dados pessoais e financeiros) são sensíveis:

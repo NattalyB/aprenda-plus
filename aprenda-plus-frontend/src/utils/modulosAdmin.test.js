@@ -4,13 +4,14 @@ test('são os módulos do back-end; Sistema e Treinamentos não entram na libera
   expect(MODULOS.map((m) => m.chave)).toEqual([
     'alunos', 'professores', 'cursos', 'disciplinas', 'periodos',
     'turmas', 'aulas', 'inscricoes', 'matriculas', 'financeiro', 'comercial', 'chamados', 'funcionarios',
-    'treinamentos', 'suporte', 'historico', 'sistema',
+    'treinamentos', 'atualizacoes', 'suporte', 'historico', 'sistema',
   ]);
   expect(MODULOS_LIBERAVEIS).toHaveLength(14);
   expect(MODULOS_LIBERAVEIS.map((m) => m.chave)).toContain('chamados');
   expect(MODULOS_LIBERAVEIS.map((m) => m.chave)).not.toContain('suporte');
   expect(MODULOS_LIBERAVEIS.map((m) => m.chave)).toContain('comercial');
   expect(MODULOS_LIBERAVEIS.map((m) => m.chave)).not.toContain('treinamentos');
+  expect(MODULOS_LIBERAVEIS.map((m) => m.chave)).not.toContain('atualizacoes');
   expect(MODULOS_LIBERAVEIS.map((m) => m.chave)).toContain('historico');
   expect(MODULOS_LIBERAVEIS.map((m) => m.chave)).not.toContain('sistema');
   expect(moduloPorChave('turmas').rota).toBe('/admin/turmas');
@@ -36,17 +37,19 @@ test('Treinamentos é de toda a equipe; Histórico o Master libera; Sistema só 
 
 test('lista os módulos liberados na ordem do menu', () => {
   expect(modulosLiberados({ master: false, modulos: ['matriculas', 'alunos'] }).map((m) => m.chave)).toEqual([
-    'alunos', 'matriculas', 'treinamentos', 'suporte',
+    'alunos', 'matriculas', 'treinamentos', 'atualizacoes', 'suporte',
   ]);
   expect(modulosLiberados(null)).toEqual([]);
 });
 
 test('o nível Comercial vê só o Comercial, os Treinamentos e o Suporte', () => {
   expect(modulosLiberados({ master: false, modulos: ['comercial'] }).map((m) => m.chave)).toEqual([
-    'comercial', 'treinamentos', 'suporte',
+    'comercial', 'treinamentos', 'atualizacoes', 'suporte',
   ]);
   // Abrir chamado é de todos; atender, só de quem tem o módulo Chamados
   expect(podeUsar({ master: false, modulos: [] }, 'suporte')).toBe(true);
+  // Atualizações do sistema: toda a equipe vê
+  expect(podeUsar({ master: false, modulos: [] }, 'atualizacoes')).toBe(true);
   expect(podeUsar({ master: false, modulos: ['comercial'] }, 'chamados')).toBe(false);
   expect(podeUsar({ master: false, modulos: ['comercial'] }, 'alunos')).toBe(false);
   expect(moduloPorChave('comercial').rota).toBe('/admin/comercial');

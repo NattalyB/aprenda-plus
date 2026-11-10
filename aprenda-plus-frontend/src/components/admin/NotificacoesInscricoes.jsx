@@ -57,6 +57,7 @@ const plural = (n, um, varios) => `${n} ${n === 1 ? um : varios}`;
 // - boletos vencendo ou em atraso (módulo Financeiro)
 // - chamados esperando o suporte (módulo Chamados)
 // - respostas do suporte nos chamados que a própria pessoa abriu (todos)
+// - atualizações do sistema que a pessoa ainda não viu (todos; a lista vem do AdminLayout)
 // O número no sininho conta só o que ainda não foi lido. Abrir uma área ("Ver ...")
 // ou clicar em "Marcar todas como lidas" zera o número; só volta se chegar algo novo.
 function NotificacoesInscricoes({
@@ -65,6 +66,8 @@ function NotificacoesInscricoes({
   financeiro: mostrarFinanceiro = false,
   chamados: mostrarChamados = false,
   meusChamados: mostrarMeusChamados = false,
+  atualizacoes = [],
+  onLerAtualizacoes = () => {},
 }) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
@@ -181,7 +184,8 @@ function NotificacoesInscricoes({
   const chavesRespostas = respostas.map(chaveDeNovidade);
   const chamadosNaoLidos = mostrarChamados ? naoLidas(chavesChamados, lidas.chamados) : 0;
   const respostasNaoLidas = mostrarMeusChamados ? naoLidas(chavesRespostas, lidas.respostas) : 0;
-  const quantidade = novas.length + docsNaoLidos + finNaoLidos + chamadosNaoLidos + respostasNaoLidas;
+  const quantidade =
+    novas.length + docsNaoLidos + finNaoLidos + chamadosNaoLidos + respostasNaoLidas + atualizacoes.length;
 
   const atualizarLidas = (mudanca) => {
     const novasLidas = { ...lidas, ...mudanca };
@@ -200,6 +204,7 @@ function NotificacoesInscricoes({
 
   const marcarTodasComoLidas = () => {
     if (mostrarInscricoes) lerInscricoes();
+    if (atualizacoes.length > 0) onLerAtualizacoes();
     // Guarda só o que existe agora: o que sumir da lista não ocupa espaço à toa
     atualizarLidas({
       ...(mostrarDocumentos ? { documentos: documentosPendentes } : {}),
@@ -220,6 +225,7 @@ function NotificacoesInscricoes({
   if (docsNaoLidos > 0) partes.push(plural(docsNaoLidos, 'documento para analisar', 'documentos para analisar'));
   if (finNaoLidos > 0) partes.push(plural(finNaoLidos, 'aviso financeiro', 'avisos financeiros'));
   if (chamadosNaoLidos > 0) partes.push(plural(chamadosNaoLidos, 'chamado para atender', 'chamados para atender'));
+  if (atualizacoes.length > 0) partes.push(plural(atualizacoes.length, 'atualização do sistema', 'atualizações do sistema'));
   if (respostasNaoLidas > 0) partes.push(plural(respostasNaoLidas, 'resposta do suporte', 'respostas do suporte'));
   const rotulo = partes.length > 0 ? `Notificações: ${partes.join(' e ')}` : 'Notificações: nenhuma não lida';
 
@@ -258,6 +264,27 @@ function NotificacoesInscricoes({
               <span className="notificacoes-em-dia">✓ Tudo lido</span>
             )}
           </div>
+
+          {atualizacoes.length > 0 && (
+            <div className="notificacoes-atualizacoes">
+              <h2>Atualizações do sistema {etiquetaNova(atualizacoes.length)}</h2>
+              <ul>
+                {atualizacoes.slice(0, 3).map((a) => (
+                  <li key={a.idAtualizacao}>
+                    {a.tipo === 'manutencao' ? '🔧' : '📢'} {a.titulo}
+                  </li>
+                ))}
+              </ul>
+              {atualizacoes.length > 3 && <p className="notificacoes-mais">e mais {atualizacoes.length - 3}...</p>}
+              <button
+                type="button"
+                className="admin-btn admin-btn-sm admin-btn-primary"
+                onClick={() => abrir(onLerAtualizacoes, '/admin/atualizacoes')}
+              >
+                Ver atualizações
+              </button>
+            </div>
+          )}
 
           {mostrarMeusChamados && respostas.length > 0 && (
             <div className="notificacoes-chamados">

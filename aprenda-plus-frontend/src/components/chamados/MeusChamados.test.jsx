@@ -11,6 +11,9 @@ import {
   listarMeusChamados,
 } from '../../services/chamadoService';
 
+jest.mock('../../services/atualizacaoService', () => ({
+  listarManutencoes: jest.fn(() => Promise.resolve([])),
+}));
 jest.mock('../../services/chamadoService', () => ({
   listarMeusChamados: jest.fn(),
   buscarMeuChamado: jest.fn(),

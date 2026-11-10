@@ -17,6 +17,7 @@ import FormAula from '../../components/admin/sala/FormAula';
 import MuralDaTurma from '../../components/admin/sala/MuralDaTurma';
 import AndamentoDaTurma from '../../components/admin/sala/AndamentoDaTurma';
 import { formatarDataCurta, tipoDaAula } from '../../utils/salaDeAula';
+import FaixaManutencao from '../../components/FaixaManutencao';
 
 const hoje = () => new Date().toISOString().slice(0, 10);
 
@@ -108,6 +109,7 @@ function TurmaProfessor() {
 
   return (
     <main className="portal-prof">
+      <FaixaManutencao perfil="professor" />
       {voltar}
       <div className="portal-prof-topo">
         <div>

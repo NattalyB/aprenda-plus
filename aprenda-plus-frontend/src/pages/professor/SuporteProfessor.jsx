@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import MeusChamados from '../../components/chamados/MeusChamados';
 import { professorLogado } from '../../services/docenteService';
+import FaixaManutencao from '../../components/FaixaManutencao';
 
 // Suporte do Portal do Professor: o professor abre e acompanha os próprios chamados.
 function SuporteProfessor() {
@@ -17,6 +18,7 @@ function SuporteProfessor() {
 
   return (
     <main className="portal-prof">
+      <FaixaManutencao perfil="professor" />
       {!idChamado && <Link to="/professor" className="chamado-voltar">← Minhas turmas</Link>}
       <MeusChamados perfil="professor" rota="/professor/suporte" />
     </main>

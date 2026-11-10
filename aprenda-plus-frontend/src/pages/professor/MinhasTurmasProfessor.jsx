@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { minhasTurmas, professorLogado, getNomeProfessor, sairProfessor } from '../../services/docenteService';
 import BarraProgresso from '../../components/BarraProgresso';
+import FaixaManutencao from '../../components/FaixaManutencao';
 
 // Portal do Professor: as turmas do professor logado
 function MinhasTurmasProfessor() {
@@ -31,6 +32,7 @@ function MinhasTurmasProfessor() {
 
   return (
     <main className="portal-prof">
+      <FaixaManutencao perfil="professor" />
       <div className="portal-prof-topo">
         <div>
           <span className="portal-prof-selo">👩‍🏫 Portal do Professor</span>
