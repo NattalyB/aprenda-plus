@@ -12,6 +12,7 @@ import { modulosLiberados, podeUsar } from '../../utils/modulosAdmin';
 import NotificacoesInscricoes from './NotificacoesInscricoes';
 import EtiquetaNivel from './EtiquetaNivel';
 import SeletorTema from '../SeletorTema';
+import PularConteudo from '../PularConteudo';
 import FaixaManutencao from '../FaixaManutencao';
 import { listarAtualizacoes } from '../../services/atualizacaoService';
 import { atualizacoesNovas, iniciarVistas, manutencoesPendentes, marcarVistas, useVistas } from '../../utils/atualizacoes';
@@ -110,6 +111,7 @@ function AdminLayout() {
 
   return (
     <div className={recolhido ? 'admin-layout menu-recolhido' : 'admin-layout'}>
+      <PularConteudo alvo="conteudo-painel" />
       <aside className="admin-sidebar">
         <div className="admin-sidebar-topo">
           <Link to="/admin" className="admin-sidebar-logo" {...propsDoItem('Início')}>
@@ -161,7 +163,7 @@ function AdminLayout() {
         </nav>
 
         <div className="admin-sidebar-footer">
-          <SeletorTema compacto className="admin-seletor-tema" />
+          <SeletorTema compacto className="admin-seletor-tema" abrirAcima />
           <span className="admin-usuario">
             <span aria-hidden="true">👤</span>
             <span className="admin-usuario-texto">
@@ -187,7 +189,7 @@ function AdminLayout() {
         </div>
       )}
 
-      <main className="admin-main">
+      <main className="admin-main alvo-pular" id="conteudo-painel" tabIndex={-1}>
         <FaixaManutencao manutencoes={manutencoesPendentes(atualizacoes)} />
         <Outlet context={{ acesso, recarregarAcesso, recarregarAtualizacoes }} />
       </main>

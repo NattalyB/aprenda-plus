@@ -29,6 +29,7 @@ import AdminFuncionarios from './pages/admin/AdminFuncionarios';
 import AdminFuncionarioForm from './pages/admin/AdminFuncionarioForm';
 import Aviso from './components/Aviso';
 import ChatAssistente from './components/ChatAssistente';
+import PularConteudo from './components/PularConteudo';
 import RotaModulo from './components/admin/RotaModulo';
 import AdminInicio from './pages/admin/AdminInicio';
 import AdminSistema from './pages/admin/AdminSistema';
@@ -54,9 +55,10 @@ import SuporteProfessor from './pages/professor/SuporteProfessor';
 function SitePage({ children }) {
   return (
     <SearchProvider>
+      <PularConteudo alvo="conteudo" />
       <Header />
       <VoltarInicio />
-      {children}
+      <div id="conteudo" tabIndex={-1} className="alvo-pular">{children}</div>
       <Footer />
       <Aviso />
       <ChatAssistente />

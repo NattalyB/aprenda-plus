@@ -7350,6 +7350,94 @@ ul.comercial-termos {
   .atualizacao { gap: 10px; }
 }
 
+/* ============================================================
+   ACESSIBILIDADE: botão ♿, painel de preferências e os efeitos de cada opção
+   ============================================================ */
+.seletor-tema-divisor { width: 1px; align-self: stretch; margin: 4px 2px; background: var(--tema-fundo-808080-40); }
+.menu-recolhido .seletor-tema-divisor { width: auto; height: 1px; margin: 2px 4px; }
+.acessibilidade { position: relative; display: inline-flex; }
+.acessibilidade-painel {
+  position: absolute; top: calc(100% + 10px); right: -4px; z-index: 1200; width: 320px; max-width: calc(100vw - 24px);
+  max-height: calc(100vh - 120px); overflow-y: auto;
+  background: var(--tema-fundo-ffffff); color: var(--tema-texto-1f2937); border: 1px solid var(--tema-borda-d1d5db); border-radius: 14px; padding: 16px;
+  box-shadow: 0 12px 32px var(--tema-sombra-0f172a-22); text-align: left; font-size: 14px; line-height: 1.4;
+}
+.acessibilidade-painel.acima { top: auto; bottom: calc(100% + 10px); right: auto; left: -4px; }
+.acessibilidade-topo { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.acessibilidade-topo strong { font-size: 16px; color: var(--tema-texto-001e42); }
+.acessibilidade-fechar { background: transparent; border: 0; color: var(--tema-texto-4b5563); font-size: 15px; cursor: pointer; padding: 4px 8px; border-radius: 6px; }
+.acessibilidade-fechar:hover { background: var(--tema-fundo-f3f4f6); }
+.acessibilidade-grupo { border: 0; padding: 0; margin: 0 0 12px; }
+.acessibilidade-grupo legend { font-weight: 600; font-size: 13px; color: var(--tema-texto-374151); margin-bottom: 6px; }
+.acessibilidade-tamanhos { display: flex; gap: 6px; }
+.acessibilidade-tamanhos button {
+  flex: 1; padding: 8px 6px; border: 1px solid var(--tema-borda-d1d5db); border-radius: 8px; background: var(--tema-fundo-f9fafb); color: var(--tema-texto-1f2937);
+  cursor: pointer; font-size: 13px;
+}
+.acessibilidade-tamanhos button.ativo { background: var(--tema-fundo-001e42); border-color: var(--tema-borda-001e42); color: var(--tema-texto-ffffff); }
+.acessibilidade-opcoes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.acessibilidade-opcoes label { display: flex; gap: 10px; align-items: flex-start; padding: 8px; border-radius: 8px; cursor: pointer; }
+.acessibilidade-opcoes label:hover { background: var(--tema-fundo-f3f4f6); }
+.acessibilidade-opcoes input { width: 18px; height: 18px; margin-top: 1px; flex-shrink: 0; accent-color: var(--tema-destaque-1d4ed8); }
+.acessibilidade-opcoes span { display: flex; flex-direction: column; gap: 2px; font-weight: 600; color: var(--tema-texto-1f2937); }
+.acessibilidade-opcoes small { font-weight: 400; color: var(--tema-texto-6b7280); font-size: 12px; }
+.acessibilidade-nota { margin: 10px 0 0; font-size: 12px; color: var(--tema-texto-6b7280); }
+.acessibilidade-nota kbd { font-family: inherit; font-size: 11px; padding: 1px 5px; border: 1px solid var(--tema-borda-d1d5db); border-radius: 4px; background: var(--tema-fundo-f9fafb); }
+.acessibilidade-restaurar {
+  margin-top: 10px; width: 100%; padding: 8px; border-radius: 8px; border: 1px solid var(--tema-borda-d1d5db); background: var(--tema-fundo-f9fafb);
+  color: var(--tema-texto-1f2937); cursor: pointer; font-weight: 600;
+}
+
+/* Pular para o conteúdo: aparece só quando recebe o foco pelo teclado */
+.pular-conteudo {
+  position: absolute; left: 12px; top: -60px; z-index: 3000; padding: 10px 16px; border-radius: 8px;
+  background: var(--tema-fundo-001e42); color: var(--tema-texto-ffffff); font-weight: 700; text-decoration: none; transition: top 0.15s;
+}
+.pular-conteudo:focus { top: 12px; outline: 3px solid var(--tema-borda-f97316); outline-offset: 2px; }
+.alvo-pular:focus { outline: none; }
+
+/* Tamanho da letra: aumenta a página inteira, mantendo o desenho */
+:root[data-letra="grande"] #root { zoom: 1.15; }
+:root[data-letra="maior"] #root { zoom: 1.3; }
+
+/* Mais espaço entre linhas e letras (WCAG 1.4.12) */
+:root[data-espacamento] #root :is(p, li, td, th, label, small, dd, dt, figcaption, blockquote, textarea, input, select, .admin-subtitulo) {
+  line-height: 1.8 !important; letter-spacing: 0.05em !important; word-spacing: 0.12em !important;
+}
+:root[data-espacamento] #root :is(h1, h2, h3, h4) { line-height: 1.4 !important; letter-spacing: 0.02em !important; }
+
+/* Fonte mais legível (Atkinson Hyperlegible, criada para baixa visão) */
+:root[data-fonte-legivel] #root, :root[data-fonte-legivel] #root * {
+  font-family: 'Atkinson Hyperlegible', Verdana, Tahoma, sans-serif !important;
+}
+
+/* Menos movimento: pela opção ou pela configuração do aparelho */
+:root[data-sem-movimento] *, :root[data-sem-movimento] *::before, :root[data-sem-movimento] *::after {
+  animation-duration: 0.001ms !important; animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important; scroll-behavior: auto !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important; animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important; scroll-behavior: auto !important;
+  }
+}
+
+/* Destacar links e foco */
+:root[data-destacar-links] #root a { text-decoration: underline !important; text-underline-offset: 3px; }
+:root[data-destacar-links] #root :focus-visible { outline: 3px solid var(--tema-borda-f97316) !important; outline-offset: 2px !important; }
+
+/* Modo foco: menos coisas chamando atenção ao mesmo tempo */
+:root[data-modo-foco] .chat-bolha-texto { display: none; }
+:root[data-modo-foco] .admin-sidebar { opacity: 0.55; transition: opacity 0.2s; }
+:root[data-modo-foco] .admin-sidebar:hover, :root[data-modo-foco] .admin-sidebar:focus-within { opacity: 1; }
+:root[data-modo-foco] .hero-banner { background: var(--tema-fundo-0b2239); }
+:root[data-modo-foco] .admin-atalho { box-shadow: none; }
+:root[data-modo-foco] .notificacoes-contador { animation: none; }
+
+/* O botão do VLibras não pode ficar embaixo do assistente virtual */
+#vlibras [vw-access-button] { bottom: 110px !important; top: auto !important; }
+
 /* ===================== SELETOR DE TEMA (☀️ 🌙 👁️) ===================== */
 .seletor-tema {
   display: inline-flex;

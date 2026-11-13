@@ -49,6 +49,7 @@
   --tema-destaque-0077b6: #0077b6;
   --tema-destaque-00b4d8: #00b4d8;
   --tema-destaque-0c4a6e: #0c4a6e;
+  --tema-destaque-1d4ed8: #1d4ed8;
   --tema-fundo-000000-06: rgba(0, 0, 0, 0.06);
   --tema-fundo-001e42: #001e42;
   --tema-fundo-001e42-55: rgba(0, 30, 66, 0.55);
@@ -70,6 +71,7 @@
   --tema-fundo-1d4ed8: #1d4ed8;
   --tema-fundo-1d4ed8-35: rgba(29, 78, 216, 0.35);
   --tema-fundo-22c55e: #22c55e;
+  --tema-fundo-808080-40: rgba(128, 128, 128, 0.4);
   --tema-fundo-94a3b8: #94a3b8;
   --tema-fundo-bbf7d0: #bbf7d0;
   --tema-fundo-c2410c-35: rgba(194, 65, 12, 0.35);
@@ -140,6 +142,7 @@
   --tema-sombra-00b4d8-25: rgba(0, 180, 216, 0.25);
   --tema-sombra-0ea5e9: #0ea5e9;
   --tema-sombra-0f172a-20: rgba(15, 23, 42, 0.2);
+  --tema-sombra-0f172a-22: rgba(15, 23, 42, 0.22);
   --tema-sombra-fecaca: #fecaca;
   --tema-sombra-ffffff-35: rgba(255, 255, 255, 0.35);
   --tema-texto-001e42: #001e42;
@@ -243,6 +246,7 @@
   --tema-destaque-0077b6: #0077b6;
   --tema-destaque-00b4d8: #00b4d8;
   --tema-destaque-0c4a6e: #0c4a6e;
+  --tema-destaque-1d4ed8: #1d4ed8;
   --tema-fundo-000000-06: rgba(0, 0, 0, 0.06);
   --tema-fundo-001e42: #001e42;
   --tema-fundo-001e42-55: rgba(0, 30, 66, 0.55);
@@ -264,6 +268,7 @@
   --tema-fundo-1d4ed8: #1d4ed8;
   --tema-fundo-1d4ed8-35: rgba(29, 78, 216, 0.35);
   --tema-fundo-22c55e: #27663e;
+  --tema-fundo-808080-40: rgba(128, 128, 128, 0.4);
   --tema-fundo-94a3b8: #374251;
   --tema-fundo-bbf7d0: #183f26;
   --tema-fundo-c2410c-35: rgba(194, 65, 12, 0.35);
@@ -334,6 +339,7 @@
   --tema-sombra-00b4d8-25: rgba(0, 0, 0, 0.25);
   --tema-sombra-0ea5e9: #000000;
   --tema-sombra-0f172a-20: rgba(15, 23, 42, 0.2);
+  --tema-sombra-0f172a-22: rgba(15, 23, 42, 0.22);
   --tema-sombra-fecaca: #000000;
   --tema-sombra-ffffff-35: rgba(0, 0, 0, 0.35);
   --tema-texto-001e42: #c6dcf7;
@@ -437,6 +443,7 @@
   --tema-destaque-0077b6: #ffe600;
   --tema-destaque-00b4d8: #ffe600;
   --tema-destaque-0c4a6e: #ffe600;
+  --tema-destaque-1d4ed8: #ffe600;
   --tema-fundo-000000-06: rgba(0, 0, 0, 0.06);
   --tema-fundo-001e42: #052f61;
   --tema-fundo-001e42-55: transparent;
@@ -458,6 +465,7 @@
   --tema-fundo-1d4ed8: #051d61;
   --tema-fundo-1d4ed8-35: transparent;
   --tema-fundo-22c55e: #1c1c1c;
+  --tema-fundo-808080-40: transparent;
   --tema-fundo-94a3b8: #1c1c1c;
   --tema-fundo-bbf7d0: #1c1c1c;
   --tema-fundo-c2410c-35: transparent;
@@ -528,6 +536,7 @@
   --tema-sombra-00b4d8-25: transparent;
   --tema-sombra-0ea5e9: transparent;
   --tema-sombra-0f172a-20: transparent;
+  --tema-sombra-0f172a-22: transparent;
   --tema-sombra-fecaca: transparent;
   --tema-sombra-ffffff-35: transparent;
   --tema-texto-001e42: #ffe600;
@@ -646,6 +655,7 @@
   --tema-destaque-0077b6: #0077b6;
   --tema-destaque-00b4d8: #00b4d8;
   --tema-destaque-0c4a6e: #0c4a6e;
+  --tema-destaque-1d4ed8: #1d4ed8;
   --tema-fundo-000000-06: rgba(0, 0, 0, 0.06);
   --tema-fundo-001e42: #001e42;
   --tema-fundo-001e42-55: rgba(0, 30, 66, 0.55);
@@ -667,6 +677,7 @@
   --tema-fundo-1d4ed8: #1d4ed8;
   --tema-fundo-1d4ed8-35: rgba(29, 78, 216, 0.35);
   --tema-fundo-22c55e: #22c55e;
+  --tema-fundo-808080-40: rgba(128, 128, 128, 0.4);
   --tema-fundo-94a3b8: #94a3b8;
   --tema-fundo-bbf7d0: #bbf7d0;
   --tema-fundo-c2410c-35: rgba(194, 65, 12, 0.35);
@@ -737,6 +748,7 @@
   --tema-sombra-00b4d8-25: rgba(0, 180, 216, 0.25);
   --tema-sombra-0ea5e9: #0ea5e9;
   --tema-sombra-0f172a-20: rgba(15, 23, 42, 0.2);
+  --tema-sombra-0f172a-22: rgba(15, 23, 42, 0.22);
   --tema-sombra-fecaca: #fecaca;
   --tema-sombra-ffffff-35: rgba(255, 255, 255, 0.35);
   --tema-texto-001e42: #001e42;

@@ -9,7 +9,7 @@ afterEach(() => {
 
 test('mostra os três temas e marca o escolhido', () => {
   render(<SeletorTema compacto className="extra" />);
-  const grupo = screen.getByRole('group', { name: 'Tema da tela' });
+  const grupo = screen.getByRole('group', { name: 'Tema e acessibilidade' });
   expect(grupo).toHaveClass('seletor-tema-compacto', 'extra');
 
   expect(screen.getByRole('button', { name: 'Tema claro' })).toHaveAttribute('aria-pressed', 'true');
