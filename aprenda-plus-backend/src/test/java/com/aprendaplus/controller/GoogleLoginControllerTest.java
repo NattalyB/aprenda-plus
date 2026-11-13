@@ -157,7 +157,9 @@ class GoogleLoginControllerTest {
 
     @Test
     void completaOCadastroComOEmailDoPasseESemSenhaConhecida() throws Exception {
-        when(jwtUtil.validarToken("passe-30-min")).thenReturn(passe(JwtUtil.PAPEL_CADASTRO_GOOGLE, "nova@gmail.com"));
+        // O passe é montado antes do when(): criar um mock dentro de outro when() confunde o Mockito
+        Claims passeValido = passe(JwtUtil.PAPEL_CADASTRO_GOOGLE, "nova@gmail.com");
+        when(jwtUtil.validarToken("passe-30-min")).thenReturn(passeValido);
         Aluno salvo = aluno("ativo");
         salvo.setEmail("nova@gmail.com");
         when(alunoService.cadastrarComDocumento(any(Aluno.class), eq("certificado.pdf"), any())).thenReturn(salvo);
@@ -180,8 +182,10 @@ class GoogleLoginControllerTest {
     @Test
     void passeVencidoOuDeOutroTipoNaoCadastra() throws Exception {
         when(jwtUtil.validarToken("vencido")).thenThrow(new JwtException("expirado"));
-        when(jwtUtil.validarToken("token-de-aluno")).thenReturn(passe("ALUNO", "maria@gmail.com"));
-        when(jwtUtil.validarToken("sem-email")).thenReturn(passe(JwtUtil.PAPEL_CADASTRO_GOOGLE, null));
+        Claims deAluno = passe("ALUNO", "maria@gmail.com");
+        Claims semEmail = passe(JwtUtil.PAPEL_CADASTRO_GOOGLE, null);
+        when(jwtUtil.validarToken("token-de-aluno")).thenReturn(deAluno);
+        when(jwtUtil.validarToken("sem-email")).thenReturn(semEmail);
 
         for (String passe : new String[] {"vencido", "token-de-aluno", "sem-email"}) {
             mockMvc.perform(multipart("/auth/google/cadastro").file(parteAluno()).param("tokenCadastro", passe))
@@ -193,7 +197,8 @@ class GoogleLoginControllerTest {
 
     @Test
     void emailQueJaTemCadastroNaoCriaOutraConta() throws Exception {
-        when(jwtUtil.validarToken("passe")).thenReturn(passe(JwtUtil.PAPEL_CADASTRO_GOOGLE, "maria@gmail.com"));
+        Claims passeDeQuemJaTemConta = passe(JwtUtil.PAPEL_CADASTRO_GOOGLE, "maria@gmail.com");
+        when(jwtUtil.validarToken("passe")).thenReturn(passeDeQuemJaTemConta);
         when(alunoRepository.existsByEmailIgnoreCase("maria@gmail.com")).thenReturn(true);
 
         mockMvc.perform(multipart("/auth/google/cadastro").file(parteAluno()).param("tokenCadastro", "passe"))
