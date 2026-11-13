@@ -542,6 +542,8 @@ Ao lado do seletor de tema fica o botão **♿ Acessibilidade**, pensado para pe
 - Quem se cadastrou pelo Google fica com uma senha aleatória que ninguém conhece. Se um dia quiser entrar com e-mail e senha, usa o "Esqueci minha senha".
 - Não precisa de tabela nova no banco.
 
+**Política de privacidade:** o site tem a página [`#/privacidade`](https://nattalyb.github.io/aprenda-plus/#/privacidade), linkada no rodapé e no cadastro, que explica quais dados o AprendaPlus guarda, para quê, com quem compartilha e como pedir acesso, correção ou exclusão (LGPD). O Google exige esse link para publicar o login com Google.
+
 **Como ligar:** criar um **ID de cliente OAuth** (tipo "Aplicativo da Web") no Google Cloud Console, com as origens `https://nattalyb.github.io` e `http://localhost:5173`, e colocar o ID na variável `GOOGLE_CLIENT_ID` do back-end. Sem ela, o botão do Google simplesmente não aparece e o login com e-mail e senha continua igual.
 
 ---
@@ -845,7 +847,7 @@ A meta do projeto era **cobertura mínima de 70%**. Os dois lados ficaram bem ac
 | | Testes | Cobertura | Ferramentas |
 |---|---|---|---|
 | **Back-end** | **859** | **98%** das instruções, 91% dos desvios (*branches*), 98% dos métodos e 100% das classes | JUnit 5, Mockito, MockMvc, JaCoCo |
-| **Front-end** | **899** | **98,4%** das instruções, 95% dos desvios (*branches*), 97% das funções e 99,3% das linhas | Jest, Testing Library |
+| **Front-end** | **900** | **98,4%** das instruções, 95% dos desvios (*branches*), 97% das funções e 99,3% das linhas | Jest, Testing Library |
 
 ### Back-end
 

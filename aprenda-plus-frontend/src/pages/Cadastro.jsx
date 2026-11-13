@@ -293,6 +293,9 @@ function Cadastro() {
           <button type="submit" className="form-btn" disabled={enviando}>
             {enviando ? 'SALVANDO...' : 'CRIAR CONTA'}
           </button>
+          <p className="form-dica cadastro-privacidade">
+            Ao criar a conta, você concorda com a nossa <Link to="/privacidade">Política de privacidade</Link>.
+          </p>
         </form>
 
         <p className="form-rodape">

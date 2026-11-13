@@ -39,6 +39,7 @@ import MinhasTurmasEad from './pages/sala/MinhasTurmasEad';
 import SalaTurma from './pages/sala/SalaTurma';
 import CertificadoConclusao from './pages/sala/CertificadoConclusao';
 import ValidarCertificado from './pages/ValidarCertificado';
+import Privacidade from './pages/Privacidade';
 import AdminSalaDeAula from './pages/admin/AdminSalaDeAula';
 import AdminTreinamentos from './pages/admin/AdminTreinamentos';
 import AdminHistorico from './pages/admin/AdminHistorico';
@@ -79,6 +80,7 @@ function App() {
         <Route path="/sala/:idTurma" element={<SitePage><SalaTurma /></SitePage>} />
         <Route path="/sala/:idTurma/certificado" element={<CertificadoConclusao />} />
         <Route path="/certificado" element={<SitePage><ValidarCertificado /></SitePage>} />
+        <Route path="/privacidade" element={<SitePage><Privacidade /></SitePage>} />
         <Route path="/certificado/:codigo" element={<SitePage><ValidarCertificado /></SitePage>} />
 
         <Route path="/professor" element={<SitePage><MinhasTurmasProfessor /></SitePage>} />

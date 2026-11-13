@@ -12,6 +12,8 @@ function Footer() {
           <p>aprendaplus@gmail.com | (51) 0000-0000</p>
           <p>
             <a href="#/certificado" className="footer-link">Validar certificado</a>
+            {' · '}
+            <a href="#/privacidade" className="footer-link">Política de privacidade</a>
           </p>
         </div>
       </div>

@@ -7452,6 +7452,24 @@ ul.comercial-termos {
 .cadastro-google strong { word-break: break-word; }
 .form-field input[readonly] { background: var(--tema-fundo-f3f4f6); color: var(--tema-texto-4b5563); cursor: not-allowed; }
 
+/* ============================================================
+   POLÍTICA DE PRIVACIDADE
+   ============================================================ */
+.privacidade { display: flex; justify-content: center; padding: 32px 16px 56px; background: var(--tema-fundo-f5f7fb); }
+.privacidade-conteudo {
+  width: 100%; max-width: 820px; background: var(--tema-fundo-ffffff); border: 1px solid var(--tema-borda-e5e7eb); border-radius: 16px;
+  padding: 36px 40px; color: var(--tema-texto-1f2937); line-height: 1.65; font-size: 16px;
+}
+.privacidade-conteudo h1 { margin: 0 0 4px; font-size: 30px; color: var(--tema-texto-001e42); }
+.privacidade-conteudo h2 { margin: 28px 0 8px; font-size: 20px; color: var(--tema-texto-001e42); }
+.privacidade-conteudo ul { margin: 8px 0; padding-left: 22px; }
+.privacidade-conteudo li { margin: 4px 0; }
+.privacidade-conteudo a { color: var(--tema-texto-1d4ed8); }
+.privacidade-atualizada { margin: 0 0 18px; font-size: 13px; color: var(--tema-texto-6b7280); }
+.privacidade-voltar { margin-top: 28px; }
+.cadastro-privacidade { margin-top: 10px; text-align: center; }
+@media (max-width: 640px) { .privacidade-conteudo { padding: 24px 18px; } }
+
 /* ===================== SELETOR DE TEMA (☀️ 🌙 👁️) ===================== */
 .seletor-tema {
   display: inline-flex;
