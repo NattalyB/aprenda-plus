@@ -39,6 +39,23 @@ public class JwtUtil {
                 .compact();
     }
 
+    // Login com o Google, primeira vez do aluno: um "passe" curto que prova que o Google confirmou este e-mail.
+    // Ele só serve para completar o cadastro (o papel CADASTRO_GOOGLE não abre nenhuma outra rota).
+    public static final String PAPEL_CADASTRO_GOOGLE = "CADASTRO_GOOGLE";
+    private static final long VALIDADE_CADASTRO_MS = 1000L * 60 * 30; // 30 minutos para preencher o formulário
+
+    public String gerarTokenCadastroGoogle(String email, String nome) {
+        long agora = System.currentTimeMillis();
+        return Jwts.builder()
+                .subject(email)
+                .claim("papel", PAPEL_CADASTRO_GOOGLE)
+                .claim("nome", nome)
+                .issuedAt(new Date(agora))
+                .expiration(new Date(agora + VALIDADE_CADASTRO_MS))
+                .signWith(chave)
+                .compact();
+    }
+
     // Versão antiga, mantida por compatibilidade (gera token sem papel)
     public String gerarToken(String email) {
         return gerarToken(email, null, null);

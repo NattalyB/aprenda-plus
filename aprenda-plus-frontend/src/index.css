@@ -7438,6 +7438,20 @@ ul.comercial-termos {
 /* O botão do VLibras não pode ficar embaixo do assistente virtual */
 #vlibras [vw-access-button] { bottom: 110px !important; top: auto !important; }
 
+/* ============================================================
+   LOGIN COM O GOOGLE
+   ============================================================ */
+.login-google { margin: 18px 0 6px; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.login-google-ou { width: 100%; display: flex; align-items: center; gap: 12px; color: var(--tema-texto-6b7280); font-size: 13px; }
+.login-google-ou::before, .login-google-ou::after { content: ''; flex: 1; height: 1px; background: var(--tema-fundo-e5e7eb); }
+.login-google-botao { width: 100%; max-width: 360px; min-height: 44px; display: flex; justify-content: center; }
+.cadastro-google {
+  display: flex; flex-direction: column; gap: 4px; margin-bottom: 18px; padding: 12px 14px; border-radius: 10px;
+  background: var(--tema-fundo-eff6ff); border: 1px solid var(--tema-borda-bfdbfe); color: var(--tema-texto-1e3a8a); font-size: 14px;
+}
+.cadastro-google strong { word-break: break-word; }
+.form-field input[readonly] { background: var(--tema-fundo-f3f4f6); color: var(--tema-texto-4b5563); cursor: not-allowed; }
+
 /* ===================== SELETOR DE TEMA (☀️ 🌙 👁️) ===================== */
 .seletor-tema {
   display: inline-flex;

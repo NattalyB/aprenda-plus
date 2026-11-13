@@ -25,7 +25,8 @@ Projeto final do curso **Desenvolvimento Full Stack** do programa **+PraTi / Cod
 - [Portal do Professor](#-portal-do-professor)
 - [Chamados de suporte](#-chamados-de-suporte)
 - [Atualizações do sistema](#-atualizações-do-sistema)
-- [Acessibilidade: tema claro, escuro e alto contraste](#-acessibilidade-tema-claro-escuro-e-alto-contraste)
+- [Acessibilidade: temas, preferências de leitura e Libras](#-acessibilidade-temas-preferências-de-leitura-e-libras)
+- [Entrar com o Google](#-entrar-com-o-google)
 - [Recuperação de senha](#-recuperação-de-senha)
 - [Importação por planilha](#-importação-por-planilha)
 - [Tecnologias](#-tecnologias)
@@ -63,6 +64,7 @@ Projeto final do curso **Desenvolvimento Full Stack** do programa **+PraTi / Cod
 - **Cadastro e login de alunos**, com validação de todos os campos (exceto o complemento do endereço).
 - **Máscaras no CPF e no telefone** (`000.000.000-00` e `(51) 99999-9999`, que se ajusta para telefone fixo), com a biblioteca `react-number-format`. O CPF é enviado ao servidor só com os números.
 - **Senha com "olho"** para mostrar o que foi digitado e campo **Confirmar senha**, que avisa na hora se as duas são iguais (mínimo de 6 caracteres).
+- **Entrar com o Google:** o aluno entra com a conta Google; na primeira vez, o nome e o e-mail já vêm preenchidos e ele só completa o resto do cadastro, sem criar senha (veja [Entrar com o Google](#-entrar-com-o-google)).
 - **Esqueci minha senha:** o aluno recebe por e-mail um link para criar uma nova senha (veja [Recuperação de senha](#-recuperação-de-senha)).
 - **Endereço preenchido pelo CEP:** ao digitar o CEP, rua, bairro, cidade e estado são preenchidos automaticamente pela API pública do ViaCEP.
 - **Contas inativas ou bloqueadas** não conseguem entrar nem comprar. A tela explica o motivo.
@@ -180,11 +182,12 @@ Projeto final do curso **Desenvolvimento Full Stack** do programa **+PraTi / Cod
 
 - Funil de vendas, leads de quem não concluiu a compra (com mensagem pronta para o WhatsApp) e os cursos e termos mais procurados no site.
 
-**Chamados de suporte e temas** (detalhes em [Chamados de suporte](#-chamados-de-suporte) e [Acessibilidade](#-acessibilidade-tema-claro-escuro-e-alto-contraste))
+**Chamados de suporte e temas** (detalhes em [Chamados de suporte](#-chamados-de-suporte) e [Acessibilidade](#-acessibilidade-temas-preferências-de-leitura-e-libras))
 
 - **🆘 Suporte:** qualquer funcionário abre um chamado (com print) quando algo não funciona e acompanha a resposta.
 - **🎧 Chamados:** quem tem o módulo atende os chamados da equipe e dos professores, por prioridade.
 - **Tema claro, escuro e alto contraste** no rodapé do menu, também no site e no Portal do Professor.
+- **♿ Preferências de acessibilidade** ao lado do tema: tamanho da letra, espaçamento, fonte mais legível, menos animação, links destacados, modo foco e tradução em **Libras (VLibras)**.
 
 **Atualizações do sistema** (detalhes em [Atualizações do sistema](#-atualizações-do-sistema))
 
@@ -484,7 +487,7 @@ Um lugar só para a equipe saber **o que mudou** no AprendaPlus e **quando o sis
 
 ---
 
-## ♿ Acessibilidade: tema claro, escuro e alto contraste
+## ♿ Acessibilidade: temas, preferências de leitura e Libras
 
 Em **todos os ambientes** (site, área do aluno, sala de aula, Portal do Professor e painel) há um seletor com três temas:
 
@@ -498,6 +501,48 @@ Em **todos os ambientes** (site, área do aluno, sala de aula, Portal do Profess
 - A escolha fica salva no navegador e vale para todas as áreas. Na primeira visita, o sistema segue a configuração do aparelho: se ele estiver em **alto contraste** ou em **modo escuro**, o AprendaPlus já abre assim.
 - **Documentos continuam claros:** o certificado, o recibo e tudo o que é impresso saem sempre no tema claro, como papel.
 - **Como foi feito:** as cores fixas do CSS viraram **variáveis de tema** (uma por papel: texto, fundo, borda, sombra e gráfico), e cada tema define os valores delas (arquivo `src/temas.css`). Assim, telas novas já nascem funcionando nos três temas.
+
+### Preferências de acessibilidade (botão ♿)
+
+Ao lado do seletor de tema fica o botão **♿ Acessibilidade**, pensado para pessoas com deficiência visual, auditiva ou motora e para pessoas neurodivergentes (autismo, TDAH, dislexia). Cada pessoa liga o que precisa:
+
+| Opção | O que faz | Ajuda principalmente |
+|---|---|---|
+| **Tamanho da letra** (Normal, Grande, Maior) | Aumenta a página inteira em 15% ou 30%, sem quebrar o desenho das telas | Baixa visão |
+| **Mais espaço entre linhas e letras** | Linhas, letras e palavras mais espaçadas (critério 1.4.12 da WCAG) | Dislexia, baixa visão |
+| **Fonte mais legível** | Troca a fonte pela Atkinson Hyperlegible, criada para baixa visão, com letras bem diferentes entre si (só é baixada por quem liga) | Baixa visão, dislexia |
+| **Reduzir animações** | Tira transições e efeitos de movimento. Mesmo sem ligar, o sistema já respeita o "reduzir movimento" do aparelho | Autismo, TDAH, labirintite |
+| **Destacar links e foco** | Sublinha os links e mostra um contorno laranja forte no item selecionado | Baixa visão, navegação pelo teclado |
+| **Modo foco** | Menos coisas chamando atenção: o menu do painel fica esmaecido até a pessoa ir até ele, e somem os textos flutuantes | Autismo, TDAH |
+| **Tradução em Libras (VLibras)** | Mostra o widget oficial do governo federal, que traduz o texto da página para Libras com um avatar | Pessoas surdas |
+
+- O botão mostra quantas opções estão ligadas, e **Voltar ao padrão** desfaz tudo.
+- Como o tema, as preferências ficam salvas no navegador e valem no site, no painel e no Portal do Professor.
+- O painel fecha com **Esc** (o foco volta para o botão) ou clicando fora.
+- **Pular para o conteúdo:** quem navega pelo teclado aperta **Tab** ao abrir qualquer página e vê o link "Pular para o conteúdo", que leva direto ao conteúdo sem passar pelo menu.
+- **Referências:** WCAG 2.2, eMAG e Lei Brasileira de Inclusão (Lei 13.146/2015, art. 63).
+
+---
+
+## 🔑 Entrar com o Google
+
+**Alunos e professores** podem entrar com a conta Google, no login do site (abas "Sou aluno" e "Sou professor"). O aluno também tem o botão na tela de cadastro.
+
+| Quem | O que acontece |
+|---|---|
+| **Aluno que já tem conta** com o mesmo e-mail | Entra direto. |
+| **Aluno novo** | Vai para o cadastro com **nome e e-mail já preenchidos** (o e-mail fica travado, porque o Google já confirmou). Ele completa CPF, telefone, nascimento, endereço e o certificado de conclusão, **sem criar senha**, e já sai logado. |
+| **Professor** | Entra se o e-mail do Google for o mesmo que a secretaria cadastrou. Se não for, a tela explica que é preciso falar com a secretaria. |
+
+**Segurança**
+
+- O navegador recebe do Google uma **credencial**, e o servidor **confere com o próprio Google** (`oauth2.googleapis.com/tokeninfo`) antes de confiar no e-mail. Ele confere se a credencial foi feita para o AprendaPlus (ID de cliente), se é do emissor certo, se não venceu e se o e-mail está confirmado no Google.
+- O aluno novo recebe um **passe de 30 minutos** (JWT com o papel `CADASTRO_GOOGLE`) que só serve para completar o cadastro: ele não abre nenhuma outra rota. O e-mail gravado sai **do passe**, nunca do formulário.
+- Conta inativa ou bloqueada não entra pelo Google, assim como não entra com senha.
+- Quem se cadastrou pelo Google fica com uma senha aleatória que ninguém conhece. Se um dia quiser entrar com e-mail e senha, usa o "Esqueci minha senha".
+- Não precisa de tabela nova no banco.
+
+**Como ligar:** criar um **ID de cliente OAuth** (tipo "Aplicativo da Web") no Google Cloud Console, com as origens `https://nattalyb.github.io` e `http://localhost:5173`, e colocar o ID na variável `GOOGLE_CLIENT_ID` do back-end. Sem ela, o botão do Google simplesmente não aparece e o login com e-mail e senha continua igual.
 
 ---
 
@@ -799,8 +844,8 @@ A meta do projeto era **cobertura mínima de 70%**. Os dois lados ficaram bem ac
 
 | | Testes | Cobertura | Ferramentas |
 |---|---|---|---|
-| **Back-end** | **837** | **98%** das instruções, 91% dos desvios (*branches*), 98% dos métodos e 100% das classes | JUnit 5, Mockito, MockMvc, JaCoCo |
-| **Front-end** | **866** | **98,4%** das instruções, 95% dos desvios (*branches*), 97% das funções e 99,3% das linhas | Jest, Testing Library |
+| **Back-end** | **859** | **98%** das instruções, 91% dos desvios (*branches*), 98% dos métodos e 100% das classes | JUnit 5, Mockito, MockMvc, JaCoCo |
+| **Front-end** | **899** | **98,4%** das instruções, 95% dos desvios (*branches*), 97% das funções e 99,3% das linhas | Jest, Testing Library |
 
 ### Back-end
 
@@ -961,6 +1006,7 @@ O serviço `aprenda-plus-backend` é atualizado automaticamente a cada `git push
 | `JWT_SECRET` | Chave secreta que assina os tokens |
 | `BREVO_API_KEY` | Chave da API do Brevo, para enviar os e-mails |
 | `GEMINI_API_KEY` | Chave da IA do assistente virtual (opcional; sem ela, o chat funciona no modo básico) |
+| `GOOGLE_CLIENT_ID` | ID de cliente OAuth do Google, para o "Continuar com o Google" (opcional; sem ele, o botão não aparece) |
 | `EMAIL_REMETENTE` | E-mail que aparece como remetente (precisa estar verificado no Brevo) |
 | `EMAIL_SITE` | Endereço do site usado nos botões dos e-mails (opcional; o padrão é o GitHub Pages) |
 | `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD` | Conexão com o banco PostgreSQL no Neon |

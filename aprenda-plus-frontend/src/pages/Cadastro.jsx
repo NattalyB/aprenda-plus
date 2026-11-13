@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { cadastrarAlunoComDocumento } from '../services/alunoService';
 import { conferirArquivoDoDocumento } from '../services/documentoService';
 import { mostrarAviso } from '../services/avisoService';
@@ -7,20 +7,26 @@ import CampoCep from '../components/CampoCep';
 import CampoArquivo from '../components/CampoArquivo';
 import CampoSenha from '../components/CampoSenha';
 import { CampoCpf, CampoTelefone } from '../components/CamposFormatados';
+import BotaoGoogle from '../components/BotaoGoogle';
+import { cadastrarComGoogle, entrarAlunoComGoogle } from '../services/googleService';
+import { salvarSessao } from '../services/authService';
 
 export const SENHA_MINIMA = 6;
 
 function Cadastro() {
   const navigate = useNavigate();
+  const location = useLocation();
+  // Veio do "Continuar com o Google": nome e e-mail já vêm do Google e não precisa criar senha
+  const [google, setGoogle] = useState(location.state?.google || null);
   const [erro, setErro] = useState(null);
   const [enviando, setEnviando] = useState(false);
   const [certificado, setCertificado] = useState(null);
   const [confirmarSenha, setConfirmarSenha] = useState('');
 
   const [form, setForm] = useState({
-    nomeCompleto: '',
+    nomeCompleto: location.state?.google?.nome || '',
     telefone: '',
-    email: '',
+    email: location.state?.google?.email || '',
     dataNascimento: '',
     cpf: '',
     senhaHash: '',
@@ -40,9 +46,60 @@ function Cadastro() {
     setForm({ ...form, [name]: type === 'checkbox' ? checked : value });
   };
 
+  // Botão do Google no cadastro: quem já tem conta entra; quem não tem continua aqui com nome e e-mail preenchidos
+  const usarGoogle = (credencial) => {
+    setErro(null);
+    entrarAlunoComGoogle(credencial)
+      .then((dados) => {
+        if (!dados.cadastroPendente) {
+          salvarSessao(dados);
+          mostrarAviso('Você já tinha conta: entramos com ela.', 'sucesso');
+          navigate('/');
+          return;
+        }
+        setGoogle(dados);
+        setForm((atual) => ({ ...atual, nomeCompleto: atual.nomeCompleto || dados.nome || '', email: dados.email }));
+      })
+      .catch((error) => setErro(error.response?.data?.erro || 'Não foi possível entrar com o Google. Tente novamente.'));
+  };
+
+  const tratarErro = (error) => {
+    setEnviando(false);
+    const status = error.response?.status;
+    const mensagem = error.response?.data?.mensagem;
+    if (status === 409 || error.response?.data?.message?.includes('unique')) {
+      setErro('E-mail ou CPF já cadastrado.');
+    } else if (status === 413) {
+      setErro('O arquivo pode ter no máximo 5 MB.');
+    } else if (status === 400) {
+      setErro(mensagem || 'Verifique os dados preenchidos.');
+    } else {
+      setErro('Não foi possível concluir o cadastro. Tente novamente.');
+    }
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     setErro(null);
+
+    if (google) {
+      const problema = conferirArquivoDoDocumento(certificado);
+      if (problema) {
+        setErro(problema);
+        return;
+      }
+      setEnviando(true);
+      // eslint-disable-next-line no-unused-vars
+      const { senhaHash, ...dados } = form;
+      cadastrarComGoogle(google.tokenCadastro, { ...dados, email: google.email }, certificado)
+        .then((sessao) => {
+          salvarSessao(sessao);
+          mostrarAviso('Conta criada! Seu certificado foi enviado para análise da secretaria.', 'sucesso');
+          navigate('/');
+        })
+        .catch(tratarErro);
+      return;
+    }
 
     if (form.senhaHash.length < SENHA_MINIMA) {
       setErro(`A senha deve ter pelo menos ${SENHA_MINIMA} caracteres.`);
@@ -66,20 +123,7 @@ function Cadastro() {
         mostrarAviso('Conta criada! Seu certificado foi enviado para análise da secretaria.', 'sucesso');
         navigate('/login');
       })
-      .catch((error) => {
-        setEnviando(false);
-        const status = error.response?.status;
-        const mensagem = error.response?.data?.mensagem;
-        if (status === 409 || error.response?.data?.message?.includes('unique')) {
-          setErro('E-mail ou CPF já cadastrado.');
-        } else if (status === 413) {
-          setErro('O arquivo pode ter no máximo 5 MB.');
-        } else if (status === 400) {
-          setErro(mensagem || 'Verifique os dados preenchidos.');
-        } else {
-          setErro('Não foi possível concluir o cadastro. Tente novamente.');
-        }
-      });
+      .catch(tratarErro);
   };
 
   return (
@@ -87,6 +131,15 @@ function Cadastro() {
       <div className="form-card">
         <h1 className="form-title">Cadastro</h1>
         <p className="form-subtitle">Crie sua conta e comece a aprender hoje mesmo.</p>
+
+        {google ? (
+          <div className="cadastro-google" role="status">
+            <strong>Você entrou com o Google como {google.email}.</strong>
+            <span>Complete os dados abaixo para criar sua conta. Não precisa criar senha: é só entrar com o Google.</span>
+          </div>
+        ) : (
+          <BotaoGoogle onCredencial={usarGoogle} texto="signup_with" />
+        )}
 
         {erro && <div className="form-erro">{erro}</div>}
 
@@ -101,7 +154,9 @@ function Cadastro() {
 
             <div className="form-field">
               <label htmlFor="email">E-mail</label>
-              <input id="email" name="email" type="email" placeholder="seuemail@exemplo.com" value={form.email} onChange={handleChange} required />
+              <input id="email" name="email" type="email" placeholder="seuemail@exemplo.com" value={form.email} onChange={handleChange}
+                readOnly={Boolean(google)} aria-describedby={google ? 'email-google' : undefined} required />
+              {google && <small id="email-google" className="form-dica">Confirmado pelo Google.</small>}
             </div>
 
             <div className="form-row">
@@ -167,7 +222,8 @@ function Cadastro() {
             </div>
           </div>
 
-          {/* ===== Acesso ===== */}
+          {/* ===== Acesso (quem entrou com o Google não cria senha) ===== */}
+          {!google && (<>
           <h2 className="form-section-title">Acesso</h2>
           <div className="form-grid">
             <div className="form-row">
@@ -206,6 +262,7 @@ function Cadastro() {
               </p>
             )}
           </div>
+          </>)}
 
           {/* ===== Escolaridade ===== */}
           <h2 className="form-section-title">Escolaridade</h2>

@@ -6,6 +6,13 @@ import { mostrarAviso } from '../services/avisoService';
 import { buscarEnderecoPorCep } from '../services/cepService';
 
 jest.mock('../services/alunoService');
+jest.mock('../services/googleService');
+jest.mock('../services/authService');
+jest.mock('../components/BotaoGoogle', () => ({
+  __esModule: true,
+  default: ({ onCredencial }) =>
+    require('react').createElement('button', { type: 'button', onClick: () => onCredencial('cred-google') }, 'Cadastrar com o Google'),
+}));
 jest.mock('../services/avisoService');
 // A consulta ao ViaCEP é simulada: nenhum teste acessa a internet
 jest.mock('../services/cepService', () => ({
@@ -242,4 +249,90 @@ test('a pessoa escolhe se quer receber ofertas (começa desmarcado)', async () =
       expect.anything()
     )
   );
+});
+
+
+describe('cadastro com o Google', () => {
+  const googleService = jest.requireMock('../services/googleService');
+  const authService = jest.requireMock('../services/authService');
+  const vindoDoGoogle = { pathname: '/cadastro', state: { google: { tokenCadastro: 'passe', email: 'nova@gmail.com', nome: 'Nova Aluna' } } };
+  const semSenha = Object.fromEntries(Object.entries(dados).filter(([campo]) => !['Senha', 'Confirmar senha', 'E-mail', 'Nome completo'].includes(campo)));
+
+  const completar = () => {
+    Object.entries(semSenha).forEach(([campo, valor]) => {
+      fireEvent.change(screen.getByLabelText(campo), { target: { value: valor } });
+    });
+    anexar(pdf());
+    fireEvent.click(screen.getByRole('button', { name: 'CRIAR CONTA' }));
+  };
+
+  test('vindo do login: nome e e-mail preenchidos, sem senha, e já entra', async () => {
+    googleService.cadastrarComGoogle.mockResolvedValue({ token: 't', idAluno: 9, nome: 'Nova Aluna' });
+    renderizar(<Cadastro />, { rota: vindoDoGoogle });
+
+    expect(screen.getByText('Você entrou com o Google como nova@gmail.com.')).toBeInTheDocument();
+    expect(screen.getByLabelText('Nome completo')).toHaveValue('Nova Aluna');
+    expect(screen.getByLabelText('E-mail')).toHaveValue('nova@gmail.com');
+    expect(screen.getByLabelText('E-mail')).toHaveAttribute('readonly');
+    expect(screen.queryByLabelText('Senha')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Cadastrar com o Google' })).not.toBeInTheDocument();
+
+    completar();
+
+    await waitFor(() => expect(screen.getByTestId('endereco')).toHaveTextContent(/^\/$/));
+    const [passe, aluno, arquivo] = googleService.cadastrarComGoogle.mock.calls[0];
+    expect(passe).toBe('passe');
+    expect(aluno).toMatchObject({ email: 'nova@gmail.com', nomeCompleto: 'Nova Aluna', cpf: '12345678900' });
+    expect(aluno).not.toHaveProperty('senhaHash');
+    expect(arquivo.name).toBe('certificado.pdf');
+    expect(authService.salvarSessao).toHaveBeenCalledWith({ token: 't', idAluno: 9, nome: 'Nova Aluna' });
+  });
+
+  test('sem o certificado nem envia', () => {
+    renderizar(<Cadastro />, { rota: vindoDoGoogle });
+    Object.entries(semSenha).forEach(([campo, valor]) => {
+      fireEvent.change(screen.getByLabelText(campo), { target: { value: valor } });
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'CRIAR CONTA' }));
+    expect(googleService.cadastrarComGoogle).not.toHaveBeenCalled();
+  });
+
+  test('passe vencido mostra o motivo', async () => {
+    googleService.cadastrarComGoogle.mockRejectedValue({ response: { status: 400, data: { mensagem: 'O tempo para completar o cadastro acabou.' } } });
+    renderizar(<Cadastro />, { rota: vindoDoGoogle });
+    completar();
+    expect(await screen.findByText('O tempo para completar o cadastro acabou.')).toBeInTheDocument();
+  });
+
+  test('pelo botão do cadastro: quem não tem conta continua aqui com os dados do Google', async () => {
+    googleService.entrarAlunoComGoogle.mockResolvedValue({ cadastroPendente: true, tokenCadastro: 'p2', email: 'ana@gmail.com', nome: 'Ana' });
+    renderizar(<Cadastro />, { rota: '/cadastro' });
+    fireEvent.change(screen.getByLabelText('Nome completo'), { target: { value: 'Ana Paula' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Cadastrar com o Google' }));
+
+    expect(await screen.findByText('Você entrou com o Google como ana@gmail.com.')).toBeInTheDocument();
+    expect(screen.getByLabelText('E-mail')).toHaveValue('ana@gmail.com');
+    // O que a pessoa já tinha digitado não é apagado
+    expect(screen.getByLabelText('Nome completo')).toHaveValue('Ana Paula');
+  });
+
+  test('pelo botão do cadastro: quem já tem conta entra com ela', async () => {
+    googleService.entrarAlunoComGoogle.mockResolvedValue({ token: 't', idAluno: 4, nome: 'Ana' });
+    renderizar(<Cadastro />, { rota: '/cadastro' });
+    fireEvent.click(screen.getByRole('button', { name: 'Cadastrar com o Google' }));
+    await waitFor(() => expect(screen.getByTestId('endereco')).toHaveTextContent(/^\/$/));
+    expect(authService.salvarSessao).toHaveBeenCalled();
+    expect(mostrarAviso).toHaveBeenCalledWith('Você já tinha conta: entramos com ela.', 'sucesso');
+  });
+
+  test('pelo botão do cadastro: erro do Google aparece na tela', async () => {
+    googleService.entrarAlunoComGoogle.mockRejectedValueOnce({ response: { data: { erro: 'Conta bloqueada.' } } });
+    renderizar(<Cadastro />, { rota: '/cadastro' });
+    fireEvent.click(screen.getByRole('button', { name: 'Cadastrar com o Google' }));
+    expect(await screen.findByText('Conta bloqueada.')).toBeInTheDocument();
+
+    googleService.entrarAlunoComGoogle.mockRejectedValueOnce(new Error('offline'));
+    fireEvent.click(screen.getByRole('button', { name: 'Cadastrar com o Google' }));
+    expect(await screen.findByText('Não foi possível entrar com o Google. Tente novamente.')).toBeInTheDocument();
+  });
 });

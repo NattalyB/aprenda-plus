@@ -3,6 +3,8 @@ import CampoSenha from '../components/CampoSenha';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { login, salvarSessao } from '../services/authService';
 import { loginProfessor, salvarSessaoProfessor } from '../services/docenteService';
+import { entrarAlunoComGoogle, entrarProfessorComGoogle } from '../services/googleService';
+import BotaoGoogle from '../components/BotaoGoogle';
 
 const PERFIS = {
   aluno: {
@@ -36,6 +38,40 @@ function Login() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  const mostrarErro = (error) => {
+    setEnviando(false);
+    const doServidor = error.response?.data?.erro || error.response?.data?.mensagem;
+    if (error.response?.status === 401 && (!doServidor || doServidor === 'E-mail ou senha inválidos')) {
+      setErro('E-mail ou senha inválidos.');
+    } else if (doServidor) {
+      // Ex.: conta inativa, professor que ainda não criou a senha ou e-mail do Google sem cadastro
+      setErro(doServidor);
+    } else {
+      setErro('Não foi possível fazer login. Tente novamente.');
+    }
+  };
+
+  // Entrar com o Google: aluno novo vai completar o cadastro; quem já tem conta entra direto
+  const entrarComGoogle = (credencial) => {
+    setErro(null);
+    setEnviando(true);
+    const entrar =
+      perfil === 'professor'
+        ? entrarProfessorComGoogle(credencial).then((dados) => {
+            salvarSessaoProfessor(dados);
+            navigate('/professor');
+          })
+        : entrarAlunoComGoogle(credencial).then((dados) => {
+            if (dados.cadastroPendente) {
+              navigate('/cadastro', { state: { google: dados } });
+              return;
+            }
+            salvarSessao(dados);
+            navigate('/');
+          });
+    entrar.catch(mostrarErro);
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     setErro(null);
@@ -52,18 +88,7 @@ function Login() {
             navigate('/');
           });
 
-    entrar.catch((error) => {
-      setEnviando(false);
-      const doServidor = error.response?.data?.erro;
-      if (error.response?.status === 401 && (!doServidor || doServidor === 'E-mail ou senha inválidos')) {
-        setErro('E-mail ou senha inválidos.');
-      } else if (doServidor) {
-        // Ex.: conta inativa ou professor que ainda não criou a senha (o servidor explica o motivo)
-        setErro(doServidor);
-      } else {
-        setErro('Não foi possível fazer login. Tente novamente.');
-      }
-    });
+    entrar.catch(mostrarErro);
   };
 
   const textos = PERFIS[perfil];
@@ -111,6 +136,8 @@ function Login() {
             {enviando ? 'ENTRANDO...' : 'ENTRAR'}
           </button>
         </form>
+
+        <BotaoGoogle onCredencial={entrarComGoogle} />
 
         {perfil === 'professor' ? (
           <p className="form-rodape">Primeiro acesso? Peça à secretaria para enviar o link de criação de senha.</p>

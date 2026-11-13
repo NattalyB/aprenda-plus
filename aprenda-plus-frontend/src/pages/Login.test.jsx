@@ -7,6 +7,13 @@ import { loginProfessor, salvarSessaoProfessor } from '../services/docenteServic
 
 jest.mock('../services/authService');
 jest.mock('../services/docenteService');
+jest.mock('../services/googleService');
+// O botão oficial do Google é trocado por um botão simples que já devolve uma credencial
+jest.mock('../components/BotaoGoogle', () => ({
+  __esModule: true,
+  default: ({ onCredencial }) =>
+    require('react').createElement('button', { type: 'button', onClick: () => onCredencial('cred-google') }, 'Continuar com o Google'),
+}));
 
 const preencherEEnviar = (email = 'maria@teste.com', senha = 'senha123') => {
   fireEvent.change(screen.getByLabelText('E-mail'), { target: { value: email } });
@@ -107,5 +114,45 @@ describe('Sou professor', () => {
     fireEvent.click(screen.getByRole('tab', { name: '🎓 Sou aluno' }));
     expect(screen.queryByText('E-mail ou senha inválidos.')).not.toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Login' })).toBeInTheDocument();
+  });
+});
+
+describe('entrar com o Google', () => {
+  const googleService = jest.requireMock('../services/googleService');
+
+  test('aluno com conta entra direto', async () => {
+    googleService.entrarAlunoComGoogle.mockResolvedValue({ token: 't', idAluno: 7, nome: 'Maria' });
+    renderizar(<Login />, { rota: '/login' });
+    fireEvent.click(screen.getByRole('button', { name: 'Continuar com o Google' }));
+
+    await waitFor(() => expect(screen.getByTestId('endereco')).toHaveTextContent(/^\/$/));
+    expect(googleService.entrarAlunoComGoogle).toHaveBeenCalledWith('cred-google');
+    expect(salvarSessao).toHaveBeenCalledWith({ token: 't', idAluno: 7, nome: 'Maria' });
+  });
+
+  test('aluno novo vai completar o cadastro', async () => {
+    googleService.entrarAlunoComGoogle.mockResolvedValue({ cadastroPendente: true, tokenCadastro: 'p', email: 'n@g.com', nome: 'N' });
+    renderizar(<Login />, { rota: '/login' });
+    fireEvent.click(screen.getByRole('button', { name: 'Continuar com o Google' }));
+
+    await waitFor(() => expect(screen.getByTestId('endereco')).toHaveTextContent('/cadastro'));
+    expect(salvarSessao).not.toHaveBeenCalled();
+  });
+
+  test('professor entra no portal ou vê o motivo de não entrar', async () => {
+    googleService.entrarProfessorComGoogle.mockResolvedValue({ token: 'tp', idProfessor: 3, nome: 'Roberto' });
+    renderizar(<Login />, { rota: '/login?perfil=professor' });
+    fireEvent.click(screen.getByRole('button', { name: 'Continuar com o Google' }));
+    await waitFor(() => expect(screen.getByTestId('endereco')).toHaveTextContent('/professor'));
+    expect(salvarSessaoProfessor).toHaveBeenCalledWith({ token: 'tp', idProfessor: 3, nome: 'Roberto' });
+  });
+
+  test('e-mail do Google sem cadastro de professor mostra a mensagem do servidor', async () => {
+    googleService.entrarProfessorComGoogle.mockRejectedValue({
+      response: { status: 401, data: { erro: 'Não encontramos um professor com este e-mail do Google.' } },
+    });
+    renderizar(<Login />, { rota: '/login?perfil=professor' });
+    fireEvent.click(screen.getByRole('button', { name: 'Continuar com o Google' }));
+    expect(await screen.findByText('Não encontramos um professor com este e-mail do Google.')).toBeInTheDocument();
   });
 });
